@@ -22,63 +22,63 @@ import * as Font from 'expo-font';
 export const fontConfig = {
   hero: {
     fontFamily: 'Poppins_700Bold',
-    fontSize: 26,
-    lineHeight: 33,
+    fontSize: 23,
+    lineHeight: 29,
     fontWeight: '700' as const,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   display: {
     fontFamily: 'Poppins_700Bold',
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 19,
+    lineHeight: 25,
     fontWeight: '700' as const,
     letterSpacing: -0.3,
   },
   heading: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '700' as const,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '600' as const,
     letterSpacing: -0.2,
   },
   title: {
     fontFamily: 'Poppins_600SemiBold',
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 14,
+    lineHeight: 19,
     fontWeight: '600' as const,
     letterSpacing: -0.1,
   },
   subheading: {
     fontFamily: 'Poppins_500Medium',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '500' as const,
     letterSpacing: 0,
   },
   subtitle: {
     fontFamily: 'Poppins_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12.5,
+    lineHeight: 17,
     fontWeight: '400' as const,
     letterSpacing: 0,
   },
   body: {
     fontFamily: 'Poppins_400Regular',
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 19,
     fontWeight: '400' as const,
   },
   label: {
     fontFamily: 'Montserrat_600SemiBold',
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 11.5,
+    lineHeight: 16,
     fontWeight: '600' as const,
     letterSpacing: 0.5,
   },
   meta: {
     fontFamily: 'Montserrat_500Medium',
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 10.5,
+    lineHeight: 14,
     fontWeight: '500' as const,
     letterSpacing: 0.3,
   },
@@ -110,8 +110,8 @@ export function getResponsiveFontStyle(variant: FontVariantKey, width: number, i
             ? 0.94
             : 1;
 
-  const fontSize = clamp(Number((base.fontSize * widthScale).toFixed(1)), 9.8, isTV ? 32 : 22);
-  const lineHeight = clamp(Math.round(base.lineHeight * widthScale), Math.ceil(fontSize + 3), isTV ? 40 : 30);
+  const fontSize = clamp(Number((base.fontSize * widthScale).toFixed(1)), 9.5, isTV ? 28 : 20);
+  const lineHeight = clamp(Math.round(base.lineHeight * widthScale), Math.ceil(fontSize + 3), isTV ? 36 : 28);
 
   return {
     ...base,

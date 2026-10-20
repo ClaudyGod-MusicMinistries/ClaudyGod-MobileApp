@@ -94,48 +94,187 @@ type SettingItem = ToggleSettingItem | StatusSettingItem;
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  settingRowTouch:  { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 68 },
-  settingIcon: {
-    width: 40, height: 40, borderRadius: theme.radius.lg,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: theme.colors.subtleFill,
-    borderWidth: 1, borderColor: theme.colors.border,
+  settingRowTouch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    minHeight: 52,
   },
-  settingTextWrap:  { flex: 1 },
-  settingLabel:     { color: theme.colors.text, fontWeight: '600' },
-  settingHint:      { color: theme.colors.textMuted, marginTop: 3, lineHeight: 16 },
-  settingStatus: { paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs, borderRadius: theme.radius.pill, backgroundColor: theme.colors.infoSurface, borderWidth: 1, borderColor: theme.colors.infoBorder },
-  settingStatusText: { color: theme.colors.info, fontWeight: '700' },
+  settingIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFillMed,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  settingIconActive: {
+    backgroundColor: theme.colors.primarySurface,
+    borderColor: theme.colors.primaryBorder,
+  },
+  settingTextWrap: { flex: 1, minWidth: 0 },
+  settingLabel: {
+    color: theme.colors.text,
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 13.5,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  settingHint: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11.5,
+    lineHeight: 15,
+    marginTop: 2,
+  },
+  settingStatus: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryBorder,
+  },
+  settingStatusText: {
+    color: theme.colors.primary,
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
 
   sectionShell: {
-    borderRadius: theme.radius.xl, overflow: 'hidden',
-    borderWidth: 1, borderColor: theme.colors.border,
+    borderRadius: theme.radius.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     backgroundColor: theme.colors.elevated,
     ...theme.shadows.sm,
   },
-  sectionHeader: { paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.md, paddingBottom: theme.spacing.sm },
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.divider,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   sectionHeaderIcon: {
-    width: 38, height: 38, borderRadius: theme.radius.lg,
-    alignItems: 'center', justifyContent: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: theme.colors.primarySurface,
-    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryBorder,
   },
   sectionHeaderCopy: { flex: 1, minWidth: 0 },
-  sectionTitle: { color: theme.colors.text, fontSize: 14, fontWeight: '700' },
-  sectionSubtitle: { color: theme.colors.textMuted, fontSize: 11.5, marginTop: 3 },
-  sectionBody: { paddingHorizontal: 16 },
+  sectionTitle: {
+    color: theme.colors.text,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  sectionSubtitle: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11.5,
+    lineHeight: 15,
+    marginTop: 2,
+  },
+  sectionBody: {
+    paddingHorizontal: 0,
+  },
 
-  appearanceRow: { flexDirection: 'row', gap: theme.spacing.xs, padding: theme.spacing.sm, borderTopWidth: 1, borderTopColor: theme.colors.border },
-  appearanceOption: { flex: 1, minHeight: 92, alignItems: 'center', justifyContent: 'center', gap: theme.spacing.xs, padding: theme.spacing.sm, borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.border },
-  appearanceOptionBorder: { borderLeftWidth: 1, borderLeftColor: theme.colors.border },
-  appearanceIndicator: { position: 'absolute', left: theme.spacing.sm, right: theme.spacing.sm, bottom: theme.spacing.xs, height: 3, borderRadius: 2, backgroundColor: theme.colors.primary },
+  appearanceRow: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 12,
+  },
+  appearanceOption: {
+    flex: 1,
+    minHeight: 74,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.subtleFill,
+  },
+  appearanceOptionActive: {
+    backgroundColor: theme.colors.primarySurface,
+    borderColor: theme.colors.primaryBorder,
+  },
+  appearanceLabel: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  appearanceLabelActive: {
+    color: theme.colors.text,
+  },
+  appearanceHint: {
+    color: theme.colors.textMuted,
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 9.5,
+    letterSpacing: 0.2,
+    textAlign: 'center',
+  },
+  appearanceIndicator: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    bottom: 4,
+    height: 2.5,
+    borderRadius: 2,
+    backgroundColor: theme.colors.primary,
+  },
 
-  linkRow:          { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 62, paddingHorizontal: 14 },
-  linkIcon: { width: 38, height: 38, borderRadius: theme.radius.lg, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  linkLabelWrap:    { flex: 1, minWidth: 0 },
-  linkLabel:        { color: theme.colors.text, fontWeight: '600' },
-  linkHint:         { color: theme.colors.textMuted, marginTop: 2 },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 52,
+  },
+  linkIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  linkLabelWrap: { flex: 1, minWidth: 0 },
+  linkLabel: {
+    color: theme.colors.text,
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 13.5,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  linkHint: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11.5,
+    lineHeight: 15,
+    marginTop: 2,
+  },
 
   introCard: { padding: theme.spacing.lg, gap: theme.spacing.lg, borderColor: theme.colors.primaryBorder, ...theme.shadows.md },
   intro: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
@@ -145,37 +284,76 @@ const useStyles = makeStyles((theme) => ({
   introTitle: { color: theme.colors.text, fontWeight: '800', fontSize: 19, marginTop: theme.spacing.xxs },
   introSubtitle: { color: theme.colors.textSecondary, fontSize: 13, marginTop: theme.spacing.xs, lineHeight: 19 },
   accountCard: {
-    padding: theme.spacing.md,
+    padding: 16,
     borderRadius: theme.radius.xl,
     backgroundColor: theme.colors.elevated,
-    borderWidth: 1, borderColor: theme.colors.border,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     ...theme.shadows.sm,
   },
-  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   accountAvatar: {
-    width: 44, height: 44, borderRadius: 22,
-    alignItems: 'center', justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: theme.colors.primarySurface,
-    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryBorder,
   },
   accountMeta: { flex: 1, minWidth: 0 },
   accountBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 8, paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: theme.radius.pill,
     backgroundColor: theme.colors.primarySurface,
-    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryBorder,
     marginBottom: 4,
   },
-  accountBadgeText: { color: theme.colors.primary, fontSize: 10.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  accountTitle: { color: theme.colors.text, fontSize: 14.5, fontWeight: '700' },
-  accountSubtitle: { color: theme.colors.textMuted, fontSize: 12, marginTop: 2 },
+  accountBadgeText: {
+    color: theme.colors.primary,
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 9.5,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  accountTitle: {
+    color: theme.colors.text,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  accountSubtitle: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11.5,
+    lineHeight: 15,
+    marginTop: 2,
+  },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', borderTopWidth: 1, borderTopColor: theme.colors.border },
   quickCell: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
-  rowDivider:       { borderTopColor: theme.colors.border },
-  settingsGroupsRow:{ gap: 12 },
-  homeBtn:          { minWidth: 40, paddingHorizontal: 10 },
+  rowDivider: {
+    borderTopColor: theme.colors.divider,
+  },
+  settingsGroupsRow: { gap: 14 },
+  homeBtn: { minWidth: 40, paddingHorizontal: 10 },
   settingsGroupCard: { flex: 1 },
+  versionFooter: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xl,
+    gap: 8,
+  },
+  versionLabel: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11.5,
+    marginTop: 2,
+  },
 }));
 
 // ─── SettingRow ───────────────────────────────────────────────────────────────
@@ -191,20 +369,24 @@ function SettingRow({ item }: { item: SettingItem }) {
   return (
     <TVTouchable
       onPress={isToggle ? () => item.onToggle(!item.value) : undefined}
-      style={[styles.settingRowTouch, { paddingVertical: device.isTV ? 14 : 10 }]}
+      style={styles.settingRowTouch}
       showFocusBorder={false}
       accessibilityRole={isToggle ? 'switch' : 'text'}
       accessibilityState={isToggle ? { checked: item.value } : undefined}
     >
-      <View style={[styles.settingIcon, isEnabled ? { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder } : null]}>
-        <AppIcon name={item.icon} size={device.isTV ? 20 : 18} color={isToggle ? (item.value ? accentColor : theme.colors.textMuted) : theme.colors.info} />
+      <View style={[styles.settingIcon, isEnabled ? styles.settingIconActive : null]}>
+        <AppIcon
+          name={item.icon}
+          size={device.isTV ? 19 : 17}
+          color={isToggle ? (item.value ? accentColor : theme.colors.textSecondary) : theme.colors.primary}
+        />
       </View>
       <View style={styles.settingTextWrap}>
-        <CustomText style={[styles.settingLabel, { fontSize: device.isTV ? 15.5 : 14 }]}>
+        <CustomText variant="body" style={styles.settingLabel}>
           {item.label}
         </CustomText>
         {item.hint ? (
-          <CustomText style={[styles.settingHint, { fontSize: device.isTV ? 13 : 12 }]}>
+          <CustomText variant="caption" style={styles.settingHint}>
             {item.hint}
           </CustomText>
         ) : null}
@@ -218,7 +400,9 @@ function SettingRow({ item }: { item: SettingItem }) {
           ios_backgroundColor={theme.colors.border}
         />
       ) : (
-        <View style={styles.settingStatus}><CustomText variant="caption" style={styles.settingStatusText}>{item.statusLabel}</CustomText></View>
+        <View style={styles.settingStatus}>
+          <CustomText style={styles.settingStatusText}>{item.statusLabel}</CustomText>
+        </View>
       )}
     </TVTouchable>
   );
@@ -232,7 +416,7 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
   const device = useDeviceClass();
 
   const options: { value: ThemePreference; label: string; icon: AppIconName; hint: string }[] = [
-    { value: 'system', label: 'System', icon: 'devices', hint: 'Device' },
+    { value: 'system', label: 'System', icon: 'devices', hint: 'Automatic' },
     { value: 'light', label: 'Light', icon: 'sun', hint: 'Light mode' },
     { value: 'dark', label: 'Dark', icon: 'moon', hint: 'Dark mode' },
   ];
@@ -240,10 +424,12 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
   return (
     <View style={styles.sectionShell}>
       <View style={[styles.sectionHeader, styles.sectionHeaderRow]}>
-        <View style={styles.sectionHeaderIcon}><AppIcon name="palette" size={19} color={theme.colors.primary} /></View>
+        <View style={styles.sectionHeaderIcon}>
+          <AppIcon name="palette" size={17} color={theme.colors.primary} />
+        </View>
         <View style={styles.sectionHeaderCopy}>
-          <CustomText style={styles.sectionTitle}>Appearance</CustomText>
-          <CustomText style={styles.sectionSubtitle}>Choose how ClaudyGod looks on this device</CustomText>
+          <CustomText variant="title" style={styles.sectionTitle}>Appearance</CustomText>
+          <CustomText variant="caption" style={styles.sectionSubtitle}>Choose how ClaudyGod looks on this device</CustomText>
         </View>
       </View>
       <View style={styles.appearanceRow}>
@@ -253,22 +439,21 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
             <TVTouchable
               key={option.value}
               onPress={() => onChange(option.value)}
-              style={[styles.appearanceOption, active ? { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryFocusBorder } : null]}
+              style={[styles.appearanceOption, active ? styles.appearanceOptionActive : null]}
               showFocusBorder={false}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
             >
-              <AppIcon name={option.icon} size={device.isTV ? 22 : 19} color={active ? theme.colors.primary : theme.colors.textSecondary} />
+              <AppIcon name={option.icon} size={device.isTV ? 20 : 18} color={active ? theme.colors.primary : theme.colors.textSecondary} />
               <CustomText
-                style={{
-                  color: active ? theme.colors.text : theme.colors.textSecondary,
-                  fontSize: device.isTV ? 14 : 12.5,
-                  fontWeight: active ? '700' : '600',
-                }}
+                style={[
+                  styles.appearanceLabel,
+                  active ? styles.appearanceLabelActive : null,
+                ]}
               >
                 {option.label}
               </CustomText>
-              <CustomText style={{ color: theme.colors.textMuted, fontSize: device.isTV ? 11 : 10, textAlign: 'center' }}>
+              <CustomText style={styles.appearanceHint}>
                 {option.hint}
               </CustomText>
               {active ? <View style={styles.appearanceIndicator} /> : null}
@@ -289,21 +474,21 @@ function QuickLinkRow({ icon, label, hint, color, surface, border, onPress }: { 
 
   return (
     <TVTouchable onPress={onPress} showFocusBorder={false}>
-      <View style={[styles.linkRow, { paddingVertical: device.isTV ? 12 : 8 }]}> 
+      <View style={styles.linkRow}> 
         <View style={[styles.linkIcon, { backgroundColor: surface, borderColor: border }]}>
-          <AppIcon name={icon} size={device.isTV ? 20 : 17} color={color} />
+          <AppIcon name={icon} size={device.isTV ? 19 : 17} color={color} />
         </View>
         <View style={styles.linkLabelWrap}>
-          <CustomText style={[styles.linkLabel, { fontSize: device.isTV ? 15.5 : 14 }]}>
+          <CustomText variant="body" style={styles.linkLabel}>
             {label}
           </CustomText>
           {hint ? (
-            <CustomText style={[styles.linkHint, { fontSize: device.isTV ? 13 : 12 }]}>
+            <CustomText variant="caption" style={styles.linkHint}>
               {hint}
             </CustomText>
           ) : null}
         </View>
-        <AppIcon name="chevron-right" size={17} color={theme.colors.textMuted} />
+        <AppIcon name="chevron-right" size={18} color={theme.colors.textMuted} />
       </View>
     </TVTouchable>
   );
@@ -567,10 +752,10 @@ export default function SettingsScreen() {
                   {accountConnected ? 'Connected Account' : 'Guest Mode'}
                 </CustomText>
               </View>
-              <CustomText style={styles.accountTitle} numberOfLines={1}>
+              <CustomText variant="title" style={styles.accountTitle} numberOfLines={1}>
                 {accountConnected ? (userEmail ?? 'ClaudyGod Member') : 'Listening Locally'}
               </CustomText>
-              <CustomText style={styles.accountSubtitle} numberOfLines={1}>
+              <CustomText variant="caption" style={styles.accountSubtitle} numberOfLines={1}>
                 {accountConnected ? 'Manage profile, security & sessions' : 'Sign in to sync favorites across devices'}
               </CustomText>
             </View>
@@ -586,10 +771,10 @@ export default function SettingsScreen() {
       <View style={[styles.settingsGroupsRow, { flexDirection: isWideLayout ? 'row' : 'column', alignItems: isWideLayout ? 'flex-start' : 'stretch' }]}> 
         <View style={[styles.sectionShell, styles.settingsGroupCard]}>
           <View style={[styles.sectionHeader, styles.sectionHeaderRow]}>
-            <View style={styles.sectionHeaderIcon}><AppIcon name="play-circle-outline" size={19} color={theme.colors.primary} /></View>
+            <View style={styles.sectionHeaderIcon}><AppIcon name="play-circle-outline" size={17} color={theme.colors.primary} /></View>
             <View style={styles.sectionHeaderCopy}>
-              <CustomText style={styles.sectionTitle}>Playback</CustomText>
-              <CustomText style={styles.sectionSubtitle}>Listening quality and queue behavior</CustomText>
+              <CustomText variant="title" style={styles.sectionTitle}>Playback</CustomText>
+              <CustomText variant="caption" style={styles.sectionSubtitle}>Listening quality and queue behavior</CustomText>
             </View>
           </View>
           <View style={styles.sectionBody}>
@@ -601,10 +786,10 @@ export default function SettingsScreen() {
 
         <View style={[styles.sectionShell, styles.settingsGroupCard]}>
           <View style={[styles.sectionHeader, styles.sectionHeaderRow]}>
-            <View style={styles.sectionHeaderIcon}><AppIcon name="security" size={19} color={theme.colors.primary} /></View>
+            <View style={styles.sectionHeaderIcon}><AppIcon name="security" size={17} color={theme.colors.primary} /></View>
             <View style={styles.sectionHeaderCopy}>
-              <CustomText style={styles.sectionTitle}>Experience & privacy</CustomText>
-              <CustomText style={styles.sectionSubtitle}>Alerts, personalization, and diagnostics</CustomText>
+              <CustomText variant="title" style={styles.sectionTitle}>Experience & privacy</CustomText>
+              <CustomText variant="caption" style={styles.sectionSubtitle}>Alerts, personalization, and diagnostics</CustomText>
             </View>
           </View>
           <View style={styles.sectionBody}>
@@ -641,11 +826,11 @@ export default function SettingsScreen() {
           <View key={section.id} style={styles.sectionShell}>
             <View style={[styles.sectionHeader, styles.sectionHeaderRow]}>
               <View style={styles.sectionHeaderIcon}>
-                <AppIcon name={icon} size={19} color={theme.colors.primary} />
+                <AppIcon name={icon} size={17} color={theme.colors.primary} />
               </View>
               <View style={styles.sectionHeaderCopy}>
-                <CustomText style={styles.sectionTitle}>{title}</CustomText>
-                <CustomText style={styles.sectionSubtitle}>{subtitle}</CustomText>
+                <CustomText variant="title" style={styles.sectionTitle}>{title}</CustomText>
+                <CustomText variant="caption" style={styles.sectionSubtitle}>{subtitle}</CustomText>
               </View>
             </View>
             <View style={styles.sectionBody}>
@@ -671,12 +856,10 @@ export default function SettingsScreen() {
       })}
 
       {/* ─── App Version Footer ─── */}
-      <View style={{ alignItems: 'center', paddingVertical: theme.spacing.xl, gap: 4 }}>
-        <CustomText style={{ color: theme.colors.textMuted, fontSize: 12, fontWeight: '600' }}>
-          ClaudyGod v1.0.0
-        </CustomText>
-        <CustomText style={{ color: theme.colors.textSecondary, fontSize: 11 }}>
-          Worship without limits
+      <View style={styles.versionFooter}>
+        <BrandWordmark size="xs" showDot showSubtitle subtitleText="MUSIC & MINISTRIES" align="center" />
+        <CustomText variant="caption" style={styles.versionLabel}>
+          ClaudyGod v1.0.0 · Worship without limits
         </CustomText>
       </View>
     </PremiumPage>

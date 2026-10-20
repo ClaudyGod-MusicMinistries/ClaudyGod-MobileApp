@@ -30,11 +30,11 @@ export interface BrandWordmarkProps {
 }
 
 const SIZE_CONFIG = {
-  xs: { fontSize: 13, lineHeight: 17, dotSize: 13, subSize: 8, subSpacing: 1.8, subMargin: 2 },
-  sm: { fontSize: 16, lineHeight: 21, dotSize: 16, subSize: 9, subSpacing: 2.2, subMargin: 3 },
-  md: { fontSize: 22, lineHeight: 28, dotSize: 22, subSize: 10, subSpacing: 2.6, subMargin: 4 },
-  lg: { fontSize: 28, lineHeight: 34, dotSize: 28, subSize: 11, subSpacing: 3.0, subMargin: 5 },
-  xl: { fontSize: 34, lineHeight: 42, dotSize: 34, subSize: 12, subSpacing: 3.4, subMargin: 6 },
+  xs: { fontSize: 12, lineHeight: 16, dotSize: 12, subSize: 7.5, subSpacing: 1.8, subMargin: 2 },
+  sm: { fontSize: 14.5, lineHeight: 19, dotSize: 14.5, subSize: 8.5, subSpacing: 2.0, subMargin: 2.5 },
+  md: { fontSize: 19, lineHeight: 24, dotSize: 19, subSize: 9.5, subSpacing: 2.4, subMargin: 3 },
+  lg: { fontSize: 24, lineHeight: 30, dotSize: 24, subSize: 10.5, subSpacing: 2.8, subMargin: 4 },
+  xl: { fontSize: 29, lineHeight: 36, dotSize: 29, subSize: 11.5, subSpacing: 3.0, subMargin: 5 },
 } as const;
 
 export function BrandWordmark({
