@@ -1,4 +1,17 @@
 import {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+} from '@expo-google-fonts/poppins';
+import {
+  Montserrat_400Regular,
+  Montserrat_500Medium,
+  Montserrat_600SemiBold,
+  Montserrat_700Bold,
+  Montserrat_800ExtraBold,
+} from '@expo-google-fonts/montserrat';
+import {
   PlusJakartaSans_400Regular,
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
@@ -8,69 +21,69 @@ import * as Font from 'expo-font';
 
 export const fontConfig = {
   hero: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: 'Poppins_700Bold',
     fontSize: 26,
     lineHeight: 33,
     fontWeight: '700' as const,
     letterSpacing: -0.5,
   },
   display: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: 'Poppins_700Bold',
     fontSize: 22,
     lineHeight: 28,
     fontWeight: '700' as const,
     letterSpacing: -0.3,
   },
   heading: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: 'Poppins_700Bold',
     fontSize: 18,
     lineHeight: 24,
     fontWeight: '700' as const,
     letterSpacing: -0.2,
   },
   title: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: 'Poppins_600SemiBold',
     fontSize: 15,
     lineHeight: 21,
     fontWeight: '600' as const,
     letterSpacing: -0.1,
   },
   subheading: {
-    fontFamily: 'PlusJakartaSans_400Regular',
+    fontFamily: 'Poppins_500Medium',
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '400' as const,
+    fontWeight: '500' as const,
     letterSpacing: 0,
   },
   subtitle: {
-    fontFamily: 'PlusJakartaSans_400Regular',
+    fontFamily: 'Poppins_400Regular',
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '400' as const,
     letterSpacing: 0,
   },
   body: {
-    fontFamily: 'PlusJakartaSans_400Regular',
+    fontFamily: 'Poppins_400Regular',
     fontSize: 14,
     lineHeight: 21,
     fontWeight: '400' as const,
   },
   label: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: 'Montserrat_600SemiBold',
     fontSize: 12,
     lineHeight: 17,
     fontWeight: '600' as const,
-    letterSpacing: 0,
+    letterSpacing: 0.5,
   },
   meta: {
-    fontFamily: 'PlusJakartaSans_400Regular',
+    fontFamily: 'Montserrat_500Medium',
     fontSize: 11,
     lineHeight: 15,
-    fontWeight: '400' as const,
-    letterSpacing: 0,
+    fontWeight: '500' as const,
+    letterSpacing: 0.3,
   },
   caption: {
-    fontFamily: 'PlusJakartaSans_400Regular',
+    fontFamily: 'Poppins_400Regular',
     fontSize: 11,
     lineHeight: 15,
     fontWeight: '400' as const,
@@ -109,19 +122,21 @@ export function getResponsiveFontStyle(variant: FontVariantKey, width: number, i
 
 export const loadFonts = async () => {
   await Font.loadAsync({
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+    Montserrat_400Regular,
+    Montserrat_500Medium,
+    Montserrat_600SemiBold,
+    Montserrat_700Bold,
+    Montserrat_800ExtraBold,
     PlusJakartaSans_400Regular,
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
   });
 };
 
-// Web only. Expo's static-export HTML shell (app/+html.tsx) is NOT used by the
-// single-page export the production Docker image builds, so declaring the
-// @font-face rules there silently did nothing — every PlusJakartaSans_* family
-// resolved to nothing and the whole web app rendered in the browser's default
-// serif. Injecting the rules at runtime works in either export mode, and using
-// the bundled TTFs (rather than a Google CDN) keeps them same-origin and cached
-// with the app, with no third-party request per visitor.
 const WEB_FONT_STYLE_ID = 'claudygod-web-fonts';
 
 export function injectWebFonts(): void {
@@ -134,6 +149,14 @@ export function injectWebFonts(): void {
   const style = document.createElement('style');
   style.id = WEB_FONT_STYLE_ID;
   style.textContent = [
+    face('Poppins_400Regular', 400, Poppins_400Regular),
+    face('Poppins_500Medium', 500, Poppins_500Medium),
+    face('Poppins_600SemiBold', 600, Poppins_600SemiBold),
+    face('Poppins_700Bold', 700, Poppins_700Bold),
+    face('Montserrat_400Regular', 400, Montserrat_400Regular),
+    face('Montserrat_500Medium', 500, Montserrat_500Medium),
+    face('Montserrat_600SemiBold', 600, Montserrat_600SemiBold),
+    face('Montserrat_700Bold', 700, Montserrat_700Bold),
     face('PlusJakartaSans_400Regular', 400, PlusJakartaSans_400Regular),
     face('PlusJakartaSans_600SemiBold', 600, PlusJakartaSans_600SemiBold),
     face('PlusJakartaSans_700Bold', 700, PlusJakartaSans_700Bold),
@@ -142,10 +165,12 @@ export function injectWebFonts(): void {
 }
 
 export const fontWeights = {
-  light: 'PlusJakartaSans_400Regular',
-  regular: 'PlusJakartaSans_400Regular',
-  medium: 'PlusJakartaSans_400Regular',
-  semiBold: 'PlusJakartaSans_600SemiBold',
-  bold: 'PlusJakartaSans_700Bold',
-  extraBold: 'PlusJakartaSans_700Bold',
+  light: 'Poppins_400Regular',
+  regular: 'Poppins_400Regular',
+  medium: 'Poppins_500Medium',
+  semiBold: 'Poppins_600SemiBold',
+  bold: 'Poppins_700Bold',
+  extraBold: 'Poppins_700Bold',
+  brandDisplay: 'Poppins_700Bold',
+  brandLabel: 'Montserrat_700Bold',
 };

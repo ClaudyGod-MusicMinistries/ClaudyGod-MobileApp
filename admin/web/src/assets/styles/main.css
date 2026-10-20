@@ -42,7 +42,8 @@
   --info-muted: 37 99 235 / 0.12;
   --overlay: 10 8 18;
 
-  --font-body: "Aptos", "Segoe UI Variable", "SF Pro Text", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "Poppins", "Montserrat", "Aptos", "Segoe UI Variable", "SF Pro Text", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-brand: "Montserrat", "Poppins", sans-serif;
   --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 8px 24px rgb(16 24 40 / 0.035);
   --shadow-raised: 0 12px 36px rgb(16 24 40 / 0.10), 0 2px 8px rgb(16 24 40 / 0.05);
   --shadow-overlay: 0 32px 80px rgb(16 24 40 / 0.24), 0 8px 24px rgb(16 24 40 / 0.12);

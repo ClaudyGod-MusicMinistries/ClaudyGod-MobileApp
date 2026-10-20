@@ -1146,10 +1146,20 @@
   resolved "https://registry.npmjs.org/@expo-google-fonts/manrope/-/manrope-0.4.2.tgz"
   integrity sha512-BZsKe8d9BJrVnIQIZcTS7/Kac0TbXnqs/+8EBSiQxrmK6GoCO6eTkmr50D1weIk/EoF20pTmAkpWICnovATr/g==
 
+"@expo-google-fonts/montserrat@^0.4.2":
+  version "0.4.2"
+  resolved "https://registry.npmjs.org/@expo-google-fonts/montserrat/-/montserrat-0.4.2.tgz#2fa3a12ac0c79bf51ff48b5ed7fa71db26057fda"
+  integrity sha512-Xyq7rKJhhZOE1Xk4wKSSVoUeOkFmQEMhtZ3pdFrgYckGZMs115Apmld1AI8Ju+yrl5GzDdfRCCqRr33dvEDYUA==
+
 "@expo-google-fonts/plus-jakarta-sans@^0.4.2":
   version "0.4.2"
   resolved "https://registry.npmjs.org/@expo-google-fonts/plus-jakarta-sans/-/plus-jakarta-sans-0.4.2.tgz#95d6640ecb3aa76c534fb4ef3490ec7b230c3b60"
   integrity sha512-6LYVmVGwjQvH+uzzWlVc9+oMj4lkNQ41aymVDjO+x8aFk8kCye20wOyLomYMZaMezA++Uf1mZRCw3W3Fy/hxEA==
+
+"@expo-google-fonts/poppins@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.npmjs.org/@expo-google-fonts/poppins/-/poppins-0.4.1.tgz#bf49b2a14a5d255fa3404fdef7bcbbb04025f0a4"
+  integrity sha512-LiX5oEryJqDt3UmWwr4oqf11hGMz/JEffkkNcZ3UtGwyoMFzXmBmTwcrAWrEttxypxmLNmPykDg+CY2VjKve9A==
 
 "@expo/cli@54.0.27":
   version "54.0.27"
