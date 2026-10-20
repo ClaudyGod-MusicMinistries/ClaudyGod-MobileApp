@@ -127,8 +127,8 @@ const useStyles = makeStyles((theme) => ({
   settingHint: {
     color: theme.colors.textSecondary,
     fontFamily: 'Poppins_400Regular',
-    fontSize: 11.5,
-    lineHeight: 15,
+    fontSize: 11,
+    lineHeight: 14,
     marginTop: 2,
   },
   settingStatus: {
@@ -188,8 +188,8 @@ const useStyles = makeStyles((theme) => ({
   sectionSubtitle: {
     color: theme.colors.textSecondary,
     fontFamily: 'Poppins_400Regular',
-    fontSize: 11.5,
-    lineHeight: 15,
+    fontSize: 11,
+    lineHeight: 14,
     marginTop: 2,
   },
   sectionBody: {
@@ -271,8 +271,8 @@ const useStyles = makeStyles((theme) => ({
   linkHint: {
     color: theme.colors.textSecondary,
     fontFamily: 'Poppins_400Regular',
-    fontSize: 11.5,
-    lineHeight: 15,
+    fontSize: 11,
+    lineHeight: 14,
     marginTop: 2,
   },
 
@@ -331,8 +331,8 @@ const useStyles = makeStyles((theme) => ({
   accountSubtitle: {
     color: theme.colors.textSecondary,
     fontFamily: 'Poppins_400Regular',
-    fontSize: 11.5,
-    lineHeight: 15,
+    fontSize: 11,
+    lineHeight: 14,
     marginTop: 2,
   },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', borderTopWidth: 1, borderTopColor: theme.colors.border },
@@ -351,7 +351,8 @@ const useStyles = makeStyles((theme) => ({
   versionLabel: {
     color: theme.colors.textSecondary,
     fontFamily: 'Poppins_400Regular',
-    fontSize: 11.5,
+    fontSize: 11,
+    lineHeight: 14,
     marginTop: 2,
   },
 }));

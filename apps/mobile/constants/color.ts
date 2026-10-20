@@ -66,10 +66,10 @@ export const colors = {
 
     // ── Text ─────────────────────────────────────────────────────────────────
     text:           '#0D0D0D',
-    textSecondary:  '#4A4A4A',
-    textMuted:      '#666671',
+    textSecondary:  '#2C2C34',
+    textMuted:      '#52525E',
     text_primary:   '#0D0D0D',
-    text_secondary: '#4A4A4A',
+    text_secondary: '#2C2C34',
     text_accent:    '#6D28D9',
     textInverse:    '#FFFFFF',
     onPrimary:      '#FFFFFF',
@@ -176,11 +176,11 @@ export const colors = {
     shadow:       '#000000',
 
     // ── Text ─────────────────────────────────────────────────────────────────
-    text:           '#FAFAFA',
-    textSecondary:  '#B5B5BE',
-    textMuted:      '#A0A0AC',
-    text_primary:   '#FAFAFA',
-    text_secondary: '#B5B5BE',
+    text:           '#FFFFFF',
+    textSecondary:  '#D4D4DC',
+    textMuted:      '#A6A6B2',
+    text_primary:   '#FFFFFF',
+    text_secondary: '#D4D4DC',
     text_accent:    '#DDD3FF',
     textInverse:    '#111114',
     onPrimary:      '#FFFFFF',
