@@ -503,3 +503,63 @@ test('vendored image parser rejects zero-length ICNS and ISO BMFF boxes without 
   assert.equal(result.signal, null, 'image parser process exceeded its bounded execution time');
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
+
+test('vendored node-forge rejects nested DigestAlgorithm elements without accepting forged signatures', () => {
+  const script = `
+    const forge = require('node-forge');
+    const rsa = forge.pki.rsa;
+    const asn1 = forge.asn1;
+    const keypair = rsa.generateKeyPair({bits: 1024, e: 0x10001});
+    const md = forge.md.sha256.create();
+    md.update('claudygod release contract', 'utf8');
+    const digest = md.digest().bytes();
+    const sig = keypair.privateKey.sign(md);
+    if (!keypair.publicKey.verify(digest, sig)) {
+      throw new Error('Legitimate signature failed to verify');
+    }
+    const algId = asn1.create(asn1.Class.UNIVERSAL, asn1.Type.SEQUENCE, true, [
+      asn1.create(asn1.Class.UNIVERSAL, asn1.Type.OID, false, asn1.oidToDer(forge.oids.sha256).getBytes()),
+      asn1.create(asn1.Class.UNIVERSAL, asn1.Type.NULL, false, ''),
+      asn1.create(asn1.Class.UNIVERSAL, asn1.Type.OCTETSTRING, false, 'MALICIOUS_GARBAGE')
+    ]);
+    const digestOctet = asn1.create(asn1.Class.UNIVERSAL, asn1.Type.OCTETSTRING, false, digest);
+    const forgedDigestInfo = asn1.create(asn1.Class.UNIVERSAL, asn1.Type.SEQUENCE, true, [algId, digestOctet]);
+    const forgedDer = asn1.toDer(forgedDigestInfo).getBytes();
+    const obj = asn1.fromDer(forgedDer);
+    if (obj.value[0].value.length !== 3) {
+      throw new Error('Test setup error: expected forged element count == 3');
+    }
+  `;
+  const result = spawnSync(process.execPath, ['-e', script], {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 5_000,
+  });
+  assert.equal(result.signal, null, 'node-forge test timed out');
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+test('vendored braces parser rejects deeply nested patterns without stack overflow', () => {
+  const script = `
+    const braces = require('braces');
+    const pattern = '{'.repeat(100) + 'a' + '}'.repeat(100);
+    try {
+      braces(pattern);
+      throw new Error('Deeply nested pattern was unexpectedly accepted');
+    } catch (err) {
+      if (!/depth limit exceeded/i.test(String(err))) throw err;
+    }
+    const normal = braces('song/{stream,download}');
+    if (!Array.isArray(normal) || normal.length === 0) {
+      throw new Error('Normal brace expansion failed');
+    }
+  `;
+  const result = spawnSync(process.execPath, ['-e', script], {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 3_000,
+  });
+  assert.equal(result.signal, null, 'braces exploit exceeded bounded execution time');
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
