@@ -64,6 +64,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { X } from 'lucide-vue-next';
+import { generateUUID } from '@/utils/uuid';
 
 const props = withDefaults(defineProps<{
   modelValue: boolean;
@@ -74,7 +75,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>();
 const panel = ref<HTMLElement | null>(null);
-const titleId = `modal-title-${crypto.randomUUID()}`;
+const titleId = `modal-title-${generateUUID()}`;
 let previouslyFocused: HTMLElement | null = null;
 
 const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';

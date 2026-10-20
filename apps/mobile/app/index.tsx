@@ -109,7 +109,7 @@ function BrandIntroScreen({
   }, [fadeAnim, reduceMotion, slideAnim, theme.timing.moderate]);
 
   return (
-    <View style={{ width, height, backgroundColor: theme.colors.background, overflow: 'hidden' }}>
+    <View style={{ flex: 1, width: '100%', height: '100%', backgroundColor: theme.colors.background, overflow: 'hidden' }}>
       <HeroBackground
         width={width}
         height={height}
@@ -211,9 +211,13 @@ function NativeEntry() {
 
   useEffect(() => {
     let cancelled = false;
-    getPreference(ONBOARDING_SEEN_KEY, false).then((seen) => {
-      if (!cancelled) setStatus(seen ? 'done' : 'show');
-    });
+    getPreference(ONBOARDING_SEEN_KEY, false)
+      .then((seen) => {
+        if (!cancelled) setStatus(seen ? 'done' : 'show');
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('show');
+      });
     return () => {
       cancelled = true;
     };

@@ -1,4 +1,5 @@
 import { resolveApiUrl } from '@/utils/constants';
+import { generateUUID } from '@/utils/uuid';
 import type { AdminSessionResponse, SessionStatusResponse } from './types';
 
 const API_URL = resolveApiUrl();
@@ -33,7 +34,7 @@ const sessionRequest = async <T>(path: string, method: 'GET' | 'POST'): Promise<
           Accept: 'application/json',
           'Content-Type': 'application/json',
           'X-Claudy-Client-Platform': 'web',
-          'X-Request-ID': crypto.randomUUID(),
+          'X-Request-ID': generateUUID(),
         };
 
     const response = await fetch(`${API_URL}${path}`, {

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { resolveApiUrl } from '@/utils/constants';
+import { generateUUID } from '@/utils/uuid';
 import { normalizeApiError } from './apiError';
 import { notifySessionExpired, refreshSession } from './session';
 
@@ -21,7 +22,7 @@ export const client: AxiosInstance = axios.create({
 // ─── Request interceptor ─────────────────────────────────────────────────────
 
 client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  config.headers['X-Request-ID'] = crypto.randomUUID();
+  config.headers['X-Request-ID'] = generateUUID();
   return config;
 });
 
