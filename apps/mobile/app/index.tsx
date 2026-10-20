@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Image,
   Platform,
   View,
   useWindowDimensions,
@@ -16,7 +17,7 @@ import { HeroBackground } from '../components/hero/HeroBackground';
 import { useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
 import { APP_ROUTES } from '../util/appRoutes';
-import { BRAND_HERO_VIDEO_ASSET } from '../util/brandAssets';
+import { BRAND_HERO_VIDEO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
 import { useDeviceClass } from '../util/deviceClassConfig';
 import { getPreference, setPreference } from '../lib/localUserStorage';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -133,6 +134,18 @@ function BrandIntroScreen({
             }}
           >
             <View style={styles.copyGroup}>
+              <Image
+                source={BRAND_LOGO_ASSET}
+                style={{
+                  width: compact ? 42 : 52,
+                  height: compact ? 42 : 52,
+                  borderRadius: theme.radius.md,
+                  alignSelf: isPhone ? 'center' : 'flex-start',
+                  marginBottom: 4,
+                }}
+                resizeMode="contain"
+              />
+
               <CustomText
                 style={[styles.brandLabel, { textAlign: isPhone ? 'center' : 'left' }]}
               >

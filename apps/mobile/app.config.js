@@ -101,7 +101,7 @@ const appDescription = getFileOrEnv(
 const uiStyle = getFileOrEnv('EXPO_USER_INTERFACE_STYLE', 'dark');
 // Canonical brand dark background — matches brand/logo-master.svg's tile color.
 // Keep this in sync with constants/color.ts's dark background token.
-const BRAND_DARK = '#1C1230';
+const BRAND_DARK = '#16131C';
 const splashBgColor = getFileOrEnv('EXPO_SPLASH_BG_COLOR', BRAND_DARK);
 const androidAdaptiveIconBgColor = getFileOrEnv('EXPO_ANDROID_ADAPTIVE_ICON_BG_COLOR', BRAND_DARK);
 const iosBundleId = getFileOrEnv('EXPO_IOS_BUNDLE_ID', 'com.claudygod.app');

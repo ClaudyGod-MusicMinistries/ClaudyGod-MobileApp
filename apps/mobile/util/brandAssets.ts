@@ -1,6 +1,7 @@
 import { Asset } from 'expo-asset';
 
 export const BRAND_LOGO_ASSET = require('../assets/images/logo.png');
+export const BRAND_LOCKUP_ASSET = require('../assets/images/brand-lockup.png');
 // Fallback artwork for content with no image of its own (missing/errored
 // thumbnails across AppImage, PremiumHero, StreamingBanner, library/search/
 // videos lists, etc). Deliberately the brand mark on its own tile rather than

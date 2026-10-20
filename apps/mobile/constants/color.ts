@@ -8,7 +8,7 @@ export const mediaTokens = {
   // and the native splash is already this color (BRAND_DARK in app.config.js —
   // keep the two in sync), so a light-mode user never sees a white flash between
   // the splash and the landing. Home and everything after follows the theme.
-  brandCanvas: '#1C1230',
+  brandCanvas: '#16131C',
   text: '#FFFFFF',
   textMuted: 'rgba(255,255,255,0.85)',
   textSubtle: 'rgba(255,255,255,0.70)',
