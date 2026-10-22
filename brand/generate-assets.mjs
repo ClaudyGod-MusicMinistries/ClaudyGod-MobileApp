@@ -18,8 +18,8 @@ const transparentSvg = readFileSync(path.join(here, 'logo-mark-transparent.svg')
 const lockupSvgPath = path.join(here, 'logo-lockup.svg');
 const lockupSvg = existsSync(lockupSvgPath) ? readFileSync(lockupSvgPath) : null;
 
-// Canonical brand dark background — matches brand/logo-master.svg and constants/color.ts
-const ICON_BG = '#16131C';
+// Canonical brand background — matches brand/logo-master.svg (#FFFFFF pure white)
+const ICON_BG = '#FFFFFF';
 
 const targets = [
   // iOS App Store icon: opaque, no alpha channel (Apple rejects icons with alpha).
