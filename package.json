@@ -16,6 +16,7 @@
     "follow-redirects": "^1.16.1"
   },
   "scripts": {
+    "expo": "yarn --cwd ./apps/mobile expo",
     "lefthook": "lefthook",
     "hooks:install": "yarn lefthook install",
     "api:build": "yarn --cwd ./services/api build",
