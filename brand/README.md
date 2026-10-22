@@ -14,24 +14,24 @@ or `yarn --cwd apps/mobile exec node ../../brand/generate-assets.mjs`.)
 
 ## The mark
 
-"CMM Cross & Arrow" — The official ClaudyGod Music & Ministries emblem. Features the stylized 'C',
-a downward sword cross (`†`) forming the left stroke of 'M', and an ascending upward arrow (`↑`)
-forming the right ascent of 'M', in electric royal purple (`#8F3EF2` / `#9542F6`) on a deep
-midnight charcoal field (`#16131C`).
+"ClaudyGod Music & Ministries (CMM)" — The official ClaudyGod brand identity. Features the fluid
+title-case script wordmark "ClaudyGod", uppercase tracked sub-heading "MUSIC & MINISTRIES", and the
+signature vintage studio ribbon microphone banner with the "CMM" emblem in rich royal purple (`#431184`)
+on a pure white ground (`#FFFFFF`).
 
-- `logo-master.svg` — opaque square, `#16131C` background baked in. Feeds the iOS icon (1024x1024,
+- `logo-master.svg` — opaque square, `#FFFFFF` background baked in. Feeds the iOS icon (1024x1024,
   channels: 3, no alpha channel per Apple App Store requirements), favicon, and the in-app/admin/email
   brand assets. Square corners are intentional: every consumer applies its own rounding (iOS icon mask,
   CSS `border-radius`, or React Native `overflow: hidden`).
-- `logo-mark-transparent.svg` — the CMM emblem alone on a transparent field, centered within Android's
+- `logo-mark-transparent.svg` — the brand mark alone on a transparent field, centered within Android's
   ~66% adaptive-icon safe zone so it is never clipped by circular, squircle, or pebble launcher masks.
   Also feeds the Android adaptive icon foreground and the Expo splash screen.
-- `logo-lockup.svg` — full brand lockup featuring the CMM emblem on top with the official "claudyGod.
-  MUSIC & MINISTRIES" wordmark below it. Feeds `brand-lockup.png` across mobile and admin web.
+- `logo-lockup.svg` — full brand lockup featuring the complete ClaudyGod Music & Ministries CMM graphic.
+  Feeds `brand-lockup.png` across mobile and admin web.
 
 ## If the mark changes
 
 Edit the SVGs, re-run `yarn brand:generate`, and verify the regenerated PNGs. If the background color
 changes, keep these three places in sync: `logo-master.svg`'s `<rect fill>`, `ICON_BG` in
 `generate-assets.mjs`, and `android.adaptiveIcon.backgroundColor` / `splash.backgroundColor` in
-`apps/mobile/app.config.js` (`BRAND_DARK`) + `constants/color.ts`'s `brandCanvas`.
+`apps/mobile/app.config.js` (`BRAND_LIGHT`).

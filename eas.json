@@ -1,18 +1,48 @@
 {
   "cli": {
-    "version": ">= 20.3.0",
+    "version": ">= 10.0.0",
     "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development",
+      "environment": "development",
+      "env": {
+        "CLAUDYGOD_ENV": "development",
+        "NODE_ENV": "development"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "preview",
+      "environment": "preview",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "CLAUDYGOD_ENV": "production"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "distribution": "store",
+      "channel": "production",
+      "environment": "production",
+      "autoIncrement": true,
+      "env": {
+        "CLAUDYGOD_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://apimobile.claudygod.org",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://fb04ac990143558c70b61d39e0576334@o4512137329442816.ingest.de.sentry.io/4512137347203152",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gjqqajeavzucvafersio.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_9q-2dOo-Cd9DdxnxtV96sg_I4UWi_2S"
+      }
+    },
+    "production-apk": {
+      "extends": "production",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {

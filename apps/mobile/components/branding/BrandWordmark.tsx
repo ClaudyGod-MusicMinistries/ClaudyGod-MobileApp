@@ -17,7 +17,7 @@ export interface BrandWordmarkProps {
   showSubtitle?: boolean;
   /** Optional custom subtitle text. Defaults to 'MUSIC & MINISTRIES'. */
   subtitleText?: string;
-  /** Letter casing style: 'brand' ("claudyGod."), 'title' ("ClaudyGod."), or 'upper' ("CLAUDYGOD."). Default 'brand'. */
+  /** Letter casing style: 'brand' ("claudyGod."), 'title' ("ClaudyGod."), or 'upper' ("CLAUDYGOD."). Default 'title'. */
   casing?: 'brand' | 'title' | 'upper';
   /** Alignment of wordmark and subtitle. Default 'left'. */
   align?: 'left' | 'center' | 'right';
@@ -43,7 +43,7 @@ export function BrandWordmark({
   showDot = true,
   showSubtitle = false,
   subtitleText = 'MUSIC & MINISTRIES',
-  casing = 'brand',
+  casing = 'title',
   align = 'left',
   style,
   textStyle,
@@ -62,8 +62,8 @@ export function BrandWordmark({
     textColor = theme.colors.primary;
   }
 
-  // Signature dot color (royal / electric purple)
-  const dotColor = theme.colors.primary ?? '#8F3EF2';
+  // Signature dot color (royal purple matching official logo)
+  const dotColor = theme.colors.primary ?? '#431184';
 
   // Subtitle color
   const subColor = tone === 'light' ? 'rgba(255, 255, 255, 0.72)' : theme.colors.textSecondary;
@@ -75,9 +75,6 @@ export function BrandWordmark({
   } else if (casing === 'upper') {
     wordmarkBase = 'CLAUDYGOD';
   }
-
-  const containerAlign =
-    align === 'center' ? 'items-center' : align === 'right' ? 'items-end' : 'items-start';
 
   return (
     <View
