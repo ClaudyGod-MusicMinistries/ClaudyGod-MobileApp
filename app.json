@@ -1,10 +1,18 @@
 {
   "expo": {
+    "name": "ClaudyGod",
+    "slug": "claudygodmobile",
+    "owner": "peter4tech",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "android": {
+      "package": "com.claudygod.app",
+      "versionCode": 10
+    },
     "extra": {
       "eas": {
         "projectId": "8434f51d-f5d3-4b4d-96f6-de3e4d00b0dc"
       }
-    },
-    "owner": "peter4tech"
+    }
   }
 }
