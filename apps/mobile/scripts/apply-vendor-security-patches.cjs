@@ -97,4 +97,14 @@ patchPackage('braces', '3.0.3', [
   },
 ]);
 
-process.stdout.write('Applied verified vendor security patches (image-size, node-forge, braces).\n');
+// 4. brace-expansion (TypeScript/ESM .expand property interop for @expo/fingerprint and minimatch)
+patchPackage('brace-expansion', '1.1.21', [
+  {
+    relativePath: 'index.js',
+    vulnerableSource: 'module.exports = expandTop;',
+    securedSource: 'expandTop.expand = expandTop;\nexpandTop.default = expandTop;\nmodule.exports = expandTop;',
+    marker: 'expandTop.expand = expandTop;',
+  },
+]);
+
+process.stdout.write('Applied verified vendor security patches (image-size, node-forge, braces, brace-expansion).\n');

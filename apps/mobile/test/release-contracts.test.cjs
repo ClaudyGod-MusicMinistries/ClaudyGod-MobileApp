@@ -563,3 +563,22 @@ test('vendored braces parser rejects deeply nested patterns without stack overfl
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
+test('vendored brace-expansion exports expand function and supports @expo/fingerprint', () => {
+  const script = `
+    const be = require('brace-expansion');
+    if (typeof be !== 'function') throw new Error('brace-expansion must be callable as a function');
+    if (typeof be.expand !== 'function') throw new Error('brace-expansion must expose .expand function');
+    const direct = be('{a,b}');
+    if (!Array.isArray(direct) || direct.length !== 2) throw new Error('direct invocation failed');
+    const method = be.expand('{a,b}');
+    if (!Array.isArray(method) || method.length !== 2) throw new Error('.expand invocation failed');
+  `;
+  const result = spawnSync(process.execPath, ['-e', script], {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 3_000,
+  });
+  assert.equal(result.signal, null, 'brace-expansion check timed out');
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
