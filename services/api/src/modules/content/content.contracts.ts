@@ -7,13 +7,36 @@ export type SectionContract = {
   contentTypes: Array<ContentType | 'live'>;
 };
 
+const LEGACY_SECTION_ALIASES: Record<string, string> = {
+  'claudygod-music': 'music-featured',
+  'claudygod-messages': 'video-featured',
+  'claudygod-nuggets-of-truth': 'video-featured',
+};
+
 export function validateSectionAssignments(params: {
   assignedSectionIds: string[];
   contentType: ContentType;
   configuredSections: SectionContract[];
   publishing: boolean;
 }): string[] {
-  const normalized = [...new Set(params.assignedSectionIds.map((value) => value.trim()).filter(Boolean))];
+  const sectionsById = new Map(params.configuredSections.map((section) => [section.id, section]));
+  const normalized = [
+    ...new Set(
+      params.assignedSectionIds
+        .map((value) => {
+          const trimmed = value.trim();
+          if (
+            !sectionsById.has(trimmed) &&
+            LEGACY_SECTION_ALIASES[trimmed] &&
+            sectionsById.has(LEGACY_SECTION_ALIASES[trimmed])
+          ) {
+            return LEGACY_SECTION_ALIASES[trimmed];
+          }
+          return trimmed;
+        })
+        .filter(Boolean),
+    ),
+  ];
   if (params.publishing && normalized.length === 0) {
     throw new BadRequestError(
       'Published content must include at least one configured app section',
@@ -22,7 +45,6 @@ export function validateSectionAssignments(params: {
     );
   }
 
-  const sectionsById = new Map(params.configuredSections.map((section) => [section.id, section]));
   for (const sectionId of normalized) {
     const section = sectionsById.get(sectionId);
     if (!section) {

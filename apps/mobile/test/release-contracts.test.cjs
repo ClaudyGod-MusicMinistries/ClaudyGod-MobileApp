@@ -582,3 +582,42 @@ test('vendored brace-expansion exports expand function and supports @expo/finger
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
+test('sentry plugin is conditionally registered to prevent EAS build failure when credentials are unset', () => {
+  const configPath = path.join(root, 'app.config.js');
+
+  const loadPlugins = (env = {}) => {
+    const origEnv = { ...process.env };
+    try {
+      delete process.env.SENTRY_ORG;
+      delete process.env.SENTRY_PROJECT;
+      delete process.env.SENTRY_DISABLE_AUTO_UPLOAD;
+      Object.assign(process.env, env);
+      delete require.cache[require.resolve(configPath)];
+      return require(configPath).expo.plugins;
+    } finally {
+      process.env = origEnv;
+    }
+  };
+
+  const defaultPlugins = loadPlugins({});
+  const hasSentry = defaultPlugins.some((p) => (Array.isArray(p) ? p[0] : p) === '@sentry/react-native/expo');
+  assert.equal(hasSentry, false, 'Sentry plugin should be omitted when SENTRY_ORG/PROJECT are unset');
+
+  const disabledPlugins = loadPlugins({
+    SENTRY_ORG: 'my-org',
+    SENTRY_PROJECT: 'my-proj',
+    SENTRY_DISABLE_AUTO_UPLOAD: 'true',
+  });
+  const hasDisabledSentry = disabledPlugins.some((p) => (Array.isArray(p) ? p[0] : p) === '@sentry/react-native/expo');
+  assert.equal(hasDisabledSentry, false, 'Sentry plugin should be omitted when SENTRY_DISABLE_AUTO_UPLOAD=true');
+
+  const activePlugins = loadPlugins({
+    SENTRY_ORG: 'my-org',
+    SENTRY_PROJECT: 'my-proj',
+  });
+  const sentryEntry = activePlugins.find((p) => Array.isArray(p) && p[0] === '@sentry/react-native/expo');
+  assert.ok(sentryEntry, 'Sentry plugin should be included when SENTRY_ORG and SENTRY_PROJECT are defined');
+  assert.deepEqual(sentryEntry[1], { organization: 'my-org', project: 'my-proj' });
+});
+
+

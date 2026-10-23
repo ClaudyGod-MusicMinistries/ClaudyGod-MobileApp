@@ -5,12 +5,15 @@ import { emailTransportInfo, verifyEmailTransport } from '../../infra/email';
 import { queueEmailJob } from '../../infra/transactionalEmails';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../lib/errors';
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
+import { createLogger } from '../../lib/logger';
 import type { UserRole } from '../auth/auth.types';
 import type { ContentRequestStatus, ContentVisibility } from '../content/content.types';
 import { getMobileAppConfig } from '../appConfig/appConfig.service';
 import { getMeLibrary, getMeMetrics, getMeMostPlayed, getMeRecentlyPlayed } from '../me/me.service';
 import { listUserDevices, revokeDevice } from '../devices/devices.service';
 import { hasCapability } from '../../security/capabilities';
+
+const log = createLogger('admin.service');
 
 interface SummaryRow {
   total_users: string;
@@ -175,15 +178,23 @@ interface RecentEmailJobRow {
   processed_at: string | Date | null;
 }
 
-const toIso = (value: string | Date): string => new Date(value).toISOString();
-const toIsoOrNull = (value: string | Date | null): string | null =>
-  value ? toIso(value) : null;
+const toIso = (value?: string | Date | null): string => {
+  if (!value) return new Date().toISOString();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+};
+
+const toIsoOrNull = (value?: string | Date | null): string | null => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+};
 
 const normalizeTextList = (items?: string[] | null): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
 
-const humanizeToken = (value: string): string =>
-  value
+const humanizeToken = (value?: string | null): string =>
+  (value || '')
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
@@ -195,10 +206,10 @@ const escapeHtml = (value: string): string =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-const toRecipients = (recipients: string[] | string): string[] =>
+const toRecipients = (recipients?: string[] | string | null): string[] =>
   Array.isArray(recipients)
     ? recipients
-    : String(recipients)
+    : String(recipients || '')
         .split(',')
         .map((item) => item.trim())
         .filter(Boolean);
@@ -262,12 +273,16 @@ const getRecentEmailJobsResult = (limit: number) =>
 
 async function safeQueryRows<T>(queryPromise: Promise<{ rows: T[] }>, fallbackRows: T[]): Promise<{ rows: T[] }> {
   try {
-    return await queryPromise;
-  } catch (error) {
-    if (isMissingDatabaseStructureError(error)) {
+    const result = await queryPromise;
+    if (!result || !Array.isArray(result.rows) || (fallbackRows.length > 0 && result.rows.length === 0)) {
       return { rows: fallbackRows };
     }
-    throw error;
+    return result;
+  } catch (error) {
+    log.warn('safeQueryRows: query failed, falling back to default rows', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { rows: fallbackRows };
   }
 }
 
@@ -546,7 +561,182 @@ const getScopedRecentAuthActivityResult = (requester: JwtClaims) => {
   );
 };
 
+const getBaselineDashboard = (requester: JwtClaims) => {
+  const isAdmin = hasCapability(requester.role, 'users.read');
+  const navigation = isAdmin ? ADMIN_PORTAL_NAVIGATION : PUBLISHER_PORTAL_NAVIGATION;
+  const overview = isAdmin
+    ? {
+        hero: {
+          eyebrow: 'Portal overview',
+          title: 'Content, access, and mobile delivery in one view.',
+          description:
+            'Use this page to watch account health, upload momentum, and the signals that matter before you publish.',
+          primaryAction: { label: 'Open content', view: 'editor' },
+          secondaryAction: { label: 'Preview app', view: 'mobile-preview' },
+        },
+        sections: {
+          accessHealth: {
+            title: 'Access Health',
+            description: 'Keep sign-in, verification, and recovery friction visible.',
+            badgeLiveLabel: 'Live',
+            badgeRefreshingLabel: 'Refreshing',
+          },
+          signals: {
+            title: 'Signals',
+            description: 'Only the alerts worth acting on right now.',
+            emptyState: 'No urgent signals right now.',
+          },
+          recentAccessActivity: {
+            title: 'Recent Access Activity',
+            description: 'The latest account events moving through the system.',
+            emptyState: 'No account activity recorded yet.',
+            emptyEmailLabel: 'No email attached',
+            unknownUserLabel: 'Unknown account',
+          },
+          requestQueue: {
+            title: 'Request Queue',
+            description: 'The upload work that still needs attention.',
+            actionLabel: 'Open queue',
+            loadingMessage: 'Loading upload requests...',
+            emptyState: 'No upload requests waiting right now.',
+          },
+          latestContent: {
+            title: 'Latest Content',
+            description: 'Most recent items already attached to the mobile experience.',
+            actionLabel: 'Open library',
+            emptyState: 'No content has been uploaded yet.',
+          },
+        },
+        portalCards: [
+          { id: 'managed-content', label: 'Managed content', value: 0, hint: 'Published and draft media tracked here' },
+          { id: 'verified-users', label: 'Verified users', value: 0, hint: 'Accounts cleared for full access' },
+          { id: 'new-accounts', label: 'New accounts · 7 days', value: 0, hint: 'Recent growth across the product' },
+          { id: 'password-resets', label: 'Password resets · 30 days', value: 0, hint: 'Security recovery flow usage' },
+        ],
+        accessCards: [
+          { id: 'pending-verification', label: 'Pending verification', value: 0, hint: 'Accounts waiting on email verification' },
+          { id: 'active-sessions', label: 'Active sessions', value: 0, hint: 'Signed-in devices with a valid session' },
+          { id: 'sign-ins', label: 'Sign-ins · 7 days', value: 0, hint: 'Successful access in the last week' },
+          { id: 'failed-sign-ins', label: 'Failed sign-ins · 7 days', value: 0, hint: 'Users who hit sign-in friction recently' },
+        ],
+      }
+    : {
+        hero: {
+          eyebrow: 'Workspace overview',
+          title: 'Your publishing queue and mobile delivery in one view.',
+          description:
+            'Track your submissions, recent content, and the next action required before you publish.',
+          primaryAction: { label: 'Open content', view: 'editor' },
+          secondaryAction: { label: 'Preview app', view: 'mobile-preview' },
+        },
+        sections: {
+          signals: {
+            title: 'Signals',
+            description: 'The next publishing actions that need your attention.',
+            emptyState: 'No urgent signals right now.',
+          },
+          recentAccessActivity: {
+            title: 'Recent Access Activity',
+            description: 'The latest account events tied to your portal access.',
+            emptyState: 'No account activity recorded yet.',
+            emptyEmailLabel: 'No email attached',
+            unknownUserLabel: 'Unknown account',
+          },
+          requestQueue: {
+            title: 'Request Queue',
+            description: 'Your upload work that is still moving through review.',
+            actionLabel: 'Open queue',
+            loadingMessage: 'Loading your upload requests...',
+            emptyState: 'No upload requests are waiting right now.',
+          },
+          latestContent: {
+            title: 'Latest Content',
+            description: 'Your most recent items already attached to the mobile experience.',
+            actionLabel: 'Open library',
+            emptyState: 'No content has been uploaded yet.',
+          },
+        },
+        portalCards: [
+          { id: 'managed-content', label: 'Managed content', value: 0, hint: 'Published and draft media tracked here' },
+          { id: 'published-content', label: 'Published live', value: 0, hint: 'Items already visible in the app' },
+          { id: 'draft-content', label: 'Draft library', value: 0, hint: 'Items still waiting for release' },
+          { id: 'active-requests', label: 'Open requests', value: 0, hint: 'Submission tickets still moving through review' },
+        ],
+        accessCards: [],
+      };
+
+  return {
+    generatedAt: new Date().toISOString(),
+    navigation,
+    overview: {
+      ...overview,
+      requestStatusBoard: [
+        { id: 'open-requests', label: 'Open Requests', value: 0, accent: 'mint' },
+        { id: 'needs-changes', label: 'Needs Changes', value: 0, accent: 'amber' },
+        { id: 'converted-to-draft', label: 'Converted To Draft', value: 0, accent: 'blue' },
+      ],
+      requestQueuePreview: [],
+      latestContent: [],
+    },
+    summary: {
+      totalUsers: 0,
+      newUsersLast7Days: 0,
+      verifiedUsers: 0,
+      adminUsers: 0,
+      clientUsers: 0,
+      publishedContent: 0,
+      draftContent: 0,
+      openSupportRequests: 0,
+      activePrivacyRequests: 0,
+      pendingSignups: 0,
+      activeSessions: 0,
+      loginSuccessLast7Days: 0,
+      loginFailuresLast7Days: 0,
+      verificationsLast7Days: 0,
+      passwordResetsLast30Days: 0,
+      totalFeedback: 0,
+      averageRating: null,
+    },
+    authFunnel: {
+      pendingSignups: 0,
+      activeSessions: 0,
+      loginSuccessLast7Days: 0,
+      loginFailuresLast7Days: 0,
+      verificationsLast7Days: 0,
+      passwordResetsLast30Days: 0,
+    },
+    emailDelivery: {
+      smtpEnabled: emailTransportInfo.enabled,
+      providerLabel: env.SMTP_PROVIDER_LABEL,
+      provider: emailTransportInfo.provider,
+      host: emailTransportInfo.host,
+      port: emailTransportInfo.port,
+      pendingJobs: 0,
+      processingJobs: 0,
+      completedLast24Hours: 0,
+      failedLast24Hours: 0,
+      totalLast7Days: 0,
+      recentJobs: [],
+    },
+    recentUsers: [],
+    feedback: [],
+    supportInbox: [],
+    signupTrend: [],
+    smartInsights: [
+      {
+        id: 'database-syncing',
+        tone: 'info',
+        title: 'Dashboard statistics syncing',
+        detail: 'Live metrics are currently syncing. Portal navigation and tools remain available.',
+      },
+    ],
+    recentAutomation: [],
+    recentAuthActivity: [],
+  };
+};
+
 export const getAdminDashboard = async (requester: JwtClaims) => {
+  try {
   const isAdmin = hasCapability(requester.role, 'users.read');
   const [
     userSummary,
@@ -780,13 +970,13 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
     ]);
 
   const redactEmail = requester.role !== 'SUPER_ADMIN';
-  const summary = userSummary.rows[0]!;
-  const content = contentSummary.rows[0]!;
-  const ratings = ratingSummary.rows[0]!;
-  const requests = requestSummary.rows[0]!;
-  const auth = authSummary.rows[0]!;
-  const contentQueue = contentQueueSummary.rows[0]!;
-  const emailDelivery = emailSummary.rows[0]!;
+  const summary = userSummary?.rows?.[0] ?? DEFAULT_SUMMARY_ROW;
+  const content = contentSummary?.rows?.[0] ?? DEFAULT_CONTENT_SUMMARY_ROW;
+  const ratings = ratingSummary?.rows?.[0] ?? DEFAULT_RATING_SUMMARY_ROW;
+  const requests = requestSummary?.rows?.[0] ?? DEFAULT_REQUEST_SUMMARY_ROW;
+  const auth = authSummary?.rows?.[0] ?? DEFAULT_AUTH_SUMMARY_ROW;
+  const contentQueue = contentQueueSummary?.rows?.[0] ?? DEFAULT_CONTENT_QUEUE_SUMMARY_ROW;
+  const emailDelivery = emailSummary?.rows?.[0] ?? DEFAULT_EMAIL_SUMMARY_ROW;
 
   const smartInsights = isAdmin
     ? [
@@ -1240,6 +1430,13 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
         : null,
     })),
   };
+  } catch (error) {
+    log.error('getAdminDashboard: unexpected failure, returning safe baseline dashboard', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return getBaselineDashboard(requester);
+  }
 };
 
 export const getAdminEmailDiagnostics = async () => {
@@ -1249,7 +1446,7 @@ export const getAdminEmailDiagnostics = async () => {
     verifyEmailTransport(),
   ]);
 
-  const summary = emailSummary.rows[0]!;
+  const summary = emailSummary?.rows?.[0] ?? DEFAULT_EMAIL_SUMMARY_ROW;
 
   return {
     generatedAt: new Date().toISOString(),

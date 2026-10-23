@@ -134,12 +134,41 @@
                 <span v-if="s.screens.length" class="opacity-60">· {{ s.screens.join(', ') }}</span>
                 <span v-if="form.appSections.includes(s.value)" class="text-primary-soft/70">×</span>
               </button>
-
             </div>
+
+            <!-- Incompatible / Invalid assignments (always visible with one-click removal) -->
+            <div v-if="invalidSections.length" class="p-3 rounded-xl border border-danger/30 bg-danger/10 space-y-2 mt-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-semibold text-danger">Incompatible section assignments:</span>
+                <button
+                  type="button"
+                  class="text-[11px] font-medium text-danger hover:underline cursor-pointer"
+                  @click="clearInvalidSections"
+                >
+                  Remove all invalid
+                </button>
+              </div>
+              <p class="text-[11px] text-danger/80 leading-snug">
+                These sections are not in your mobile layout or do not accept {{ form.type }} content. Click to remove them:
+              </p>
+              <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <button
+                  v-for="invalidId in invalidSections"
+                  :key="invalidId"
+                  type="button"
+                  class="px-2.5 py-1 rounded-full text-xs font-medium border bg-danger/20 border-danger/40 text-danger hover:bg-danger/30 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                  title="Click to remove this section"
+                  @click="removeSection(invalidId)"
+                >
+                  {{ invalidId }}
+                  <span class="font-bold text-sm leading-none">&times;</span>
+                </button>
+              </div>
+            </div>
+
             <p v-if="compatibleSectionOptions.length === 0 && configStore.appConfig" class="text-[11px] text-danger">
               No configured section accepts {{ form.type }} content. Create or update a compatible layout section before publishing.
             </p>
-            <p v-if="assignmentError" class="text-[11px] text-danger">{{ assignmentError }}</p>
           </div>
         </AppCard>
 
@@ -249,6 +278,15 @@ const emptyForm = (): FormState => ({
   metadata: '',
 });
 
+const LEGACY_SECTION_ALIASES: Record<string, string> = {
+  'claudygod-music': 'music-featured',
+  'claudygod-messages': 'video-featured',
+  'claudygod-nuggets-of-truth': 'video-featured',
+  music: 'music-featured',
+  videos: 'video-featured',
+  home: 'home-featured',
+};
+
 const form = ref<FormState>(emptyForm());
 const metadataError = ref('');
 
@@ -256,11 +294,14 @@ const compatibleSectionOptions = computed(() =>
   configuredSectionOptions.value.filter((section) => section.contentTypes.includes(form.value.type)),
 );
 
-const assignmentError = computed(() => {
+const invalidSections = computed(() => {
   const compatibleIds = new Set(compatibleSectionOptions.value.map((section) => section.value));
-  const invalid = form.value.appSections.filter((sectionId) => !compatibleIds.has(sectionId));
-  return invalid.length
-    ? `Remove invalid or incompatible section assignments: ${invalid.join(', ')}`
+  return form.value.appSections.filter((sectionId) => !compatibleIds.has(sectionId));
+});
+
+const assignmentError = computed(() => {
+  return invalidSections.value.length
+    ? `Remove invalid or incompatible section assignments: ${invalidSections.value.join(', ')}`
     : '';
 });
 
@@ -271,6 +312,18 @@ function toggleSection(value: string): void {
   } else {
     form.value.appSections.splice(idx, 1);
   }
+}
+
+function removeSection(value: string): void {
+  const idx = form.value.appSections.indexOf(value);
+  if (idx !== -1) {
+    form.value.appSections.splice(idx, 1);
+  }
+}
+
+function clearInvalidSections(): void {
+  const compatibleIds = new Set(compatibleSectionOptions.value.map((section) => section.value));
+  form.value.appSections = form.value.appSections.filter((sectionId) => compatibleIds.has(sectionId));
 }
 
 function onMediaUploaded(payload: { url: string; sessionId: string }): void {
@@ -300,6 +353,8 @@ onMounted(async () => {
     await store.fetchOne(id.value);
     const c = store.current;
     if (c) {
+      const rawSections = c.appSections ?? [];
+      const migratedSections = rawSections.map((s) => LEGACY_SECTION_ALIASES[s] || s);
       form.value = {
         title: c.title,
         description: c.description ?? '',
@@ -312,7 +367,7 @@ onMounted(async () => {
         channelName: c.channelName ?? '',
         duration: c.duration ?? '',
         tags: c.tags.join(', '),
-        appSections: c.appSections ?? [],
+        appSections: [...new Set(migratedSections)],
         visibility: c.visibility,
         isFeatured: c.isFeatured ?? false,
         metadata: c.metadata && Object.keys(c.metadata).length ? JSON.stringify(c.metadata, null, 2) : '',
@@ -343,8 +398,20 @@ async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void>
   }
   const requiresUrl = form.value.type === 'audio' || form.value.type === 'video';
   if (assignmentError.value) {
-    ui.addToast({ tone: 'danger', title: 'Fix app section assignments', message: assignmentError.value });
-    return;
+    const compatibleIds = new Set(compatibleSectionOptions.value.map((section) => section.value));
+    const validSections = form.value.appSections.filter((sectionId) => compatibleIds.has(sectionId));
+    if (validSections.length > 0 || (overrideVisibility ?? form.value.visibility) === 'draft') {
+      const removed = invalidSections.value.join(', ');
+      form.value.appSections = validSections;
+      ui.addToast({
+        tone: 'info',
+        title: 'Removed incompatible section assignments',
+        message: `Removed: ${removed}`,
+      });
+    } else {
+      ui.addToast({ tone: 'danger', title: 'Fix app section assignments', message: assignmentError.value });
+      return;
+    }
   }
   if ((overrideVisibility ?? form.value.visibility) === 'published' && form.value.appSections.length === 0) {
     ui.addToast({ tone: 'danger', title: 'Choose at least one compatible app section before publishing' });
