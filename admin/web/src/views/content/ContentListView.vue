@@ -1,9 +1,15 @@
-﻿<template>
+<template>
   <div class="space-y-4">
     <!-- Header -->
     <PageHeader icon="content" title="Content library" :subtitle="`${store.total} item${store.total !== 1 ? 's' : ''} total`">
+      <RouterLink to="/config?tab=layout">
+        <AppButton variant="secondary" size="sm">
+          <SlidersHorizontal class="w-4 h-4" />
+          Layout sections
+        </AppButton>
+      </RouterLink>
       <AppButton variant="secondary" size="sm" @click="toggleReorderMode">
-        {{ reorderMode ? 'Done reordering' : 'Reorder' }}
+        {{ reorderMode ? 'Done reordering' : 'Reorder content' }}
       </AppButton>
       <RouterLink to="/content/new">
         <AppButton size="sm">
@@ -18,19 +24,56 @@
     <!-- Reorder mode -->
     <template v-if="reorderMode">
       <AppCard class="p-4 space-y-4">
-        <div class="flex items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <label class="text-xs font-semibold text-ink-muted uppercase tracking-wide">Reordering</label>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="text-xs font-semibold text-ink-muted uppercase tracking-wide">Reorder by</label>
+            <div class="inline-flex rounded-lg border border-border p-0.5 bg-surface-hover/50">
+              <button
+                type="button"
+                :class="[
+                  'px-3 py-1 text-xs font-medium rounded-md transition-colors',
+                  reorderScope === 'type' ? 'bg-surface-strong text-ink shadow-sm' : 'text-ink-muted hover:text-ink',
+                ]"
+                @click="setReorderScope('type')"
+              >
+                Content type
+              </button>
+              <button
+                type="button"
+                :class="[
+                  'px-3 py-1 text-xs font-medium rounded-md transition-colors',
+                  reorderScope === 'section' ? 'bg-surface-strong text-ink shadow-sm' : 'text-ink-muted hover:text-ink',
+                ]"
+                @click="setReorderScope('section')"
+              >
+                App section
+              </button>
+            </div>
             <AppSelect
+              v-if="reorderScope === 'type'"
               v-model="reorderType"
               :options="typeOptions"
-              class="w-40"
+              class="w-36"
+            />
+            <AppSelect
+              v-else
+              v-model="reorderSection"
+              :options="sectionOptions"
+              placeholder="Select a section…"
+              class="w-48"
             />
           </div>
-          <AppButton size="sm" :loading="reorderSaving" @click="saveReorder">Save order</AppButton>
+          <div class="flex items-center gap-3">
+            <RouterLink to="/config?tab=layout" class="text-xs text-primary font-medium hover:underline">
+              Rearrange sections
+            </RouterLink>
+            <AppButton size="sm" :loading="reorderSaving" @click="saveReorder">Save order</AppButton>
+          </div>
         </div>
         <p class="text-xs text-ink-muted">
-          Drag to set the order this content appears in on the mobile app. This order applies wherever this content shows up.
+          {{ reorderScope === 'type'
+            ? 'Drag to set the global priority order within this content type.'
+            : 'Drag to set the sequence items appear in for this mobile app section.' }}
         </p>
 
         <div v-if="reorderLoading" class="py-10 text-center text-sm text-ink-muted">Loading…</div>
@@ -80,6 +123,13 @@
           placeholder="All types"
           class="w-36"
           @update:model-value="store.filters.type = $event || undefined"
+        />
+        <AppSelect
+          :model-value="store.filters.section ?? ''"
+          :options="sectionOptions"
+          placeholder="All sections"
+          class="w-44"
+          @update:model-value="store.filters.section = $event || undefined"
         />
         <AppSelect
           :model-value="store.filters.status ?? ''"
@@ -222,9 +272,10 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { watchDebounced } from '@vueuse/core';
-import { AlertCircle, FileText, ListMusic, Music2, Video } from 'lucide-vue-next';
+import { AlertCircle, FileText, ListMusic, Music2, SlidersHorizontal, Video } from 'lucide-vue-next';
 import draggable from 'vuedraggable';
 import { useContentStore } from '@/stores/content.store';
+import { useConfigStore } from '@/stores/config.store';
 import { useUiStore } from '@/stores/ui.store';
 import { listContent, reorderContent } from '@/api/content';
 import type { ContentItem } from '@/api/types';
@@ -240,12 +291,15 @@ import SearchInput from '@/components/shared/SearchInput.vue';
 import PageHeader from '@/components/shared/PageHeader.vue';
 
 const store = useContentStore();
+const configStore = useConfigStore();
 const ui = useUiStore();
 const selectedIds = ref<string[]>([]);
 const bulkLoading = ref(false);
 
 const reorderMode = ref(false);
+const reorderScope = ref<'type' | 'section'>('type');
 const reorderType = ref('audio');
+const reorderSection = ref<string>('');
 const reorderItems = ref<ContentItem[]>([]);
 const reorderLoading = ref(false);
 const reorderSaving = ref(false);
@@ -271,15 +325,40 @@ const statusOptions = [
   { value: 'draft', label: 'Draft' },
 ];
 
-onMounted(() => { void store.fetchContent(); });
+const sectionOptions = computed(() => {
+  const layout = configStore.appConfig?.layout;
+  if (!layout) return [];
+  const map = new Map<string, string>();
+  for (const group of [layout.homeSections, layout.videoSections, layout.playerSections, layout.librarySections]) {
+    for (const section of group ?? []) {
+      if (section?.id && !map.has(section.id)) {
+        map.set(section.id, section.title || section.id);
+      }
+    }
+  }
+  return [...map.entries()].map(([value, label]) => ({ value, label }));
+});
+
+function setReorderScope(scope: 'type' | 'section'): void {
+  reorderScope.value = scope;
+  if (scope === 'section' && !reorderSection.value && sectionOptions.value.length > 0) {
+    reorderSection.value = sectionOptions.value[0]!.value;
+  }
+  void fetchReorderItems();
+}
+
+onMounted(() => {
+  void store.fetchContent();
+  void configStore.fetchAppConfig();
+});
 onBeforeUnmount(() => store.cancelContentFetch());
 
-watchDebounced(() => [store.filters.type, store.filters.status, store.filters.search], () => {
+watchDebounced(() => [store.filters.type, store.filters.section, store.filters.status, store.filters.search], () => {
   store.filters.page = 1;
   void store.fetchContent();
 }, { debounce: 250, maxWait: 700 });
 
-const hasActiveFilters = computed(() => Boolean(store.filters.type || store.filters.status || store.filters.search));
+const hasActiveFilters = computed(() => Boolean(store.filters.type || store.filters.section || store.filters.status || store.filters.search));
 
 function contentIcon(type: string) {
   return { audio: Music2, video: Video, playlist: ListMusic, announcement: FileText }[type] ?? FileText;
@@ -298,6 +377,7 @@ function onPageChange(page: number): void {
 
 function resetFilters(): void {
   store.filters.type = undefined;
+  store.filters.section = undefined;
   store.filters.status = undefined;
   store.filters.search = undefined;
   store.filters.page = 1;
@@ -307,7 +387,16 @@ function resetFilters(): void {
 async function fetchReorderItems(): Promise<void> {
   reorderLoading.value = true;
   try {
-    const res = await listContent({ type: reorderType.value, sort: 'sortOrder', sortDir: 'asc', pageSize: 100 });
+    const params = reorderScope.value === 'type'
+      ? { type: reorderType.value, sort: 'sortOrder', sortDir: 'asc' as const, pageSize: 100 }
+      : { section: reorderSection.value || undefined, sort: 'sortOrder', sortDir: 'asc' as const, pageSize: 100 };
+
+    if (reorderScope.value === 'section' && !reorderSection.value && sectionOptions.value.length > 0) {
+      reorderSection.value = sectionOptions.value[0]!.value;
+      params.section = reorderSection.value;
+    }
+
+    const res = await listContent(params);
     reorderItems.value = res.items;
   } catch (e) {
     ui.addToast({ tone: 'danger', title: 'Failed to load items', message: e instanceof Error ? e.message : undefined });
@@ -321,7 +410,7 @@ function toggleReorderMode(): void {
   if (reorderMode.value) void fetchReorderItems();
 }
 
-watch(reorderType, () => {
+watch([reorderType, reorderSection], () => {
   if (reorderMode.value) void fetchReorderItems();
 });
 
