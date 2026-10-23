@@ -8,18 +8,27 @@
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import sharp from 'sharp';
+import { createRequire } from 'node:module';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..');
+const require = createRequire(import.meta.url);
+
+let sharp;
+try {
+  sharp = (await import('sharp')).default;
+} catch {
+  const sharpPath = path.resolve(repoRoot, 'apps/mobile/node_modules/sharp');
+  sharp = require(sharpPath);
+}
 
 const masterSvg = readFileSync(path.join(here, 'logo-master.svg'));
 const transparentSvg = readFileSync(path.join(here, 'logo-mark-transparent.svg'));
 const lockupSvgPath = path.join(here, 'logo-lockup.svg');
 const lockupSvg = existsSync(lockupSvgPath) ? readFileSync(lockupSvgPath) : null;
 
-// Canonical brand dark background — matches brand/logo-master.svg and constants/color.ts
-const ICON_BG = '#16131C';
+// Canonical brand background — matches brand/logo-master.svg (#FFFFFF pure white)
+const ICON_BG = '#FFFFFF';
 
 const targets = [
   // iOS App Store icon: opaque, no alpha channel (Apple rejects icons with alpha).

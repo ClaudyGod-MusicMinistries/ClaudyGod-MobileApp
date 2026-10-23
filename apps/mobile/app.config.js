@@ -101,9 +101,9 @@ const appDescription = getFileOrEnv(
 const uiStyle = getFileOrEnv('EXPO_USER_INTERFACE_STYLE', 'dark');
 // Canonical brand dark background — matches brand/logo-master.svg's tile color.
 // Keep this in sync with constants/color.ts's dark background token.
-const BRAND_DARK = '#16131C';
-const splashBgColor = getFileOrEnv('EXPO_SPLASH_BG_COLOR', BRAND_DARK);
-const androidAdaptiveIconBgColor = getFileOrEnv('EXPO_ANDROID_ADAPTIVE_ICON_BG_COLOR', BRAND_DARK);
+const BRAND_LIGHT = '#FFFFFF';
+const splashBgColor = getFileOrEnv('EXPO_SPLASH_BG_COLOR', BRAND_LIGHT);
+const androidAdaptiveIconBgColor = getFileOrEnv('EXPO_ANDROID_ADAPTIVE_ICON_BG_COLOR', BRAND_LIGHT);
 const iosBundleId = getFileOrEnv('EXPO_IOS_BUNDLE_ID', 'com.claudygod.app');
 const iosBuildNumber = getFileOrEnv('EXPO_IOS_BUILD_NUMBER', '1');
 // iPhone-only for the first release. Declaring iPad support commits to a working
