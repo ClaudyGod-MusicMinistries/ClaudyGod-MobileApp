@@ -1,3 +1,5 @@
+import type { AppConfig } from '@/api/types';
+
 export const MOBILE_CONTENT_TYPE_OPTIONS = ['audio', 'video', 'playlist', 'announcement', 'live'] as const;
 export const MOBILE_SECTION_RAIL_MIN_ITEMS = 6;
 
@@ -148,3 +150,76 @@ export const DONATE_PLAN_PERIOD_OPTIONS = [
   { value: 'once', label: 'One-time' },
   { value: 'monthly', label: 'Monthly' },
 ] as const;
+
+export function createDefaultMobileAppConfig(): AppConfig {
+  return {
+    version: 6,
+    hero: {
+      fallbackTitle: 'Start your worship stream',
+      fallbackSubtitle: 'Music, videos, and live moments.',
+    },
+    layout: {
+      homeSections: [],
+      videoSections: [],
+      playerSections: [],
+      librarySections: [],
+    },
+    discovery: {
+      categories: ['All', 'audio', 'video', 'playlist', 'live', 'announcement'],
+      shortcuts: [],
+    },
+    settingsHub: {
+      sections: [],
+    },
+    referral: {
+      howItWorks: [],
+      rewardTiers: [],
+    },
+    donate: {
+      currency: 'USD',
+      currencyOptions: [],
+      quickAmounts: [],
+      quickAmountsByCurrency: {},
+      methods: [],
+      plans: [],
+      impactBreakdown: [],
+      scriptures: [],
+    },
+    privacy: {
+      contactEmail: 'privacy@claudygod.org',
+      deleteConfirmPhrase: 'I CONFIRM',
+      principles: [],
+    },
+    help: {
+      supportCenterUrl: 'https://claudygod.org',
+      contact: [],
+      faqs: [],
+    },
+    about: {
+      versionLabel: 'Version 1.0.0',
+      heroStats: [],
+      featureChips: [],
+      team: [],
+      social: [],
+    },
+    rate: {
+      iosStoreUrl: '',
+      androidStoreUrl: '',
+      feedbackRoute: '/settingsPage/help',
+    },
+    navigation: {
+      tabs: [],
+    },
+    intelligence: {
+      assistantEnabled: false,
+      adCopySuggestionsEnabled: false,
+      providerLabel: 'Integrated AI',
+      defaultTone: 'Confident, concise, ministry-safe',
+    },
+    monetization: {
+      adsEnabled: false,
+      disclosureLabel: 'Sponsored',
+      placements: [],
+    },
+  };
+}

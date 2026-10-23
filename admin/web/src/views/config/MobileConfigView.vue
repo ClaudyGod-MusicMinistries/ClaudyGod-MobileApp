@@ -11,7 +11,7 @@
       <AppSpinner size="lg" />
     </div>
 
-    <template v-else-if="config">
+    <template v-else-if="isLoaded">
       <!-- Tabs -->
       <div class="flex gap-2 border-b border-border pb-0">
         <button
@@ -726,6 +726,7 @@ import {
   createDonateMethod,
   createDonatePlan,
   createImpactItem,
+  createDefaultMobileAppConfig,
 } from '@/utils/mobileConfig';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -775,24 +776,26 @@ const DONATE_PLAN_PERIOD_OPTIONS_ARR = DONATE_PLAN_PERIOD_OPTIONS.map((o) => ({ 
 // Editable deep clone of the full config — round-tripped in full on save since the
 // backend requires the entire object. Every section is now editable somewhere in
 // this view.
-const config = ref<AppConfig | null>(null);
+const isLoaded = ref(false);
+const config = ref<AppConfig>(createDefaultMobileAppConfig());
 
 const categoriesText = computed({
-  get: () => config.value?.discovery.categories.join(', ') ?? '',
+  get: () => config.value.discovery.categories.join(', '),
   set: (v: string) => {
-    if (config.value) {
-      config.value.discovery.categories = v.split(',').map((c) => c.trim()).filter(Boolean) as AppConfig['discovery']['categories'];
-    }
+    config.value.discovery.categories = v.split(',').map((c) => c.trim()).filter(Boolean) as AppConfig['discovery']['categories'];
   },
 });
 
 onMounted(async () => {
   await store.fetchAppConfig();
-  if (store.appConfig) config.value = cloneMobileConfig(store.appConfig);
+  if (store.appConfig) {
+    config.value = cloneMobileConfig(store.appConfig);
+    isLoaded.value = true;
+  }
 });
 
 async function onSave(): Promise<void> {
-  if (!config.value) return;
+  if (!isLoaded.value) return;
   try {
     await store.saveAppConfig(config.value);
     sectionDiagnostics.value = {};
