@@ -11,7 +11,7 @@
       <AppSpinner size="lg" />
     </div>
 
-    <template v-else-if="config">
+    <template v-else-if="isLoaded">
       <!-- Tabs -->
       <div class="flex gap-2 border-b border-border pb-0">
         <button
@@ -473,11 +473,11 @@
         <div class="space-y-3">
           <h3 class="text-sm font-bold text-ink">Social links</h3>
           <div class="space-y-2">
-            <div v-for="(link, i) in config.about.social" :key="i" class="grid grid-cols-1 sm:grid-cols-6 gap-2 sm:items-end">
-              <AppInput v-model="link.icon" label="Icon" placeholder="public" />
-              <AppInput v-model="link.label" label="Label" placeholder="Website" />
-              <AppInput v-model="link.url" label="URL" class="sm:col-span-3" placeholder="https://claudygod.org" />
-              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeSocialLink(i)">Remove</AppButton>
+            <div v-for="(socialItem, sIdx) in config.about.social" :key="sIdx" class="grid grid-cols-1 sm:grid-cols-6 gap-2 sm:items-end">
+              <AppInput v-model="socialItem.icon" label="Icon" placeholder="public" />
+              <AppInput v-model="socialItem.label" label="Label" placeholder="Website" />
+              <AppInput v-model="socialItem.url" label="URL" class="sm:col-span-3" placeholder="https://claudygod.org" />
+              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeSocialLink(sIdx)">Remove</AppButton>
             </div>
           </div>
           <AppButton variant="secondary" size="xs" @click="addSocialLink">+ Add link</AppButton>
@@ -726,6 +726,7 @@ import {
   createDonateMethod,
   createDonatePlan,
   createImpactItem,
+  createDefaultMobileAppConfig,
 } from '@/utils/mobileConfig';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -775,24 +776,26 @@ const DONATE_PLAN_PERIOD_OPTIONS_ARR = DONATE_PLAN_PERIOD_OPTIONS.map((o) => ({ 
 // Editable deep clone of the full config — round-tripped in full on save since the
 // backend requires the entire object. Every section is now editable somewhere in
 // this view.
-const config = ref<AppConfig | null>(null);
+const isLoaded = ref(false);
+const config = ref<AppConfig>(createDefaultMobileAppConfig());
 
 const categoriesText = computed({
-  get: () => config.value?.discovery.categories.join(', ') ?? '',
+  get: () => config.value.discovery.categories.join(', '),
   set: (v: string) => {
-    if (config.value) {
-      config.value.discovery.categories = v.split(',').map((c) => c.trim()).filter(Boolean) as AppConfig['discovery']['categories'];
-    }
+    config.value.discovery.categories = v.split(',').map((c) => c.trim()).filter(Boolean) as AppConfig['discovery']['categories'];
   },
 });
 
 onMounted(async () => {
   await store.fetchAppConfig();
-  if (store.appConfig) config.value = cloneMobileConfig(store.appConfig);
+  if (store.appConfig) {
+    config.value = cloneMobileConfig(store.appConfig);
+    isLoaded.value = true;
+  }
 });
 
 async function onSave(): Promise<void> {
-  if (!config.value) return;
+  if (!isLoaded.value) return;
   try {
     await store.saveAppConfig(config.value);
     sectionDiagnostics.value = {};
