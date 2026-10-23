@@ -11,7 +11,8 @@
       "environment": "development",
       "env": {
         "CLAUDYGOD_ENV": "development",
-        "NODE_ENV": "development"
+        "NODE_ENV": "development",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "preview": {
@@ -22,7 +23,11 @@
         "buildType": "apk"
       },
       "env": {
-        "CLAUDYGOD_ENV": "production"
+        "CLAUDYGOD_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://apimobile.claudygod.org",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gjqqajeavzucvafersio.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_9q-2dOo-Cd9DdxnxtV96sg_I4UWi_2S",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "production": {

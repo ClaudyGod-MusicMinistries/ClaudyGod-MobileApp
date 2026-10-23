@@ -154,6 +154,9 @@ const seedEnv = (key, value) => {
     case 'SENTRY_AUTH_TOKEN':
       process.env.SENTRY_AUTH_TOKEN = value;
       break;
+    case 'SENTRY_DISABLE_AUTO_UPLOAD':
+      process.env.SENTRY_DISABLE_AUTO_UPLOAD = value;
+      break;
     case 'CLAUDYGOD_ENV':
       process.env.CLAUDYGOD_ENV = value;
       break;
@@ -176,6 +179,7 @@ seedEnv('NODE_ENV', fileEnv.NODE_ENV);
 seedEnv('SENTRY_ORG', fileEnv.SENTRY_ORG);
 seedEnv('SENTRY_PROJECT', fileEnv.SENTRY_PROJECT);
 seedEnv('SENTRY_AUTH_TOKEN', fileEnv.SENTRY_AUTH_TOKEN);
+seedEnv('SENTRY_DISABLE_AUTO_UPLOAD', fileEnv.SENTRY_DISABLE_AUTO_UPLOAD);
 
 const getEnv = (keys, fallback = '') => {
   const candidates = Array.isArray(keys) ? keys : [keys];
@@ -326,15 +330,24 @@ module.exports = {
         },
       ],
       'expo-updates',
-      // No-op for local/dev builds without Sentry configured — only affects EAS builds
-      // that set SENTRY_ORG/SENTRY_PROJECT/SENTRY_AUTH_TOKEN for source map upload.
-      [
-        '@sentry/react-native/expo',
-        {
-          ...(process.env.SENTRY_ORG ? { organization: process.env.SENTRY_ORG } : {}),
-          ...(process.env.SENTRY_PROJECT ? { project: process.env.SENTRY_PROJECT } : {}),
-        },
-      ],
+      // Sentry config plugin injects native Gradle and Xcode build steps to upload source maps.
+      // Only register it when organization and project are explicitly provided and auto-upload
+      // is not disabled. Without org/project/token, Gradle's SentryUpload task fails the EAS build
+      // with "An organization ID or slug is required". Runtime crash logging via lib/sentry.ts
+      // continues to operate independently whenever EXPO_PUBLIC_SENTRY_DSN is configured.
+      ...(getFileOrEnv('SENTRY_ORG') &&
+      getFileOrEnv('SENTRY_PROJECT') &&
+      getFileOrEnv('SENTRY_DISABLE_AUTO_UPLOAD') !== 'true'
+        ? [
+            [
+              '@sentry/react-native/expo',
+              {
+                organization: getFileOrEnv('SENTRY_ORG'),
+                project: getFileOrEnv('SENTRY_PROJECT'),
+              },
+            ],
+          ]
+        : []),
     ],
   },
 };
