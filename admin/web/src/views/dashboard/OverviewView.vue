@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <AppPage eyebrow="Mobile operations" :title="`${greeting}, ${firstName}`" description="Monitor publishing, audience activity, and items requiring attention across the mobile experience.">
     <template #actions>
       <AppButton variant="secondary" size="sm" :loading="dashboard.isLoading" @click="dashboard.fetchDashboard()">
@@ -85,19 +85,19 @@
 
     <!-- Stat cards -->
     <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-      <AppStatCard label="Total users" :value="summary.totalUsers" icon-bg="bg-primary/15">
+      <AppStatCard label="Total users" :value="summary.totalUsers" :loading="dashboard.isLoading && !dashboard.data" icon-bg="bg-primary/15">
         <template #icon><Users class="w-4 h-4 text-primary" /></template>
       </AppStatCard>
-      <AppStatCard label="New (7 days)" :value="summary.newUsersLast7Days" icon-bg="bg-success/15">
+      <AppStatCard label="New (7 days)" :value="summary.newUsersLast7Days" :loading="dashboard.isLoading && !dashboard.data" icon-bg="bg-success/15">
         <template #icon><TrendingUp class="w-4 h-4 text-success" /></template>
       </AppStatCard>
-      <AppStatCard label="Verified" :value="summary.verifiedUsers" icon-bg="bg-info/15">
+      <AppStatCard label="Verified" :value="summary.verifiedUsers" :loading="dashboard.isLoading && !dashboard.data" icon-bg="bg-info/15">
         <template #icon><BadgeCheck class="w-4 h-4 text-info" /></template>
       </AppStatCard>
-      <AppStatCard label="Content items" :value="summary.totalContent" icon-bg="bg-primary/15">
+      <AppStatCard label="Content items" :value="summary.totalContent" :loading="dashboard.isLoading && !dashboard.data" icon-bg="bg-primary/15">
         <template #icon><FileText class="w-4 h-4 text-primary-soft" /></template>
       </AppStatCard>
-      <AppStatCard label="Live sessions" :value="summary.liveSessions" icon-bg="bg-danger/15">
+      <AppStatCard label="Live sessions" :value="summary.liveSessions" :loading="dashboard.isLoading && !dashboard.data" icon-bg="bg-danger/15">
         <template #icon><Radio class="w-4 h-4 text-danger" /></template>
       </AppStatCard>
     </div>
@@ -118,6 +118,18 @@
             :rows="latestContent"
             :loading="dashboard.isLoading"
           >
+            <template #empty>
+              <AppEmptyState
+                title="No published content yet"
+                message="Add media records or sync from YouTube to populate the mobile feed."
+              >
+                <template #action>
+                  <RouterLink to="/content/new">
+                    <AppButton size="sm" variant="secondary">Add content</AppButton>
+                  </RouterLink>
+                </template>
+              </AppEmptyState>
+            </template>
             <template #cell-visibility="{ value }">
               <StatusBadge :status="String(value)" />
             </template>
@@ -137,17 +149,29 @@
         <div>
           <h2 class="text-sm font-semibold text-ink mb-3">Review queue</h2>
           <AppCard class="p-4 space-y-2">
-            <div
-              v-for="item in requestBoard"
-              :key="item.status"
-              class="flex items-center justify-between py-1.5"
-            >
-              <div class="flex items-center gap-2">
-                <StatusBadge :status="item.status" />
+            <template v-if="dashboard.isLoading && !dashboard.data">
+              <div v-for="i in 3" :key="i" class="flex items-center justify-between py-1.5 animate-pulse">
+                <div class="h-4 w-24 bg-surface-hover rounded" />
+                <div class="h-4 w-8 bg-surface-hover rounded" />
               </div>
-              <span class="text-sm font-semibold text-ink tabular-nums">{{ item.count }}</span>
-            </div>
-            <AppEmptyState v-if="!requestBoard.length" title="No requests" />
+            </template>
+            <template v-else-if="requestBoard.length">
+              <div
+                v-for="item in requestBoard"
+                :key="item.status"
+                class="flex items-center justify-between py-1.5"
+              >
+                <div class="flex items-center gap-2">
+                  <StatusBadge :status="item.status" />
+                </div>
+                <span class="text-sm font-semibold text-ink tabular-nums">{{ item.count }}</span>
+              </div>
+            </template>
+            <AppEmptyState
+              v-else
+              title="Review queue is clear"
+              message="No submission requests currently require review."
+            />
           </AppCard>
         </div>
 
@@ -155,12 +179,13 @@
           <AppCard class="p-4 flex items-center justify-between gap-4" tone="subtle">
             <div>
               <p class="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Pending review</p>
-              <p class="text-2xl font-black text-ink tabular-nums mt-1">{{ summary.pendingRequests }}</p>
+              <div v-if="dashboard.isLoading && !dashboard.data" class="h-8 w-16 bg-surface-hover animate-pulse rounded mt-1" />
+              <p v-else class="text-2xl font-black text-ink tabular-nums mt-1">{{ summary.pendingRequests }}</p>
               <p class="text-xs text-ink-muted mt-0.5">
-                {{ dashboard.lastFetchedAt ? `Updated ${formatDate(dashboard.lastFetchedAt.toISOString())}` : 'Loading…' }}
+                {{ lastUpdatedText }}
               </p>
             </div>
-            <AppButton variant="ghost" size="xs" @click="dashboard.fetchDashboard()">
+            <AppButton variant="ghost" size="xs" :loading="dashboard.isLoading" @click="dashboard.fetchDashboard()">
               Refresh
             </AppButton>
           </AppCard>
@@ -225,6 +250,12 @@ const contentCols = [
   { key: 'visibility', label: 'Status' },
   { key: 'createdAt', label: 'Added', align: 'right' as const },
 ];
+
+const lastUpdatedText = computed(() => {
+  if (dashboard.isLoading && !dashboard.data) return 'Fetching latest data…';
+  if (!dashboard.lastFetchedAt) return 'Pending initial sync';
+  return `Updated ${dashboard.lastFetchedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+});
 
 function formatDate(iso: string): string {
   const d = new Date(iso);

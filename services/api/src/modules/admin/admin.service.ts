@@ -393,6 +393,21 @@ const PUBLISHER_PORTAL_NAVIGATION = [
   },
 ] as const;
 
+interface LiveSummaryRow {
+  active_live_sessions: string;
+}
+
+const DEFAULT_LIVE_SUMMARY_ROW: LiveSummaryRow = {
+  active_live_sessions: '0',
+};
+
+const getLiveSessionSummaryResult = () =>
+  pool.query<LiveSummaryRow>(
+    `SELECT
+       COUNT(*) FILTER (WHERE status IN ('live', 'scheduled'))::text AS active_live_sessions
+     FROM live_sessions`,
+  );
+
 const getScopedContentSummaryResult = (requester: JwtClaims) => {
   if (hasCapability(requester.role, 'content.read')) {
     return pool.query<ContentSummaryRow>(
@@ -400,7 +415,8 @@ const getScopedContentSummaryResult = (requester: JwtClaims) => {
          COUNT(*)::text AS total_managed_content,
          COUNT(*) FILTER (WHERE visibility = 'published')::text AS published_content,
          COUNT(*) FILTER (WHERE visibility = 'draft')::text AS draft_content
-       FROM content_items`,
+       FROM content_items
+       WHERE deleted_at IS NULL`,
     );
   }
 
@@ -410,7 +426,7 @@ const getScopedContentSummaryResult = (requester: JwtClaims) => {
        COUNT(*) FILTER (WHERE visibility = 'published')::text AS published_content,
        COUNT(*) FILTER (WHERE visibility = 'draft')::text AS draft_content
      FROM content_items
-     WHERE author_id = $1`,
+     WHERE author_id = $1 AND deleted_at IS NULL`,
     [requester.sub],
   );
 };
@@ -497,8 +513,9 @@ const getScopedRecentManagedContentResult = (requester: JwtClaims) => {
          created_at,
          updated_at
        FROM content_items
+       WHERE deleted_at IS NULL
        ORDER BY updated_at DESC, created_at DESC
-       LIMIT 4`,
+       LIMIT 8`,
     );
   }
 
@@ -512,9 +529,9 @@ const getScopedRecentManagedContentResult = (requester: JwtClaims) => {
        created_at,
        updated_at
      FROM content_items
-     WHERE author_id = $1
+     WHERE author_id = $1 AND deleted_at IS NULL
      ORDER BY updated_at DESC, created_at DESC
-     LIMIT 4`,
+     LIMIT 8`,
     [requester.sub],
   );
 };
@@ -673,9 +690,9 @@ export const getBaselineDashboard = (requester?: Partial<JwtClaims> | null) => {
       overview: {
         ...overview,
         requestStatusBoard: [
-          { id: 'open-requests', label: 'Open Requests', value: 0, accent: 'mint' },
-          { id: 'needs-changes', label: 'Needs Changes', value: 0, accent: 'amber' },
-          { id: 'converted-to-draft', label: 'Converted To Draft', value: 0, accent: 'blue' },
+          { id: 'open-requests', status: 'submitted', label: 'Open Requests', value: 0, count: 0, accent: 'mint' },
+          { id: 'needs-changes', status: 'changes_requested', label: 'Needs Changes', value: 0, count: 0, accent: 'amber' },
+          { id: 'converted-to-draft', status: 'approved', label: 'Converted To Draft', value: 0, count: 0, accent: 'blue' },
         ],
         requestQueuePreview: [],
         latestContent: [],
@@ -836,6 +853,7 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
     recentAuthActivity,
     emailSummary,
     recentEmailJobs,
+    liveSummary,
   ] =
     await Promise.all([
       safeQueryRows(
@@ -1048,11 +1066,16 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
         isAdmin ? getRecentEmailJobsResult(8) : Promise.resolve({ rows: [] as RecentEmailJobRow[] }),
         [],
       ),
+      safeQueryRows(
+        getLiveSessionSummaryResult(),
+        [DEFAULT_LIVE_SUMMARY_ROW],
+      ),
     ]);
 
-  const redactEmail = requester.role !== 'SUPER_ADMIN';
+  const redactEmail = String(requester?.role ?? '').toUpperCase() !== 'SUPER_ADMIN';
   const summary = userSummary?.rows?.[0] ?? DEFAULT_SUMMARY_ROW;
   const content = contentSummary?.rows?.[0] ?? DEFAULT_CONTENT_SUMMARY_ROW;
+  const live = liveSummary?.rows?.[0] ?? DEFAULT_LIVE_SUMMARY_ROW;
   const ratings = ratingSummary?.rows?.[0] ?? DEFAULT_RATING_SUMMARY_ROW;
   const requests = requestSummary?.rows?.[0] ?? DEFAULT_REQUEST_SUMMARY_ROW;
   const auth = authSummary?.rows?.[0] ?? DEFAULT_AUTH_SUMMARY_ROW;
@@ -1357,20 +1380,26 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
       requestStatusBoard: [
         {
           id: 'open-requests',
+          status: 'submitted',
           label: 'Open Requests',
           value: Number(contentQueue.active_requests),
+          count: Number(contentQueue.active_requests),
           accent: 'mint',
         },
         {
           id: 'needs-changes',
+          status: 'changes_requested',
           label: 'Needs Changes',
           value: Number(contentQueue.needs_attention_requests),
+          count: Number(contentQueue.needs_attention_requests),
           accent: 'amber',
         },
         {
           id: 'converted-to-draft',
+          status: 'approved',
           label: 'Converted To Draft',
           value: Number(contentQueue.fulfilled_requests),
+          count: Number(contentQueue.fulfilled_requests),
           accent: 'blue',
         },
       ],
@@ -1400,7 +1429,7 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
       totalContent: Number(content?.total_managed_content ?? 0),
       publishedContent: Number(content?.published_content ?? 0),
       draftContent: Number(content?.draft_content ?? 0),
-      liveSessions: 0,
+      liveSessions: Number(live?.active_live_sessions ?? 0),
       pendingRequests: Number(contentQueue?.active_requests ?? 0),
       openSupportRequests: Number(requests?.open_support_requests ?? 0),
       activePrivacyRequests: Number(requests?.active_privacy_requests ?? 0),

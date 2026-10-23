@@ -16,7 +16,8 @@
     </div>
     <div>
       <p class="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">{{ label }}</p>
-      <p class="text-2xl font-semibold text-ink tabular-nums mt-1">{{ formattedValue }}</p>
+      <div v-if="loading" class="h-8 w-20 bg-surface-hover animate-pulse rounded mt-1" />
+      <p v-else class="text-2xl font-semibold text-ink tabular-nums mt-1">{{ formattedValue }}</p>
     </div>
     <p v-if="caption" class="text-xs text-ink-muted border-t border-border pt-2">{{ caption }}</p>
   </AppCard>
@@ -32,7 +33,8 @@ const props = withDefaults(defineProps<{
   trend?: number;
   caption?: string;
   iconBg?: string;
-}>(), { iconBg: 'bg-primary/15' });
+  loading?: boolean;
+}>(), { iconBg: 'bg-primary/15', loading: false });
 
 const formattedValue = computed(() => {
   if (typeof props.value === 'number') {

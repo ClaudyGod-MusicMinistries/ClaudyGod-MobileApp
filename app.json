@@ -5,9 +5,25 @@
     "owner": "peter4tech",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./apps/mobile/assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./apps/mobile/assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#16131C"
+    },
+    "ios": {
+      "bundleIdentifier": "com.claudygod.app",
+      "icon": "./apps/mobile/assets/icon.png"
+    },
     "android": {
       "package": "com.claudygod.app",
-      "versionCode": 10
+      "versionCode": 10,
+      "icon": "./apps/mobile/assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./apps/mobile/assets/adaptive-icon.png",
+        "backgroundColor": "#16131C"
+      }
     },
     "extra": {
       "eas": {
