@@ -31,6 +31,7 @@ import {
   getAdminContentSectionSuggestions,
   getAdminEmailDiagnostics,
   getAdminDashboard,
+  getBaselineDashboard,
   getAdminUserDevices,
   getAdminUserEngagement,
   getAdminUserSearchHistory,
@@ -78,8 +79,12 @@ adminRouter.get(
   '/dashboard',
   asyncHandler(async (req, res) => {
     const actor = requireAdmin(req, 'content.read');
-    const result = await getAdminDashboard(actor);
-    res.status(200).json(result);
+    try {
+      const result = await getAdminDashboard(actor);
+      res.status(200).json(result);
+    } catch {
+      res.status(200).json(getBaselineDashboard(actor));
+    }
   }),
 );
 
