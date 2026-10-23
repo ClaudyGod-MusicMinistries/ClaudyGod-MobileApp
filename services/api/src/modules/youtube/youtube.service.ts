@@ -124,9 +124,8 @@ const normalizeTextList = (items?: string[]): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
 
 const sectionRules = [
-  { section: 'claudygod-music', pattern: /(worship|praise|song|music|choir|hymn|album|track|ministration)/i },
-  { section: 'claudygod-nuggets-of-truth', pattern: /(nugget|truth|daily word|devotion|scripture|verse|reflection)/i },
-  { section: 'claudygod-messages', pattern: /(message|sermon|teaching|conference|service|prayer|word)/i },
+  { section: 'music-featured', pattern: /(worship|praise|song|music|choir|hymn|album|track|ministration)/i },
+  { section: 'video-featured', pattern: /(message|sermon|teaching|conference|service|prayer|word|nugget|truth|daily word|devotion|scripture|verse|reflection)/i },
 ] as const;
 
 const tagRules = [
@@ -204,12 +203,12 @@ function deriveSuggestedAppSections(video: {
     .filter((rule) => rule.pattern.test(signals))
     .map((rule) => rule.section);
 
-  if (video.isLive && !sections.includes('claudygod-music')) {
-    sections.push('claudygod-music');
+  if (video.isLive && !sections.includes('video-featured')) {
+    sections.push('video-featured');
   }
 
   if (sections.length === 0) {
-    sections.push('claudygod-messages');
+    sections.push('video-featured');
   }
 
   return normalizeTextList(sections);
