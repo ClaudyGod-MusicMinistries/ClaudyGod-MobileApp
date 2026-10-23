@@ -473,11 +473,11 @@
         <div class="space-y-3">
           <h3 class="text-sm font-bold text-ink">Social links</h3>
           <div class="space-y-2">
-            <div v-for="(link, i) in config.about.social" :key="i" class="grid grid-cols-1 sm:grid-cols-6 gap-2 sm:items-end">
-              <AppInput v-model="link.icon" label="Icon" placeholder="public" />
-              <AppInput v-model="link.label" label="Label" placeholder="Website" />
-              <AppInput v-model="link.url" label="URL" class="sm:col-span-3" placeholder="https://claudygod.org" />
-              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeSocialLink(i)">Remove</AppButton>
+            <div v-for="(socialItem, sIdx) in config.about.social" :key="sIdx" class="grid grid-cols-1 sm:grid-cols-6 gap-2 sm:items-end">
+              <AppInput v-model="socialItem.icon" label="Icon" placeholder="public" />
+              <AppInput v-model="socialItem.label" label="Label" placeholder="Website" />
+              <AppInput v-model="socialItem.url" label="URL" class="sm:col-span-3" placeholder="https://claudygod.org" />
+              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeSocialLink(sIdx)">Remove</AppButton>
             </div>
           </div>
           <AppButton variant="secondary" size="xs" @click="addSocialLink">+ Add link</AppButton>
