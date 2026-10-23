@@ -58,7 +58,23 @@ export const ROLE_CAPABILITIES: Readonly<Record<UserRole, readonly Capability[]>
   SUPER_ADMIN: Object.freeze([...CAPABILITIES]),
 });
 
-export const hasCapability = (role: UserRole, capability: Capability): boolean =>
-  ROLE_CAPABILITIES[role].includes(capability);
+export const normalizeRole = (role: UserRole | string | null | undefined): UserRole | null => {
+  if (!role || typeof role !== 'string') return null;
+  const upper = role.trim().toUpperCase();
+  if (upper in ROLE_CAPABILITIES) {
+    return upper as UserRole;
+  }
+  return null;
+};
 
-export const capabilitiesForRole = (role: UserRole): readonly Capability[] => ROLE_CAPABILITIES[role];
+export const hasCapability = (role: UserRole | string | null | undefined, capability: Capability): boolean => {
+  const normalized = normalizeRole(role);
+  if (!normalized) return false;
+  return (ROLE_CAPABILITIES[normalized] ?? []).includes(capability);
+};
+
+export const capabilitiesForRole = (role: UserRole | string | null | undefined): readonly Capability[] => {
+  const normalized = normalizeRole(role);
+  if (!normalized) return [];
+  return ROLE_CAPABILITIES[normalized] ?? [];
+};

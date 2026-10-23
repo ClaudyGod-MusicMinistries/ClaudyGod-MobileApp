@@ -1,5 +1,6 @@
 import { isSentryEnabled, reportException, Sentry } from '../lib/sentry';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useContext, useEffect, type ReactNode } from 'react';
@@ -27,6 +28,9 @@ import { MiniPlayer } from '../components/player/MiniPlayer';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { AuthProvider } from '../features/auth/AuthContext';
 import { initPlaybackService } from '../playback';
+
+// Prevent the native splash screen from auto-hiding before the initial React layout mounts.
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Global unhandled JS error handler — active in production builds only.
 if (!__DEV__) {
@@ -74,6 +78,12 @@ function RootLayoutInner() {
   useEffect(() => {
     void initPlaybackService();
   }, []);
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      void SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded]);
 
   if (!fontsLoaded) {
     return <AppLoadingScreen />;

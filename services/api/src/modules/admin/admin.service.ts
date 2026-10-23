@@ -393,6 +393,21 @@ const PUBLISHER_PORTAL_NAVIGATION = [
   },
 ] as const;
 
+interface LiveSummaryRow {
+  active_live_sessions: string;
+}
+
+const DEFAULT_LIVE_SUMMARY_ROW: LiveSummaryRow = {
+  active_live_sessions: '0',
+};
+
+const getLiveSessionSummaryResult = () =>
+  pool.query<LiveSummaryRow>(
+    `SELECT
+       COUNT(*) FILTER (WHERE status IN ('live', 'scheduled'))::text AS active_live_sessions
+     FROM live_sessions`,
+  );
+
 const getScopedContentSummaryResult = (requester: JwtClaims) => {
   if (hasCapability(requester.role, 'content.read')) {
     return pool.query<ContentSummaryRow>(
@@ -400,7 +415,8 @@ const getScopedContentSummaryResult = (requester: JwtClaims) => {
          COUNT(*)::text AS total_managed_content,
          COUNT(*) FILTER (WHERE visibility = 'published')::text AS published_content,
          COUNT(*) FILTER (WHERE visibility = 'draft')::text AS draft_content
-       FROM content_items`,
+       FROM content_items
+       WHERE deleted_at IS NULL`,
     );
   }
 
@@ -410,7 +426,7 @@ const getScopedContentSummaryResult = (requester: JwtClaims) => {
        COUNT(*) FILTER (WHERE visibility = 'published')::text AS published_content,
        COUNT(*) FILTER (WHERE visibility = 'draft')::text AS draft_content
      FROM content_items
-     WHERE author_id = $1`,
+     WHERE author_id = $1 AND deleted_at IS NULL`,
     [requester.sub],
   );
 };
@@ -497,8 +513,9 @@ const getScopedRecentManagedContentResult = (requester: JwtClaims) => {
          created_at,
          updated_at
        FROM content_items
+       WHERE deleted_at IS NULL
        ORDER BY updated_at DESC, created_at DESC
-       LIMIT 4`,
+       LIMIT 8`,
     );
   }
 
@@ -512,9 +529,9 @@ const getScopedRecentManagedContentResult = (requester: JwtClaims) => {
        created_at,
        updated_at
      FROM content_items
-     WHERE author_id = $1
+     WHERE author_id = $1 AND deleted_at IS NULL
      ORDER BY updated_at DESC, created_at DESC
-     LIMIT 4`,
+     LIMIT 8`,
     [requester.sub],
   );
 };
@@ -561,11 +578,13 @@ const getScopedRecentAuthActivityResult = (requester: JwtClaims) => {
   );
 };
 
-const getBaselineDashboard = (requester: JwtClaims) => {
-  const isAdmin = hasCapability(requester.role, 'users.read');
-  const navigation = isAdmin ? ADMIN_PORTAL_NAVIGATION : PUBLISHER_PORTAL_NAVIGATION;
-  const overview = isAdmin
-    ? {
+export const getBaselineDashboard = (requester?: Partial<JwtClaims> | null) => {
+  try {
+    const role = requester?.role;
+    const isAdmin = hasCapability(role as UserRole, 'users.read');
+    const navigation = isAdmin ? ADMIN_PORTAL_NAVIGATION : PUBLISHER_PORTAL_NAVIGATION;
+    const overview = isAdmin
+      ? {
         hero: {
           eyebrow: 'Portal overview',
           title: 'Content, access, and mobile delivery in one view.',
@@ -665,74 +684,153 @@ const getBaselineDashboard = (requester: JwtClaims) => {
         accessCards: [],
       };
 
-  return {
-    generatedAt: new Date().toISOString(),
-    navigation,
-    overview: {
-      ...overview,
-      requestStatusBoard: [
-        { id: 'open-requests', label: 'Open Requests', value: 0, accent: 'mint' },
-        { id: 'needs-changes', label: 'Needs Changes', value: 0, accent: 'amber' },
-        { id: 'converted-to-draft', label: 'Converted To Draft', value: 0, accent: 'blue' },
-      ],
-      requestQueuePreview: [],
-      latestContent: [],
-    },
-    summary: {
-      totalUsers: 0,
-      newUsersLast7Days: 0,
-      verifiedUsers: 0,
-      adminUsers: 0,
-      clientUsers: 0,
-      publishedContent: 0,
-      draftContent: 0,
-      openSupportRequests: 0,
-      activePrivacyRequests: 0,
-      pendingSignups: 0,
-      activeSessions: 0,
-      loginSuccessLast7Days: 0,
-      loginFailuresLast7Days: 0,
-      verificationsLast7Days: 0,
-      passwordResetsLast30Days: 0,
-      totalFeedback: 0,
-      averageRating: null,
-    },
-    authFunnel: {
-      pendingSignups: 0,
-      activeSessions: 0,
-      loginSuccessLast7Days: 0,
-      loginFailuresLast7Days: 0,
-      verificationsLast7Days: 0,
-      passwordResetsLast30Days: 0,
-    },
-    emailDelivery: {
-      smtpEnabled: emailTransportInfo.enabled,
-      providerLabel: env.SMTP_PROVIDER_LABEL,
-      provider: emailTransportInfo.provider,
-      host: emailTransportInfo.host,
-      port: emailTransportInfo.port,
-      pendingJobs: 0,
-      processingJobs: 0,
-      completedLast24Hours: 0,
-      failedLast24Hours: 0,
-      totalLast7Days: 0,
-      recentJobs: [],
-    },
-    recentUsers: [],
-    feedback: [],
-    supportInbox: [],
-    signupTrend: [],
-    smartInsights: [
-      {
-        id: 'database-syncing',
-        tone: 'info',
-        title: 'Dashboard statistics syncing',
-        detail: 'Live metrics are currently syncing. Portal navigation and tools remain available.',
+    return {
+      generatedAt: new Date().toISOString(),
+      navigation,
+      overview: {
+        ...overview,
+        requestStatusBoard: [
+          { id: 'open-requests', status: 'submitted', label: 'Open Requests', value: 0, count: 0, accent: 'mint' },
+          { id: 'needs-changes', status: 'changes_requested', label: 'Needs Changes', value: 0, count: 0, accent: 'amber' },
+          { id: 'converted-to-draft', status: 'approved', label: 'Converted To Draft', value: 0, count: 0, accent: 'blue' },
+        ],
+        requestQueuePreview: [],
+        latestContent: [],
       },
-    ],
-    recentAutomation: [],
-    recentAuthActivity: [],
-  };
+      summary: {
+        totalUsers: 0,
+        newUsersLast7Days: 0,
+        verifiedUsers: 0,
+        adminUsers: 0,
+        clientUsers: 0,
+        totalContent: 0,
+        publishedContent: 0,
+        draftContent: 0,
+        liveSessions: 0,
+        pendingRequests: 0,
+        openSupportRequests: 0,
+        activePrivacyRequests: 0,
+        pendingSignups: 0,
+        activeSessions: 0,
+        loginSuccessLast7Days: 0,
+        loginFailuresLast7Days: 0,
+        verificationsLast7Days: 0,
+        passwordResetsLast30Days: 0,
+        totalFeedback: 0,
+        averageRating: null,
+      },
+      authFunnel: {
+        pendingSignups: 0,
+        activeSessions: 0,
+        loginSuccessLast7Days: 0,
+        loginFailuresLast7Days: 0,
+        verificationsLast7Days: 0,
+        passwordResetsLast30Days: 0,
+      },
+      emailDelivery: {
+        smtpEnabled: Boolean(emailTransportInfo?.enabled),
+        providerLabel: env.SMTP_PROVIDER_LABEL,
+        provider: emailTransportInfo?.provider ?? 'postfix',
+        host: emailTransportInfo?.host ?? '',
+        port: emailTransportInfo?.port ?? 25,
+        pendingJobs: 0,
+        processingJobs: 0,
+        completedLast24Hours: 0,
+        failedLast24Hours: 0,
+        totalLast7Days: 0,
+        recentJobs: [],
+      },
+      recentUsers: [],
+      feedback: [],
+      supportInbox: [],
+      signupTrend: [],
+      smartInsights: [
+        {
+          id: 'database-syncing',
+          tone: 'info',
+          title: 'Dashboard statistics syncing',
+          detail: 'Live metrics are currently syncing. Portal navigation and tools remain available.',
+        },
+      ],
+      recentAutomation: [],
+      recentAuthActivity: [],
+    };
+  } catch {
+    return {
+      generatedAt: new Date().toISOString(),
+      navigation: ADMIN_PORTAL_NAVIGATION,
+      overview: {
+        hero: {
+          eyebrow: 'Portal overview',
+          title: 'Content, access, and mobile delivery in one view.',
+          description: 'Live metrics are currently syncing. Portal navigation and tools remain available.',
+          primaryAction: { label: 'Open content', view: 'editor' },
+          secondaryAction: { label: 'Preview app', view: 'mobile-preview' },
+        },
+        sections: {
+          signals: { title: 'Signals', description: '', emptyState: 'No urgent signals right now.' },
+          recentAccessActivity: { title: 'Recent Access Activity', description: '', emptyState: 'No activity yet.', emptyEmailLabel: '', unknownUserLabel: '' },
+          requestQueue: { title: 'Request Queue', description: '', actionLabel: '', loadingMessage: '', emptyState: 'No requests.' },
+          latestContent: { title: 'Latest Content', description: '', actionLabel: '', emptyState: 'No content yet.' },
+        },
+        portalCards: [],
+        accessCards: [],
+        requestStatusBoard: [],
+        requestQueuePreview: [],
+        latestContent: [],
+      },
+      summary: {
+        totalUsers: 0,
+        newUsersLast7Days: 0,
+        verifiedUsers: 0,
+        adminUsers: 0,
+        clientUsers: 0,
+        totalContent: 0,
+        publishedContent: 0,
+        draftContent: 0,
+        liveSessions: 0,
+        pendingRequests: 0,
+        openSupportRequests: 0,
+        activePrivacyRequests: 0,
+        pendingSignups: 0,
+        activeSessions: 0,
+        loginSuccessLast7Days: 0,
+        loginFailuresLast7Days: 0,
+        verificationsLast7Days: 0,
+        passwordResetsLast30Days: 0,
+        totalFeedback: 0,
+        averageRating: null,
+      },
+      authFunnel: {
+        pendingSignups: 0,
+        activeSessions: 0,
+        loginSuccessLast7Days: 0,
+        loginFailuresLast7Days: 0,
+        verificationsLast7Days: 0,
+        passwordResetsLast30Days: 0,
+      },
+      emailDelivery: {
+        smtpEnabled: false,
+        providerLabel: 'Offline',
+        provider: 'postfix',
+        host: '',
+        port: 25,
+        pendingJobs: 0,
+        processingJobs: 0,
+        completedLast24Hours: 0,
+        failedLast24Hours: 0,
+        totalLast7Days: 0,
+        recentJobs: [],
+      },
+      recentUsers: [],
+      feedback: [],
+      supportInbox: [],
+      signupTrend: [],
+      smartInsights: [],
+      recentAutomation: [],
+      recentAuthActivity: [],
+    };
+  }
 };
 
 export const getAdminDashboard = async (requester: JwtClaims) => {
@@ -755,6 +853,7 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
     recentAuthActivity,
     emailSummary,
     recentEmailJobs,
+    liveSummary,
   ] =
     await Promise.all([
       safeQueryRows(
@@ -967,11 +1066,16 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
         isAdmin ? getRecentEmailJobsResult(8) : Promise.resolve({ rows: [] as RecentEmailJobRow[] }),
         [],
       ),
+      safeQueryRows(
+        getLiveSessionSummaryResult(),
+        [DEFAULT_LIVE_SUMMARY_ROW],
+      ),
     ]);
 
-  const redactEmail = requester.role !== 'SUPER_ADMIN';
+  const redactEmail = String(requester?.role ?? '').toUpperCase() !== 'SUPER_ADMIN';
   const summary = userSummary?.rows?.[0] ?? DEFAULT_SUMMARY_ROW;
   const content = contentSummary?.rows?.[0] ?? DEFAULT_CONTENT_SUMMARY_ROW;
+  const live = liveSummary?.rows?.[0] ?? DEFAULT_LIVE_SUMMARY_ROW;
   const ratings = ratingSummary?.rows?.[0] ?? DEFAULT_RATING_SUMMARY_ROW;
   const requests = requestSummary?.rows?.[0] ?? DEFAULT_REQUEST_SUMMARY_ROW;
   const auth = authSummary?.rows?.[0] ?? DEFAULT_AUTH_SUMMARY_ROW;
@@ -1276,79 +1380,88 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
       requestStatusBoard: [
         {
           id: 'open-requests',
+          status: 'submitted',
           label: 'Open Requests',
           value: Number(contentQueue.active_requests),
+          count: Number(contentQueue.active_requests),
           accent: 'mint',
         },
         {
           id: 'needs-changes',
+          status: 'changes_requested',
           label: 'Needs Changes',
           value: Number(contentQueue.needs_attention_requests),
+          count: Number(contentQueue.needs_attention_requests),
           accent: 'amber',
         },
         {
           id: 'converted-to-draft',
+          status: 'approved',
           label: 'Converted To Draft',
           value: Number(contentQueue.fulfilled_requests),
+          count: Number(contentQueue.fulfilled_requests),
           accent: 'blue',
         },
       ],
-      requestQueuePreview: contentQueuePreview.rows.map((row) => ({
+      requestQueuePreview: (contentQueuePreview?.rows ?? []).map((row) => ({
         id: row.id,
-        title: row.title,
-        description: row.description,
-        status: row.request_status,
+        title: row.title ?? '',
+        description: row.description ?? '',
+        status: row.request_status ?? 'submitted',
         createdAt: toIso(row.created_at),
       })),
-      latestContent: recentManagedContent.rows.map((row) => ({
+      latestContent: (recentManagedContent?.rows ?? []).map((row) => ({
         id: row.id,
-        title: row.title,
-        description: row.description,
-        type: row.content_type,
-        visibility: row.visibility,
+        title: row.title ?? '',
+        description: row.description ?? '',
+        type: row.content_type ?? 'video',
+        visibility: row.visibility ?? 'draft',
         createdAt: toIso(row.created_at),
         updatedAt: toIso(row.updated_at),
       })),
     },
     summary: {
-      totalUsers: Number(summary.total_users),
-      newUsersLast7Days: Number(summary.new_users_last_7_days),
-      verifiedUsers: Number(summary.verified_users),
-      adminUsers: Number(summary.admin_users),
-      clientUsers: Number(summary.client_users),
-      publishedContent: Number(content.published_content),
-      draftContent: Number(content.draft_content),
-      openSupportRequests: Number(requests.open_support_requests),
-      activePrivacyRequests: Number(requests.active_privacy_requests),
-      pendingSignups: Number(auth.pending_signups),
-      activeSessions: Number(auth.active_sessions),
-      loginSuccessLast7Days: Number(auth.login_success_last_7_days),
-      loginFailuresLast7Days: Number(auth.login_failures_last_7_days),
-      verificationsLast7Days: Number(auth.verifications_last_7_days),
-      passwordResetsLast30Days: Number(auth.password_resets_last_30_days),
-      totalFeedback: Number(ratings.total_feedback),
-      averageRating: ratings.average_rating ? Number(ratings.average_rating) : null,
+      totalUsers: Number(summary?.total_users ?? 0),
+      newUsersLast7Days: Number(summary?.new_users_last_7_days ?? 0),
+      verifiedUsers: Number(summary?.verified_users ?? 0),
+      adminUsers: Number(summary?.admin_users ?? 0),
+      clientUsers: Number(summary?.client_users ?? 0),
+      totalContent: Number(content?.total_managed_content ?? 0),
+      publishedContent: Number(content?.published_content ?? 0),
+      draftContent: Number(content?.draft_content ?? 0),
+      liveSessions: Number(live?.active_live_sessions ?? 0),
+      pendingRequests: Number(contentQueue?.active_requests ?? 0),
+      openSupportRequests: Number(requests?.open_support_requests ?? 0),
+      activePrivacyRequests: Number(requests?.active_privacy_requests ?? 0),
+      pendingSignups: Number(auth?.pending_signups ?? 0),
+      activeSessions: Number(auth?.active_sessions ?? 0),
+      loginSuccessLast7Days: Number(auth?.login_success_last_7_days ?? 0),
+      loginFailuresLast7Days: Number(auth?.login_failures_last_7_days ?? 0),
+      verificationsLast7Days: Number(auth?.verifications_last_7_days ?? 0),
+      passwordResetsLast30Days: Number(auth?.password_resets_last_30_days ?? 0),
+      totalFeedback: Number(ratings?.total_feedback ?? 0),
+      averageRating: ratings?.average_rating ? Number(ratings.average_rating) : null,
     },
     authFunnel: {
-      pendingSignups: Number(auth.pending_signups),
-      activeSessions: Number(auth.active_sessions),
-      loginSuccessLast7Days: Number(auth.login_success_last_7_days),
-      loginFailuresLast7Days: Number(auth.login_failures_last_7_days),
-      verificationsLast7Days: Number(auth.verifications_last_7_days),
-      passwordResetsLast30Days: Number(auth.password_resets_last_30_days),
+      pendingSignups: Number(auth?.pending_signups ?? 0),
+      activeSessions: Number(auth?.active_sessions ?? 0),
+      loginSuccessLast7Days: Number(auth?.login_success_last_7_days ?? 0),
+      loginFailuresLast7Days: Number(auth?.login_failures_last_7_days ?? 0),
+      verificationsLast7Days: Number(auth?.verifications_last_7_days ?? 0),
+      passwordResetsLast30Days: Number(auth?.password_resets_last_30_days ?? 0),
     },
     emailDelivery: {
-      smtpEnabled: emailTransportInfo.enabled,
+      smtpEnabled: Boolean(emailTransportInfo?.enabled),
       providerLabel: env.SMTP_PROVIDER_LABEL,
-      provider: emailTransportInfo.provider,
-      host: emailTransportInfo.host,
-      port: emailTransportInfo.port,
-      pendingJobs: Number(emailDelivery.pending_jobs),
-      processingJobs: Number(emailDelivery.processing_jobs),
-      completedLast24Hours: Number(emailDelivery.completed_last_24_hours),
-      failedLast24Hours: Number(emailDelivery.failed_last_24_hours),
-      totalLast7Days: Number(emailDelivery.total_last_7_days),
-      recentJobs: recentEmailJobs.rows.map((row) => ({
+      provider: emailTransportInfo?.provider ?? 'postfix',
+      host: emailTransportInfo?.host ?? '',
+      port: emailTransportInfo?.port ?? 25,
+      pendingJobs: Number(emailDelivery?.pending_jobs ?? 0),
+      processingJobs: Number(emailDelivery?.processing_jobs ?? 0),
+      completedLast24Hours: Number(emailDelivery?.completed_last_24_hours ?? 0),
+      failedLast24Hours: Number(emailDelivery?.failed_last_24_hours ?? 0),
+      totalLast7Days: Number(emailDelivery?.total_last_7_days ?? 0),
+      recentJobs: (recentEmailJobs?.rows ?? []).map((row) => ({
         id: row.id,
         jobType: row.job_type,
         templateKey: row.template_key,
@@ -1359,8 +1472,8 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
         processedAt: toIsoOrNull(row.processed_at),
       })),
     },
-    recentUsers: recentUsers.rows.map((row) => toAdminRecentUser(row, redactEmail)),
-    feedback: feedback.rows.map((row) => ({
+    recentUsers: (recentUsers?.rows ?? []).map((row) => toAdminRecentUser(row, redactEmail)),
+    feedback: (feedback?.rows ?? []).map((row) => ({
       id: row.id,
       rating: row.rating,
       channel: row.channel,
@@ -1374,7 +1487,7 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
           }
         : null,
     })),
-    supportInbox: supportInbox.rows.map((row) => ({
+    supportInbox: (supportInbox?.rows ?? []).map((row) => ({
       id: row.id,
       status: row.status,
       category: row.category,
@@ -1390,12 +1503,12 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
           }
         : null,
     })),
-    signupTrend: signupTrend.rows.map((row) => ({
+    signupTrend: (signupTrend?.rows ?? []).map((row) => ({
       day: row.day,
-      signups: Number(row.signups),
+      signups: Number(row.signups ?? 0),
     })),
     smartInsights,
-    recentAutomation: automationRuns.rows.map((row) => ({
+    recentAutomation: (automationRuns?.rows ?? []).map((row) => ({
       id: row.id,
       runType: row.run_type,
       scope: row.scope,
@@ -1411,7 +1524,7 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
         : null,
       label: humanizeToken(row.run_type),
     })),
-    recentAuthActivity: recentAuthActivity.rows.map((row) => ({
+    recentAuthActivity: (recentAuthActivity?.rows ?? []).map((row) => ({
       id: row.id,
       eventKey: row.event_key,
       label: humanizeToken(row.event_key),
@@ -1435,7 +1548,11 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return getBaselineDashboard(requester);
+    try {
+      return getBaselineDashboard(requester);
+    } catch {
+      return getBaselineDashboard(null);
+    }
   }
 };
 

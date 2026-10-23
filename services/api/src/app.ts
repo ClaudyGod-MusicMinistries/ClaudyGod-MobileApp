@@ -181,6 +181,16 @@ export const createApp = () => {
           styleSrc: [
             "'self'",
             "'unsafe-inline'", // Needed for styled-components and CSS-in-JS
+            "https://fonts.googleapis.com",
+            "https://*.googleapis.com",
+            "https://*.sentry.io",
+          ],
+
+          // Explicit style element sources for Google Fonts stylesheet <link> tags
+          styleSrcElem: [
+            "'self'",
+            "'unsafe-inline'",
+            "https://fonts.googleapis.com",
             "https://*.googleapis.com",
             "https://*.sentry.io",
           ],

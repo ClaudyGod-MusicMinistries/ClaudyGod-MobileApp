@@ -14,7 +14,7 @@ export function requireCapability(capability: Capability) {
   };
 }
 
-export function assertCapability(role: UserRole, capability: Capability): void {
+export function assertCapability(role: UserRole | string | null | undefined, capability: Capability): void {
   if (!hasCapability(role, capability)) {
     throw new ForbiddenError(`Missing required capability: ${capability}`, 'INSUFFICIENT_CAPABILITY');
   }

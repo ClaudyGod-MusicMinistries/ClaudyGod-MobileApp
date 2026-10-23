@@ -6,7 +6,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -20,14 +20,7 @@ import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_HERO_VIDEO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
 import { BrandWordmark } from '../components/branding';
 import { useDeviceClass } from '../util/deviceClassConfig';
-import { getPreference, setPreference } from '../lib/localUserStorage';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-
-// Native-only — the web build already has its own marketing landing page (below)
-// gated on nothing, but native first-launch users were dropped straight into the
-// tabs with no introduction at all. One-time flag, same key convention as the
-// rest of localUserStorage's getPreference/setPreference usage.
-const ONBOARDING_SEEN_KEY = 'onboarding.hasSeenIntro';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -217,46 +210,28 @@ function BrandIntroScreen({
   );
 }
 
-// ─── Web landing page ─────────────────────────────────────────────────────────
+// ─── Entry & Landing Screen ──────────────────────────────────────────────────
 
-function LandingPage() {
+export default function Index() {
   const router = useRouter();
-  return <BrandIntroScreen onContinue={() => router.replace(APP_ROUTES.tabs.home)} />;
-}
-
-// ─── Native first-launch onboarding ────────────────────────────────────────────
-
-function NativeEntry() {
-  const router = useRouter();
-  const [status, setStatus] = useState<'checking' | 'show' | 'done'>('checking');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
-    getPreference(ONBOARDING_SEEN_KEY, false)
-      .then((seen) => {
-        if (!cancelled) setStatus(seen ? 'done' : 'show');
-      })
-      .catch(() => {
-        if (!cancelled) setStatus('show');
-      });
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1600);
     return () => {
-      cancelled = true;
+      clearTimeout(timer);
     };
   }, []);
 
   const handleContinue = () => {
-    void setPreference(ONBOARDING_SEEN_KEY, true);
     router.replace(APP_ROUTES.tabs.home);
   };
 
-  if (status === 'checking') return <AppLoadingScreen />;
-  if (status === 'done') return <Redirect href="/(tabs)/home" />;
-  return <BrandIntroScreen onContinue={handleContinue} ctaLabel="Get started" />;
-}
-
-export default function Index() {
-  if (Platform.OS !== 'web') {
-    return <NativeEntry />;
+  if (loading) {
+    return <AppLoadingScreen />;
   }
-  return <LandingPage />;
+
+  return <BrandIntroScreen onContinue={handleContinue} ctaLabel="Explore now" />;
 }
