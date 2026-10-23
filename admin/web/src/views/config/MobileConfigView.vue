@@ -48,77 +48,139 @@
         </p>
 
         <div v-for="group in MOBILE_LAYOUT_GROUPS" :key="group.key" class="space-y-3">
-          <div>
-            <h3 class="text-sm font-bold text-ink">{{ group.title }}</h3>
-            <p class="text-xs text-ink-muted">{{ group.description }}</p>
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold text-ink">{{ group.title }} sections</h3>
+              <p class="text-xs text-ink-muted">{{ group.description }}</p>
+            </div>
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-surface-hover text-ink-muted border border-border">
+              {{ config.layout[group.key]?.length ?? 0 }} section{{ config.layout[group.key]?.length !== 1 ? 's' : '' }}
+            </span>
           </div>
 
           <div class="space-y-3">
-            <AppCard
-              v-for="(section, idx) in config.layout[group.key]"
-              :key="section.id"
-              class="p-4 space-y-3"
+            <draggable
+              v-model="config.layout[group.key]"
+              item-key="id"
+              handle=".section-drag-handle"
+              ghost-class="opacity-40"
+              animation="150"
+              class="space-y-3"
             >
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <AppInput v-model="section.title" label="Title" placeholder="e.g. Nuggets of Truth" />
-                  <AppInput v-model="section.subtitle" label="Subtitle" placeholder="Short description shown under the title" />
-                </div>
-                <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeSection(group.key, idx)">Remove</AppButton>
-              </div>
+              <template #item="{ element: section, index: idx }">
+                <AppCard class="p-4 space-y-3 border transition-shadow hover:shadow-sm">
+                  <!-- Section Header with Drag Handle, Order Badge, Move Buttons, and Remove -->
+                  <div class="flex items-center justify-between gap-3 pb-3 border-b border-border/60">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <button
+                        type="button"
+                        class="section-drag-handle p-1.5 -ml-1 text-ink-muted hover:text-ink cursor-grab active:cursor-grabbing rounded hover:bg-surface-hover transition-colors touch-none"
+                        :title="`Drag to reorder ${section.title || 'section'}`"
+                        :aria-label="`Drag to reorder ${section.title || 'section'}`"
+                      >
+                        <GripVertical class="w-4 h-4" />
+                      </button>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary-soft border border-primary/20 shrink-0 tabular-nums">
+                        Position #{{ idx + 1 }}
+                      </span>
+                      <span class="text-xs font-semibold text-ink truncate">
+                        {{ section.title || 'Untitled section' }}
+                      </span>
+                    </div>
 
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="ct in MOBILE_CONTENT_TYPE_OPTIONS"
-                  :key="ct"
-                  type="button"
-                  :class="[
-                    'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
-                    section.contentTypes.includes(ct)
-                      ? 'bg-primary/20 border-primary/40 text-primary-soft'
-                      : 'bg-surface-hover border-border text-ink-muted hover:border-primary/30 hover:text-ink',
-                  ]"
-                  @click="toggleContentType(section, ct)"
-                >
-                  {{ ct }}
-                </button>
-              </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        :disabled="idx === 0"
+                        title="Move section up"
+                        aria-label="Move section up"
+                        @click="moveSectionUp(group.key, idx)"
+                      >
+                        <ArrowUp class="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        :disabled="idx === config.layout[group.key].length - 1"
+                        title="Move section down"
+                        aria-label="Move section down"
+                        @click="moveSectionDown(group.key, idx)"
+                      >
+                        <ArrowDown class="w-4 h-4" />
+                      </button>
+                      <div class="w-px h-3.5 bg-border mx-1" />
+                      <AppButton
+                        variant="ghost"
+                        size="xs"
+                        class="text-danger hover:bg-danger/10"
+                        title="Remove section"
+                        @click="removeSection(group.key, idx)"
+                      >
+                        Remove
+                      </AppButton>
+                    </div>
+                  </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <AppInput v-model="section.actionLabel" label="Action label" placeholder="Open" />
-                <AppSelect v-model="section.destinationTab" label="Destination tab" :options="MOBILE_TAB_DESTINATION_OPTIONS_ARR" />
-                <AppInput
-                  v-model.number="section.maxItems"
-                  type="number"
-                  label="Items shown in section rail"
-                  hint="Additional eligible items remain available through See all."
-                  :min="MOBILE_SECTION_RAIL_MIN_ITEMS"
-                  max="24"
-                />
-              </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <AppInput v-model="section.title" label="Title" placeholder="e.g. Nuggets of Truth" />
+                    <AppInput v-model="section.subtitle" label="Subtitle" placeholder="Short description shown under the title" />
+                  </div>
 
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p class="text-[11px] text-ink-muted">
-                  Tag content into this section with: <span class="font-mono text-ink">{{ section.title || section.id }}</span>
-                </p>
-                <div class="flex items-center gap-2">
-                  <span
-                    v-if="sectionDiagnostics[diagnosticKey(group.key, section.id)]"
-                    class="text-xs font-semibold text-ink"
-                  >
-                    {{ sectionDeliverySummary(group.key, section) }}
-                  </span>
-                  <AppButton
-                    variant="secondary"
-                    size="xs"
-                    :loading="diagnosticLoadingKey === diagnosticKey(group.key, section.id)"
-                    @click="verifySection(group.key, section.id)"
-                  >
-                    Verify published content
-                  </AppButton>
-                </div>
-              </div>
-            </AppCard>
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      v-for="ct in MOBILE_CONTENT_TYPE_OPTIONS"
+                      :key="ct"
+                      type="button"
+                      :class="[
+                        'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+                        section.contentTypes.includes(ct)
+                          ? 'bg-primary/20 border-primary/40 text-primary-soft'
+                          : 'bg-surface-hover border-border text-ink-muted hover:border-primary/30 hover:text-ink',
+                      ]"
+                      @click="toggleContentType(section, ct)"
+                    >
+                      {{ ct }}
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <AppInput v-model="section.actionLabel" label="Action label" placeholder="Open" />
+                    <AppSelect v-model="section.destinationTab" label="Destination tab" :options="MOBILE_TAB_DESTINATION_OPTIONS_ARR" />
+                    <AppInput
+                      v-model.number="section.maxItems"
+                      type="number"
+                      label="Items shown in section rail"
+                      hint="Additional eligible items remain available through See all."
+                      :min="MOBILE_SECTION_RAIL_MIN_ITEMS"
+                      max="24"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-[11px] text-ink-muted">
+                      Tag content into this section with: <span class="font-mono text-ink">{{ section.title || section.id }}</span>
+                    </p>
+                    <div class="flex items-center gap-2">
+                      <span
+                        v-if="sectionDiagnostics[diagnosticKey(group.key, section.id)]"
+                        class="text-xs font-semibold text-ink"
+                      >
+                        {{ sectionDeliverySummary(group.key, section) }}
+                      </span>
+                      <AppButton
+                        variant="secondary"
+                        size="xs"
+                        :loading="diagnosticLoadingKey === diagnosticKey(group.key, section.id)"
+                        @click="verifySection(group.key, section.id)"
+                      >
+                        Verify published content
+                      </AppButton>
+                    </div>
+                  </div>
+                </AppCard>
+              </template>
+            </draggable>
 
             <AppButton variant="secondary" size="sm" @click="addSection(group.key)">+ Add section</AppButton>
           </div>
@@ -159,19 +221,64 @@
           <AppCard class="p-4 space-y-3">
             <div class="flex items-start justify-between gap-3">
               <AppInput v-model="section.title" label="Section title" class="flex-1" placeholder="e.g. Quick access" />
-              <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeSettingsHubSection(sIdx)">Remove section</AppButton>
+              <div class="flex items-center gap-1 mt-5">
+                <button
+                  type="button"
+                  class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                  :disabled="sIdx === 0"
+                  title="Move section up"
+                  aria-label="Move section up"
+                  @click="moveSettingsHubSection(sIdx, sIdx - 1)"
+                >
+                  <ArrowUp class="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                  :disabled="sIdx === config.settingsHub.sections.length - 1"
+                  title="Move section down"
+                  aria-label="Move section down"
+                  @click="moveSettingsHubSection(sIdx, sIdx + 1)"
+                >
+                  <ArrowDown class="w-4 h-4" />
+                </button>
+                <div class="w-px h-3.5 bg-border mx-1" />
+                <AppButton variant="ghost" size="xs" class="text-danger" @click="removeSettingsHubSection(sIdx)">Remove section</AppButton>
+              </div>
             </div>
 
             <div class="space-y-3">
               <div
                 v-for="(item, iIdx) in section.items"
                 :key="item.id"
-                class="grid grid-cols-1 sm:grid-cols-5 gap-2 sm:items-end border-t border-border/60 pt-3 first:border-t-0 first:pt-0"
+                class="grid grid-cols-1 sm:grid-cols-6 gap-2 sm:items-end border-t border-border/60 pt-3 first:border-t-0 first:pt-0"
               >
                 <AppInput v-model="item.icon" label="Icon" placeholder="library-music" />
                 <AppInput v-model="item.label" label="Label" placeholder="Library" />
                 <AppInput v-model="item.hint" label="Hint" placeholder="Saved content" />
                 <AppSelect v-model="item.destination" label="Destination" :options="SETTINGS_DESTINATION_OPTIONS_ARR" />
+                <div class="flex items-center gap-1 mb-1">
+                  <button
+                    type="button"
+                    class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                    :disabled="iIdx === 0"
+                    title="Move item up"
+                    aria-label="Move item up"
+                    @click="moveSettingsHubItem(sIdx, iIdx, iIdx - 1)"
+                  >
+                    <ArrowUp class="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                    :disabled="iIdx === section.items.length - 1"
+                    title="Move item down"
+                    aria-label="Move item down"
+                    @click="moveSettingsHubItem(sIdx, iIdx, iIdx + 1)"
+                  >
+                    <ArrowDown class="w-3.5 h-3.5" />
+                  </button>
+                </div>
                 <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeSettingsHubItem(sIdx, iIdx)">Remove</AppButton>
               </div>
             </div>
@@ -582,6 +689,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import draggable from 'vuedraggable';
+import { ArrowDown, ArrowUp, GripVertical } from 'lucide-vue-next';
 import { useConfigStore } from '@/stores/config.store';
 import { useUiStore } from '@/stores/ui.store';
 import { getMobileSectionDiagnostic, type MobileSectionDiagnostic } from '@/api/config';
@@ -628,9 +738,14 @@ import AppEmptyState from '@/components/ui/AppEmptyState.vue';
 import MobilePreviewPanel from '@/components/shared/MobilePreviewPanel.vue';
 import PageHeader from '@/components/shared/PageHeader.vue';
 
+const route = useRoute();
 const store = useConfigStore();
 const ui = useUiStore();
-const activeTab = ref('layout');
+const activeTab = ref(
+  typeof route.query.tab === 'string' && ['layout', 'discovery', 'settings', 'referral', 'giving', 'privacy', 'help', 'about', 'donate', 'rate', 'navigation', 'intelligence', 'ads'].includes(route.query.tab)
+    ? (route.query.tab as string)
+    : 'layout',
+);
 const previewOpen = ref(false);
 const sectionDiagnostics = ref<Record<string, MobileSectionDiagnostic>>({});
 const diagnosticLoadingKey = ref<string | null>(null);
@@ -724,6 +839,44 @@ function sectionDeliverySummary(groupKey: keyof AppConfig['layout'], section: Mo
 function addSection(groupKey: keyof AppConfig['layout']): void {
   if (!config.value) return;
   config.value.layout[groupKey].push(createLayoutSection(groupKey) as unknown as MobileLayoutSection);
+}
+
+function moveSection(groupKey: keyof AppConfig['layout'], fromIdx: number, toIdx: number): void {
+  if (!config.value) return;
+  const list = config.value.layout[groupKey];
+  if (fromIdx < 0 || fromIdx >= list.length || toIdx < 0 || toIdx >= list.length || fromIdx === toIdx) return;
+  const [moved] = list.splice(fromIdx, 1);
+  if (moved) {
+    list.splice(toIdx, 0, moved);
+  }
+}
+
+function moveSectionUp(groupKey: keyof AppConfig['layout'], idx: number): void {
+  moveSection(groupKey, idx, idx - 1);
+}
+
+function moveSectionDown(groupKey: keyof AppConfig['layout'], idx: number): void {
+  moveSection(groupKey, idx, idx + 1);
+}
+
+function moveSettingsHubSection(fromIdx: number, toIdx: number): void {
+  if (!config.value) return;
+  const list = config.value.settingsHub.sections;
+  if (fromIdx < 0 || fromIdx >= list.length || toIdx < 0 || toIdx >= list.length || fromIdx === toIdx) return;
+  const [moved] = list.splice(fromIdx, 1);
+  if (moved) {
+    list.splice(toIdx, 0, moved);
+  }
+}
+
+function moveSettingsHubItem(sectionIdx: number, fromIdx: number, toIdx: number): void {
+  if (!config.value) return;
+  const list = config.value.settingsHub.sections[sectionIdx]?.items;
+  if (!list || fromIdx < 0 || fromIdx >= list.length || toIdx < 0 || toIdx >= list.length || fromIdx === toIdx) return;
+  const [moved] = list.splice(fromIdx, 1);
+  if (moved) {
+    list.splice(toIdx, 0, moved);
+  }
 }
 
 function removeSection(groupKey: keyof AppConfig['layout'], idx: number): void {
