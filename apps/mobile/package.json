@@ -25,7 +25,7 @@
     "expo/**/@react-native/dev-middleware/ws": "^8.21.0",
     "@supabase/**/ws": "^8.21.0",
     "expo/@expo/cli/ws": "^8.21.0",
-    "@babel/core": "7.28.5",
+    "@babel/core": "8.0.7",
     "@babel/parser": "7.28.5"
   },
   "scripts": {
@@ -106,17 +106,17 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
-    "@babel/core": "7.28.5",
+    "@babel/core": "8.0.7",
     "@types/react": "~19.1.0",
     "@types/react-native-vector-icons": "^6.4.18",
-    "babel-preset-expo": "~54.0.10",
+    "babel-preset-expo": "~58.0.19",
     "cross-env": "^10.1.0",
-    "eslint": "^9.25.0",
-    "eslint-config-expo": "~10.0.0",
-    "react-refresh": "^0.17.0",
-    "sharp": "^0.35.2",
-    "typescript": "~5.9.2",
-    "vitest": "^2"
+    "eslint": "^10.13.0",
+    "eslint-config-expo": "~58.0.4",
+    "react-refresh": "^0.19.0",
+    "sharp": "^0.35.5",
+    "typescript": "~7.0.2",
+    "vitest": "^5"
   },
   "private": true
 }
