@@ -25,37 +25,32 @@ const ss = StyleSheet.create({
 
 const useStyles = makeStyles((theme) => ({
   btnBase: {
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  // Size variants
-  btnSm:  { minHeight: 44, paddingHorizontal: 14, paddingVertical: 10 },
-  btnMd:  { minHeight: 48, paddingHorizontal: 18, paddingVertical: 12 },
-  btnLg:  { minHeight: 54, paddingHorizontal: 22, paddingVertical: 14 },
+  // Size variants - calibrated for modern mobile touch targets without bloating
+  btnSm:  { minHeight: 34, paddingHorizontal: 14, paddingVertical: 7 },
+  btnMd:  { minHeight: 42, paddingHorizontal: 18, paddingVertical: 10 },
+  btnLg:  { minHeight: 48, paddingHorizontal: 22, paddingVertical: 12 },
   // Color variants
   btnPrimary:   { backgroundColor: theme.colors.primary },
   btnSecondary: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
   btnOutline:   { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.primary },
   btnGhost:     { backgroundColor: 'transparent' },
   // Pill-shaped gradient CTA — used for the app's premium/hero calls to action
-  // rather than the flatter default `primary`, which stays as the workhorse
-  // button everywhere else so this doesn't ripple into every screen unasked.
   btnGradient: {
-    borderRadius: 999,
+    borderRadius: theme.radius.pill,
   },
-  // Shadow lives on a separate outer wrapper (see render below) — combined
-  // with the button's own overflow:hidden (needed to clip the gradient fill
-  // into a pill) it would silently disappear on iOS.
   btnGradientShadowWrap: {
-    borderRadius: 999,
+    borderRadius: theme.radius.pill,
     shadowColor: theme.colors.primary,
-    shadowOpacity: 0.34,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
   // States
   btnDisabled:  { opacity: 0.52 },
@@ -66,9 +61,9 @@ const useStyles = makeStyles((theme) => ({
     textAlign: 'center', flexShrink: 1,
     letterSpacing: 0.2, fontWeight: '600',
   },
-  btnTextSm:  { fontSize: 12, lineHeight: 16.8 },
-  btnTextMd:  { fontSize: 13, lineHeight: 18.2 },
-  btnTextLg:  { fontSize: 14.5, lineHeight: 20.3 },
+  btnTextSm:  { fontSize: 11.5, lineHeight: 16 },
+  btnTextMd:  { fontSize: 13, lineHeight: 18 },
+  btnTextLg:  { fontSize: 14, lineHeight: 20 },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   contentTransition: { alignItems: 'center', justifyContent: 'center', maxWidth: '100%' },
 }));

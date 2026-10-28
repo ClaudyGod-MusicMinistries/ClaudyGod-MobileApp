@@ -32,41 +32,67 @@ export function ContentList({ title, items, onPressItem, onMorePress }: {
     <FadeIn delay={120}>
       <View>
         {title ? <CustomText variant="title" style={styles.listTitle}>{title}</CustomText> : null}
-        <View style={useGrid ? { flexDirection: 'row', flexWrap: 'wrap', gap: 10 } : { gap: 0 }}>
-          {items.map((item, index) => (
-            <TVTouchable
-              key={`${title ?? 'content'}-${item.id}`}
-              onPress={() => onPressItem(item)}
-              showFocusBorder={false}
-              style={useGrid ? { width: `${Math.floor(100 / numCols) - 1}%` } : undefined}
-            >
-              <View style={{
-                flexDirection: 'row', alignItems: 'center', gap: 12,
-                paddingVertical: useGrid ? 10 : 9,
-                borderTopWidth: useGrid ? 0 : (index === 0 ? 0 : 1),
-                borderTopColor: theme.colors.border,
-                borderRadius: useGrid ? theme.radius.md : 0,
-                backgroundColor: useGrid ? theme.colors.subtleFill : 'transparent',
-                paddingHorizontal: useGrid ? 10 : 0,
-              }}>
-                <View style={[styles.listItemThumb, { width: useGrid ? 100 : 120, height: useGrid ? 58 : 68 }]}>
-                  <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={styles.listItemImg} />
-                  {isValidDuration(item.duration) ? (
-                    <View style={styles.listDuration}>
-                      <CustomText style={styles.listDurationText}>{item.duration}</CustomText>
-                    </View>
+        <View style={useGrid ? { flexDirection: 'row', flexWrap: 'wrap', gap: 10 } : { gap: 6 }}>
+          {items.map((item, index) => {
+            const isAudio = item.type === 'audio';
+            const thumbW = useGrid ? (isAudio ? 56 : 96) : (isAudio ? 54 : 86);
+            const thumbH = useGrid ? 56 : (isAudio ? 54 : 48);
+
+            return (
+              <TVTouchable
+                key={`${title ?? 'content'}-${item.id}`}
+                onPress={() => onPressItem(item)}
+                showFocusBorder={false}
+                style={useGrid ? { width: `${Math.floor(100 / numCols) - 1}%` } : undefined}
+              >
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  paddingVertical: 8,
+                  paddingHorizontal: 10,
+                  borderRadius: 12,
+                  backgroundColor: theme.colors.surface,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                }}>
+                  <View style={[styles.listItemThumb, { width: thumbW, height: thumbH, borderRadius: 8 }]}>
+                    <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={styles.listItemImg} />
+                    {isValidDuration(item.duration) ? (
+                      <View style={[styles.listDuration, { backgroundColor: 'rgba(0,0,0,0.72)', borderRadius: 4 }]}>
+                        <CustomText style={styles.listDurationText}>{item.duration}</CustomText>
+                      </View>
+                    ) : null}
+                  </View>
+                  <View style={common.flex1}>
+                    <CustomText variant="label" style={[styles.listItemTitle, { fontSize: 13, lineHeight: 18 }]} numberOfLines={2}>
+                      {cleanFeedText(item.title)}
+                    </CustomText>
+                    <CustomText variant="caption" style={[styles.listItemSubtitle, { fontSize: 11, marginTop: 2 }]} numberOfLines={1}>
+                      {cleanFeedText(item.subtitle)}
+                    </CustomText>
+                  </View>
+                  <View style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: theme.colors.primarySurface,
+                    borderWidth: 1,
+                    borderColor: theme.colors.primaryBorder,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <MaterialIcons name="play-arrow" size={17} color={theme.colors.primary} />
+                  </View>
+                  {onMorePress ? (
+                    <TVTouchable onPress={() => onMorePress(item)} showFocusBorder={false} style={{ padding: 4 }}>
+                      <MaterialIcons name="more-vert" size={18} color={theme.colors.textMuted} />
+                    </TVTouchable>
                   ) : null}
                 </View>
-                <View style={common.flex1}>
-                  <CustomText variant="label" style={styles.listItemTitle} numberOfLines={2}>{cleanFeedText(item.title)}</CustomText>
-                  <CustomText variant="caption" style={styles.listItemSubtitle} numberOfLines={1}>{cleanFeedText(item.subtitle)}</CustomText>
-                </View>
-                {onMorePress
-                  ? <TVTouchable onPress={() => onMorePress(item)} showFocusBorder={false}><MaterialIcons name="more-vert" size={18} color={theme.colors.textMuted} /></TVTouchable>
-                  : <MaterialIcons name="chevron-right" size={18} color={theme.colors.textMuted} />}
-              </View>
-            </TVTouchable>
-          ))}
+              </TVTouchable>
+            );
+          })}
         </View>
       </View>
     </FadeIn>

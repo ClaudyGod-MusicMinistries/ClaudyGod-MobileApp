@@ -39,10 +39,57 @@ const useStyles = makeStyles((theme) => ({
   errorTitle: { color: theme.colors.text },
   errorBody: { color: theme.colors.textSecondary },
   outerPad: { gap: theme.spacing.lg, paddingTop: theme.layout.sectionGap },
-  paginationShell: { gap: theme.spacing.sm, paddingTop: theme.spacing.sm },
-  paginationMeta: { color: theme.colors.textSecondary, textAlign: 'center' },
-  paginationRow: { flexDirection: 'row', gap: theme.spacing.sm },
-  paginationButton: { flex: 1 },
+  paginationShell: {
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.lg,
+    alignItems: 'center',
+  },
+  paginationCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 4,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    ...theme.shadows.sm,
+  },
+  pageNavBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.subtleFill,
+  },
+  pageNavBtnPrimary: {
+    backgroundColor: theme.colors.primary,
+  },
+  pageNavBtnDisabled: {
+    opacity: 0.35,
+  },
+  pageNavText: {
+    color: theme.colors.text,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  pageNavTextPrimary: {
+    color: theme.colors.onPrimary,
+  },
+  pageNavTextDisabled: {
+    color: theme.colors.textMuted,
+  },
+  pageIndicatorPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  pageIndicatorText: {
+    color: theme.colors.textSecondary,
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
   scrollFill: { flex: 1, backgroundColor: 'transparent' },
   scrollContent: { paddingBottom: theme.layout.tabBarContentPadding },
 }));
@@ -178,32 +225,34 @@ export default function SectionDetailScreen() {
 
             {detail && !error && detail.total > detail.limit ? (
               <View style={styles.paginationShell}>
-                <CustomText variant="caption" style={styles.paginationMeta}>
-                  Page {detail.page} of {Math.ceil(detail.total / detail.limit)} · {detail.total} total items
-                </CustomText>
-                <View style={styles.paginationRow}>
-                <AppButton
-                  title="Previous"
-                  variant="secondary"
-                  size="lg"
-                  disabled={loading || detail.page <= 1}
-                  loading={pendingPage === detail.page - 1}
-                  loadingLabel="Loading"
-                  style={styles.paginationButton}
-                  leftIcon={<MaterialIcons name="chevron-left" size={18} color={theme.colors.text} />}
-                  onPress={() => void load(detail.page - 1)}
-                />
-                <AppButton
-                  title="Next"
-                  variant="primary"
-                  size="lg"
-                  disabled={loading || !detail.hasMore}
-                  loading={pendingPage === detail.page + 1}
-                  loadingLabel="Loading"
-                  style={styles.paginationButton}
-                  rightIcon={<MaterialIcons name="chevron-right" size={18} color={theme.colors.onPrimary} />}
-                  onPress={() => void load(detail.page + 1)}
-                />
+                <View style={styles.paginationCapsule}>
+                  <TVTouchable
+                    onPress={() => void load(detail.page - 1)}
+                    disabled={loading || detail.page <= 1}
+                    showFocusBorder={false}
+                    style={[styles.pageNavBtn, (loading || detail.page <= 1) && styles.pageNavBtnDisabled]}
+                    accessibilityLabel="Previous page"
+                  >
+                    <MaterialIcons name="chevron-left" size={18} color={detail.page <= 1 ? theme.colors.textMuted : theme.colors.text} />
+                    <CustomText style={[styles.pageNavText, detail.page <= 1 && styles.pageNavTextDisabled]}>Previous</CustomText>
+                  </TVTouchable>
+
+                  <View style={styles.pageIndicatorPill}>
+                    <CustomText variant="caption" style={styles.pageIndicatorText}>
+                      Page {detail.page} of {Math.ceil(detail.total / detail.limit)} · {detail.total} total items
+                    </CustomText>
+                  </View>
+
+                  <TVTouchable
+                    onPress={() => void load(detail.page + 1)}
+                    disabled={loading || !detail.hasMore}
+                    showFocusBorder={false}
+                    style={[styles.pageNavBtn, styles.pageNavBtnPrimary, (loading || !detail.hasMore) && styles.pageNavBtnDisabled]}
+                    accessibilityLabel="Next page"
+                  >
+                    <CustomText style={[styles.pageNavText, styles.pageNavTextPrimary, !detail.hasMore && styles.pageNavTextDisabled]}>Next</CustomText>
+                    <MaterialIcons name="chevron-right" size={18} color={!detail.hasMore ? theme.colors.textMuted : theme.colors.onPrimary} />
+                  </TVTouchable>
                 </View>
               </View>
             ) : null}
