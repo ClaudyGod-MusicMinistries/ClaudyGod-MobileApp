@@ -570,23 +570,7 @@
           <AppButton variant="secondary" size="sm" @click="addTeamMember">+ Add team member</AppButton>
         </div>
 
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <h3 class="text-sm font-bold text-ink">Social links</h3>
-            <AppButton variant="secondary" size="xs" @click="addSocialLink">+ Add</AppButton>
-          </div>
-          <AppCard v-for="(socialLink, idx) in config.about.social" :key="idx" class="p-4">
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <AppInput v-model="socialLink.icon" label="Icon" placeholder="public" />
-                <AppInput v-model="socialLink.label" label="Label" placeholder="Website" />
-                <AppInput v-model="socialLink.url" label="Link URL" placeholder="https://claudygod.org" />
-              </div>
-              <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeSocialLink(idx)">Remove</AppButton>
-            </div>
-          </AppCard>
-          <AppButton variant="secondary" size="sm" @click="addSocialLink">+ Add social link</AppButton>
-        </div>
+        <SocialLinksEditor :links="config.about.social" />
       </div>
 
       <!-- Donate -->
@@ -827,7 +811,6 @@ import {
   createHeroStat,
   createFeatureChip,
   createTeamMember,
-  createSocialLink,
   createCurrencyOption,
   createDonateMethod,
   createDonatePlan,
@@ -844,6 +827,7 @@ import AppSpinner from '@/components/ui/AppSpinner.vue';
 import AppEmptyState from '@/components/ui/AppEmptyState.vue';
 import MobilePreviewPanel from '@/components/shared/MobilePreviewPanel.vue';
 import PageHeader from '@/components/shared/PageHeader.vue';
+import SocialLinksEditor from '@/components/shared/SocialLinksEditor.vue';
 
 const route = useRoute();
 const store = useConfigStore();
@@ -1195,14 +1179,6 @@ function addTeamMember(): void {
 
 function removeTeamMember(idx: number): void {
   config.value?.about.team.splice(idx, 1);
-}
-
-function addSocialLink(): void {
-  config.value.about.social.push(createSocialLink());
-}
-
-function removeSocialLink(idx: number): void {
-  config.value.about.social.splice(idx, 1);
 }
 
 function ensureCurrencyOptions(): AppConfig['donate']['currencyOptions'] {
