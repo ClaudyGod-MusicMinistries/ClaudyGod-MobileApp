@@ -36,8 +36,9 @@ docker run --detach --rm \
 # Wait for PostgreSQL to be ready
 echo "⏳ Waiting for PostgreSQL to be ready..."
 READY=0
-for _attempt in $(seq 1 30); do
-  if docker exec "$CONTAINER_NAME" pg_isready -U postgres >/dev/null 2>&1; then
+for _attempt in $(seq 1 45); do
+  if docker exec "$CONTAINER_NAME" pg_isready -U postgres -h 127.0.0.1 >/dev/null 2>&1 && \
+     docker exec "$CONTAINER_NAME" psql -U postgres -d postgres -c "SELECT 1" >/dev/null 2>&1; then
     READY=1
     echo "✅ PostgreSQL is ready"
     break
