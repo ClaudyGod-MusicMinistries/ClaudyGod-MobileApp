@@ -46,7 +46,7 @@ const TABS: { id: LibTab; label: string; icon: React.ComponentProps<typeof Mater
 
 const useStyles = makeStyles((theme) => ({
   overviewCard: {
-    padding: theme.spacing.lg, gap: theme.spacing.lg,
+    padding: theme.spacing.md, gap: theme.spacing.md,
     borderColor: theme.colors.primaryBorder,
     ...theme.shadows.md,
   },
@@ -313,7 +313,7 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
   );
 }
 
-function LibraryOverview({ counts, loaded, children }: { counts: Record<LibTab, number>; loaded: boolean; children: React.ReactNode }) {
+function LibraryOverview({ counts, loaded, children }: { counts: Record<LibTab, number>; loaded: boolean; children?: React.ReactNode }) {
   const styles = useStyles();
   return (
     <SurfaceCard tone="strong" style={styles.overviewCard}>
@@ -614,74 +614,74 @@ export default function LibraryScreen() {
         refreshing={loading || !loaded}
         onRefresh={() => Promise.all([refresh(), refreshLibrary(), refreshDownloads()]).then(() => undefined)}
       >
-        <LibraryOverview counts={counts} loaded={loaded}>
-          <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
+        <LibraryOverview counts={counts} loaded={loaded} />
 
-          {/* In-Library Search, Category Filter Chips & Sort Controls */}
-          <View style={styles.libraryFilterRow}>
-            <View style={styles.librarySearchBox}>
-              <MaterialIcons name="search" size={16} color={theme.colors.textSecondary} />
-              <TextInput
-                value={filterQuery}
-                onChangeText={setFilterQuery}
-                placeholder="Filter saved, history & downloads..."
-                placeholderTextColor={theme.colors.textMuted}
-                style={styles.librarySearchInput}
-              />
-              {filterQuery ? (
-                <TVTouchable onPress={() => setFilterQuery('')} showFocusBorder={false}>
-                  <MaterialIcons name="close" size={16} color={theme.colors.textSecondary} />
-                </TVTouchable>
-              ) : null}
-            </View>
+        <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
 
-            <View style={styles.filterPillRow}>
-              {(['all', 'audio', 'video', 'playlist'] as const).map((type) => {
-                const active = selectedType === type;
-                const label = type === 'all' ? 'All' : type === 'audio' ? 'Music' : type === 'video' ? 'Videos' : 'Playlists';
-                return (
-                  <TVTouchable
-                    key={type}
-                    onPress={() => setSelectedType(type)}
-                    showFocusBorder={false}
-                    style={[styles.filterPill, active && styles.filterPillActive]}
-                  >
-                    <CustomText style={[styles.filterPillText, active && styles.filterPillTextActive]}>
-                      {label}
-                    </CustomText>
-                  </TVTouchable>
-                );
-              })}
-
-              <TVTouchable
-                onPress={() => setSortBy((prev) => (prev === 'recent' ? 'az' : 'recent'))}
-                showFocusBorder={false}
-                style={styles.sortToggleBtn}
-              >
-                <MaterialIcons name={sortBy === 'az' ? 'sort-by-alpha' : 'schedule'} size={14} color={theme.colors.primary} />
-                <CustomText style={styles.sortToggleText}>
-                  {sortBy === 'az' ? 'A-Z' : 'Recent'}
-                </CustomText>
+        {/* In-Library Search, Category Filter Chips & Sort Controls */}
+        <View style={styles.libraryFilterRow}>
+          <View style={styles.librarySearchBox}>
+            <MaterialIcons name="search" size={16} color={theme.colors.textSecondary} />
+            <TextInput
+              value={filterQuery}
+              onChangeText={setFilterQuery}
+              placeholder="Filter saved, history & downloads..."
+              placeholderTextColor={theme.colors.textMuted}
+              style={styles.librarySearchInput}
+            />
+            {filterQuery ? (
+              <TVTouchable onPress={() => setFilterQuery('')} showFocusBorder={false}>
+                <MaterialIcons name="close" size={16} color={theme.colors.textSecondary} />
               </TVTouchable>
-            </View>
-
-            {!isAuthenticated ? (
-              <View style={styles.guestBanner}>
-                <View style={styles.guestBannerTextWrap}>
-                  <CustomText style={styles.guestBannerTitle}>Guest Mode</CustomText>
-                  <CustomText style={styles.guestBannerSubtitle}>Sign in to sync your library across devices</CustomText>
-                </View>
-                <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} showFocusBorder={false} style={styles.guestBannerBtn}>
-                  <CustomText style={styles.guestBannerBtnText}>Sign In</CustomText>
-                </TVTouchable>
-              </View>
             ) : null}
           </View>
-        </LibraryOverview>
+
+          <View style={styles.filterPillRow}>
+            {(['all', 'audio', 'video', 'playlist'] as const).map((type) => {
+              const active = selectedType === type;
+              const label = type === 'all' ? 'All' : type === 'audio' ? 'Music' : type === 'video' ? 'Videos' : 'Playlists';
+              return (
+                <TVTouchable
+                  key={type}
+                  onPress={() => setSelectedType(type)}
+                  showFocusBorder={false}
+                  style={[styles.filterPill, active && styles.filterPillActive]}
+                >
+                  <CustomText style={[styles.filterPillText, active && styles.filterPillTextActive]}>
+                    {label}
+                  </CustomText>
+                </TVTouchable>
+              );
+            })}
+
+            <TVTouchable
+              onPress={() => setSortBy((prev) => (prev === 'recent' ? 'az' : 'recent'))}
+              showFocusBorder={false}
+              style={styles.sortToggleBtn}
+            >
+              <MaterialIcons name={sortBy === 'az' ? 'sort-by-alpha' : 'schedule'} size={14} color={theme.colors.primary} />
+              <CustomText style={styles.sortToggleText}>
+                {sortBy === 'az' ? 'A-Z' : 'Recent'}
+              </CustomText>
+            </TVTouchable>
+          </View>
+
+          {!isAuthenticated ? (
+            <View style={styles.guestBanner}>
+              <View style={styles.guestBannerTextWrap}>
+                <CustomText style={styles.guestBannerTitle}>Guest Mode</CustomText>
+                <CustomText style={styles.guestBannerSubtitle}>Sign in to sync your library across devices</CustomText>
+              </View>
+              <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} showFocusBorder={false} style={styles.guestBannerBtn}>
+                <CustomText style={styles.guestBannerBtnText}>Sign In</CustomText>
+              </TVTouchable>
+            </View>
+          ) : null}
+        </View>
 
         {error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
         {syncError ? <ErrorState message={syncError} onRetry={() => void refreshLibrary()} /> : null}
-        {downloadSyncError ? <ErrorState message={downloadSyncError} onRetry={() => void refreshDownloads()} /> : null}
+        {activeTab === 'downloads' && downloadSyncError ? <ErrorState message={downloadSyncError} onRetry={() => void refreshDownloads()} /> : null}
 
         {activeTab === 'saved' ? (
           <>

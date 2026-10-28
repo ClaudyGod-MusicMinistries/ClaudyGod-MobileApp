@@ -202,17 +202,23 @@ export default function PlaySection() {
 
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
   const allQueue = useMemo(
-    () => dedupeFeedItems([...(routeItem ? [routeItem] : []), ...feed.music, ...feed.mostPlayed, ...feed.recommendations, ...feed.playlists, ...feed.recent])
-      .filter((item) => !shouldOpenVideoScreen(item)),
+    () => dedupeFeedItems([...(routeItem ? [routeItem] : []), ...feed.music, ...feed.mostPlayed, ...feed.recommendations, ...feed.playlists, ...feed.recent]),
     [feed, routeItem],
   );
 
   const filteredQueue = useMemo(() => {
-    if (filter === 'all') return allQueue;
-    if (filter === 'songs') return allQueue.filter((item) => item.type === 'audio');
-    if (filter === 'messages') return allQueue.filter((item) => item.subtitle?.toLowerCase().includes('message') || item.description?.toLowerCase().includes('message'));
-    if (filter === 'playlists') return allQueue.filter((item) => item.type === 'playlist');
-    return allQueue;
+    let pool = allQueue;
+    if (filter === 'songs') {
+      pool = allQueue.filter((item) => item.type === 'audio' || (!item.isLive && item.type !== 'playlist'));
+    } else if (filter === 'messages') {
+      pool = allQueue.filter((item) => {
+        const text = [item.title, item.subtitle, item.description].join(' ').toLowerCase();
+        return text.includes('message') || text.includes('sermon') || text.includes('truth') || text.includes('teach') || text.includes('word');
+      });
+    } else if (filter === 'playlists') {
+      pool = allQueue.filter((item) => item.type === 'playlist');
+    }
+    return pool.length > 0 ? pool : allQueue;
   }, [allQueue, filter]);
 
   // Map every playable feed card to a PlaybackItem once; the playback store owns
@@ -220,6 +226,7 @@ export default function PlaySection() {
   const playbackByFeedId = useMemo(() => {
     const map = new Map<string, PlaybackItem>();
     for (const card of allQueue) {
+      if (shouldOpenVideoScreen(card)) continue;
       const item = feedItemToPlaybackItem(card);
       if (item && item.source.kind !== 'youtube') map.set(card.id, item);
     }
@@ -227,8 +234,8 @@ export default function PlaySection() {
   }, [allQueue]);
   const feedById = useMemo(() => new Map(allQueue.map((card) => [card.id, card])), [allQueue]);
   const firstPlayable = useMemo(
-    () => filteredQueue.find((card) => playbackByFeedId.has(card.id)) ?? null,
-    [filteredQueue, playbackByFeedId],
+    () => filteredQueue.find((card) => playbackByFeedId.has(card.id)) ?? filteredQueue[0] ?? feed.music[0] ?? feed.recent[0] ?? null,
+    [filteredQueue, playbackByFeedId, feed.music, feed.recent],
   );
 
   const playItem = useCallback(async (item: FeedCardItem, source: string) => {
@@ -334,10 +341,10 @@ export default function PlaySection() {
       ) : (
         <PremiumHero
           item={firstPlayable}
-          title={firstPlayable?.title ?? 'Choose something to play'}
-          subtitle={firstPlayable?.description || 'Select a song, message, or playlist to begin listening.'}
+          title={firstPlayable?.title ?? 'Start your worship stream'}
+          subtitle={firstPlayable?.subtitle || firstPlayable?.description || 'Select a song, message, or playlist to begin listening.'}
           emptyIcon="library-music"
-          primaryLabel={firstPlayable ? 'Play' : 'Browse music'}
+          primaryLabel={firstPlayable ? (shouldOpenVideoScreen(firstPlayable) ? 'Watch & Listen' : 'Play Worship') : 'Browse music'}
           primaryIcon={firstPlayable ? 'play-arrow' : 'queue-music'}
           onPrimary={() => (firstPlayable ? void playItem(firstPlayable, 'music_hero') : undefined)}
         />
@@ -420,6 +427,42 @@ export default function PlaySection() {
         </View>
       ) : null}
 
+      {/* ── Worship Songs & Ministration ─────────────────────────────────── */}
+      {feed.music.length > 0 ? (
+        <View style={styles.sectionRow}>
+          <SectionLabel
+            title="Worship & Praise"
+            accent="Featured"
+            actionLabel={feed.music.length > 6 ? 'See all' : undefined}
+            onAction={feed.music.length > 6 ? () => router.push(APP_ROUTES.tabs.search) : undefined}
+          />
+          <ContentRail
+            title=""
+            items={feed.music}
+            loading={loading}
+            onPressItem={(item) => void openItem(item, 'music_worship_rail')}
+            cardVariant="portrait"
+          />
+        </View>
+      ) : null}
+
+      {/* ── Curated Playlists ────────────────────────────────────────────── */}
+      {feed.playlists.length > 0 ? (
+        <View style={styles.sectionRow}>
+          <SectionLabel
+            title="Curated Playlists"
+            accent="Collections"
+          />
+          <ContentRail
+            title=""
+            items={feed.playlists}
+            loading={loading}
+            onPressItem={(item) => void openItem(item, 'music_playlists_rail')}
+            cardVariant="landscape"
+          />
+        </View>
+      ) : null}
+
       {/* ── Most played trending ─────────────────────────────────────────── */}
       {feed.mostPlayed.length > 0 ? (
         <>
@@ -438,7 +481,7 @@ export default function PlaySection() {
         </>
       ) : null}
 
-      {!loading && !allQueue.length && !hasSectionItems ? (
+      {!loading && !allQueue.length && !hasSectionItems && !feed.music.length ? (
         <EmptyState
           title="No music right now"
           message="Try Videos, Live, or Search for something to play."

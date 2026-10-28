@@ -44,7 +44,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<DownloadsContextValue>(() => ({
     downloads: {},
-    syncError: WEB_DOWNLOAD_MESSAGE,
+    syncError: null,
     refreshDownloads,
     downloadContent,
     deleteDownload,
