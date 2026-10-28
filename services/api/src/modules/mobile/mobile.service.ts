@@ -194,12 +194,15 @@ const buildRankScore = (item: MobileFeedItem, playCount: number): number => {
 
 const resolveContentImageUrl = (row: PublishedContentRow): string | null => {
   if (row.thumbnail_url && row.thumbnail_url.trim()) {
+    if (row.thumbnail_url.includes('i.ytimg.com') && row.thumbnail_url.includes('hqdefault.jpg')) {
+      return row.thumbnail_url.replace('hqdefault.jpg', 'maxresdefault.jpg');
+    }
     return row.thumbnail_url;
   }
   if (row.source_kind === 'youtube' && row.media_url) {
     const match = row.media_url.match(/(?:v=|\/embed\/|youtu\.be\/|\/v\/)([a-zA-Z0-9_-]{11})/);
     if (match?.[1]) {
-      return `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg`;
+      return `https://i.ytimg.com/vi/${match[1]}/maxresdefault.jpg`;
     }
   }
   return FALLBACK_IMAGE;
@@ -228,7 +231,7 @@ const toYouTubeFeedItem = (item: YouTubeVideoItem): MobileFeedItem => ({
   description: item.description || 'Latest release from the ministry YouTube feed.',
   subtitle: item.channelTitle || 'ClaudyGod',
   type: item.isLive ? 'live' : 'video',
-  imageUrl: item.thumbnailUrl || (item.youtubeVideoId ? `https://i.ytimg.com/vi/${item.youtubeVideoId}/hqdefault.jpg` : FALLBACK_IMAGE),
+  imageUrl: item.thumbnailUrl || (item.youtubeVideoId ? `https://i.ytimg.com/vi/${item.youtubeVideoId}/maxresdefault.jpg` : FALLBACK_IMAGE),
   mediaUrl: item.url,
   duration: item.duration || undefined,
   channelName: item.channelTitle || undefined,
