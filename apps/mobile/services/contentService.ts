@@ -63,6 +63,10 @@ interface MobileFeedApiItem {
   campaignId?: string;
   youtubeVideoId?: string;
   playAsAudio?: boolean;
+  releaseDate?: string;
+  isUpcoming?: boolean;
+  trailerUrl?: string;
+  metadata?: Record<string, unknown>;
 }
 
 interface EngagementFeedResponse {
@@ -88,6 +92,10 @@ export interface FeedCardItem {
   sponsorName?: string;
   placement?: string;
   campaignId?: string;
+  releaseDate?: string;
+  isUpcoming?: boolean;
+  trailerUrl?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface FeedLayoutSection {
@@ -185,6 +193,10 @@ function normalizeFeedItem(item: MobileFeedApiItem): FeedCardItem {
     sponsorName: item.sponsorName,
     placement: item.placement,
     campaignId: item.campaignId,
+    releaseDate: item.releaseDate,
+    isUpcoming: item.isUpcoming,
+    trailerUrl: item.trailerUrl,
+    metadata: item.metadata,
   };
 }
 

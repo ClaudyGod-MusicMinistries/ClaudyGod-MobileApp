@@ -268,34 +268,28 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
   settingsHub: {
     sections: [
       {
-        id: 'account-privacy',
-        title: 'Account & Security',
+        id: 'privacy-legal',
+        title: 'Privacy & Legal',
         items: [
           { id: 'privacy-controls', icon: 'security', label: 'Data & Privacy Controls', hint: 'Manage data, exports, recommendations & deletion', destination: 'settings.privacy' },
+          { id: 'privacy-policy', icon: 'policy', label: 'Privacy Policy', hint: 'How ClaudyGod handles and protects data', destination: 'settings.privacyPolicy' },
+          { id: 'terms', icon: 'gavel', label: 'Terms of Service', hint: 'Rules and terms for using ClaudyGod', destination: 'settings.terms' },
         ],
       },
       {
         id: 'ministry-giving',
-        title: 'Ministry & Giving',
+        title: 'Ministry & Support',
         items: [
           { id: 'donate', icon: 'volunteer-activism', label: 'Support & Giving', hint: 'Partner with ClaudyGod Ministries', destination: 'settings.donate' },
           { id: 'referral', icon: 'card-giftcard', label: 'Invite Friends', hint: 'Share worship with friends & family', destination: 'settings.referral' },
         ],
       },
       {
-        id: 'help-support',
-        title: 'Help & Support',
+        id: 'help-about',
+        title: 'Help & About',
         items: [
           { id: 'help', icon: 'help-outline', label: 'Help Center & FAQs', hint: 'FAQs, contact, and prayer support', destination: 'settings.help' },
-        ],
-      },
-      {
-        id: 'about-legal',
-        title: 'About & Legal',
-        items: [
-          { id: 'privacy-policy', icon: 'policy', label: 'Privacy Policy', hint: 'How ClaudyGod handles data', destination: 'settings.privacyPolicy' },
-          { id: 'terms', icon: 'gavel', label: 'Terms of Service', hint: 'Rules for using ClaudyGod', destination: 'settings.terms' },
-          { id: 'about', icon: 'info-outline', label: 'About ClaudyGod', hint: 'Product and ministry information', destination: 'settings.about' },
+          { id: 'about', icon: 'info-outline', label: 'About ClaudyGod', hint: 'Product, mission, and ministry information', destination: 'settings.about' },
           { id: 'rate', icon: 'star-outline', label: 'Rate the App', hint: 'Share product feedback', destination: 'settings.rate' },
         ],
       },

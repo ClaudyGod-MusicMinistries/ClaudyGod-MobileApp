@@ -26,7 +26,7 @@ interface DownloadsContextValue {
   getDownloadedUri: (_contentId: string) => string | null;
 }
 
-const WEB_DOWNLOAD_MESSAGE = 'Offline downloads are available in the iOS and Android apps.';
+const _WEB_DOWNLOAD_MESSAGE = 'Offline downloads are available in the iOS and Android apps.';
 const DownloadsContext = createContext<DownloadsContextValue | null>(null);
 
 /**

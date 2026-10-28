@@ -512,21 +512,92 @@ export default function SettingsScreen() {
     const configured = getSettingsHubSections(appConfig);
     const rawSections = configured.length ? configured : DEFAULT_QUICK_ACCESS_SECTIONS;
 
-    // Filter out misplaced items (e.g. Library inside Settings) and avoid duplicated destinations
+    // Collect and flatten all valid items
+    const allItems: { id: string; icon: string; label: string; hint: string; destination: AppRouteId }[] = [];
     const seenDestinations = new Set<string>();
-    return rawSections
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) => {
-          // The Library has its own dedicated primary bottom tab and should never appear in Settings
-          if (item.destination === 'tabs.library' || item.id === 'library') return false;
-          // Prevent duplicate navigation entries across multiple groups
-          if (seenDestinations.has(item.destination)) return false;
-          seenDestinations.add(item.destination);
-          return true;
-        }),
-      }))
-      .filter((section) => section.items.length > 0);
+
+    for (const section of rawSections) {
+      for (const item of section.items) {
+        // Exclude library, tabs, or profile duplicates
+        if (
+          item.destination === 'tabs.library' ||
+          item.id === 'library' ||
+          item.id === 'profile' ||
+          seenDestinations.has(item.destination)
+        ) {
+          continue;
+        }
+        seenDestinations.add(item.destination);
+        allItems.push(item);
+      }
+    }
+
+    // High-end Spotify & Apple Music grouping:
+    // 1. Privacy & Legal (Privacy controls, Privacy policy, Terms of service)
+    const privacyItems = allItems.filter(
+      (item) =>
+        item.destination.toLowerCase().includes('privacy') ||
+        item.destination.toLowerCase().includes('term') ||
+        item.id.toLowerCase().includes('privacy') ||
+        item.id.toLowerCase().includes('term'),
+    );
+
+    // 2. Ministry & Giving (Donate, referral/share)
+    const ministryItems = allItems.filter(
+      (item) =>
+        item.destination.toLowerCase().includes('donate') ||
+        item.destination.toLowerCase().includes('referral') ||
+        item.id.toLowerCase().includes('donate') ||
+        item.id.toLowerCase().includes('referral') ||
+        item.id.toLowerCase().includes('give'),
+    );
+
+    // 3. Help & About (Help center, About, Rate)
+    const helpAboutItems = allItems.filter(
+      (item) =>
+        !privacyItems.includes(item) &&
+        !ministryItems.includes(item),
+    );
+
+    const canonicalSections: {
+      id: string;
+      title: string;
+      subtitle: string;
+      icon: AppIconName;
+      items: typeof allItems;
+    }[] = [];
+
+    if (privacyItems.length > 0) {
+      canonicalSections.push({
+        id: 'privacy-legal',
+        title: 'Privacy & Legal',
+        subtitle: 'Data controls, permissions, and official policies',
+        icon: 'security',
+        items: privacyItems,
+      });
+    }
+
+    if (ministryItems.length > 0) {
+      canonicalSections.push({
+        id: 'ministry-support',
+        title: 'Ministry & Support',
+        subtitle: 'Partner with us, give, and share worship with friends',
+        icon: 'volunteer-activism',
+        items: ministryItems,
+      });
+    }
+
+    if (helpAboutItems.length > 0) {
+      canonicalSections.push({
+        id: 'help-about',
+        title: 'Help & About',
+        subtitle: 'FAQs, contact support, feedback, and ministry info',
+        icon: 'info-outline',
+        items: helpAboutItems,
+      });
+    }
+
+    return canonicalSections;
   }, [appConfig]);
 
   const [notifications,   setNotifications]   = useState(true);
@@ -819,31 +890,9 @@ export default function SettingsScreen() {
 
       {/* ─── Grouped Service Sections ─── */}
       {settingsHubSections.map((section) => {
-        const title = section.title?.trim()
-          ? section.title
-          : section.id.includes('privacy')
-          ? 'Data & Privacy'
-          : section.id.includes('giving') || section.id.includes('ministry') || section.id.includes('support')
-          ? 'Ministry & Giving'
-          : section.id.includes('help')
-          ? 'Help & Support'
-          : 'About & Legal';
-
-        const subtitle = section.id.includes('privacy')
-          ? 'Manage your personal data, exports, and account deletion'
-          : section.id.includes('giving') || section.id.includes('ministry') || section.id.includes('support')
-          ? 'Partner with us, support the ministry, and share worship'
-          : section.id.includes('help')
-          ? 'FAQs, contact channels, and community support'
-          : 'Official policies, terms, and ministry information';
-
-        const icon: AppIconName = section.id.includes('privacy')
-          ? 'security'
-          : section.id.includes('giving') || section.id.includes('ministry') || section.id.includes('support')
-          ? 'volunteer-activism'
-          : section.id.includes('help')
-          ? 'help-outline'
-          : 'info-outline';
+        const title = section.title;
+        const subtitle = section.subtitle;
+        const icon: AppIconName = section.icon;
 
         return (
           <View key={section.id} style={styles.sectionShell}>

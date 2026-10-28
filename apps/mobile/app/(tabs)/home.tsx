@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, View, useWindowDimensions, type ImageStyle } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -27,8 +27,8 @@ import {
   ContentRail,
   dedupeFeedItems,
   GreetingBanner,
-  isRedundantSubtitle,
   LiveNowBanner,
+  LatestReleaseCard,
   PremiumHero,
   PremiumPage,
   SectionLabel,
@@ -207,71 +207,6 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
   );
 }
 
-// ─── NewContentBanner ─────────────────────────────────────────────────────────
-
-function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () => void }) {
-  const styles = useStyles();
-  const theme  = useAppTheme();
-  const { width } = useWindowDimensions();
-  const compact = width < 430;
-  const artSize = compact ? 108 : 128;
-
-  return (
-    <TVTouchable onPress={onPress} showFocusBorder={false} pressScale={0.98}>
-      <View style={styles.bannerShadowWrap}>
-      <View style={styles.bannerCard}>
-        <View style={styles.bannerRow}>
-          <View style={{ flex: 1, padding: compact ? 16 : 20, gap: 7, justifyContent: 'center' }}>
-            <View style={styles.bannerBadge}>
-              <LinearGradient
-                colors={[theme.colors.primary, theme.colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFillObject}
-              />
-              <CustomText style={styles.bannerBadgeText}>NEW</CustomText>
-            </View>
-            <CustomText
-              style={[styles.bannerTitleBase, { fontSize: compact ? 16 : 18, lineHeight: compact ? 22 : 25 }]}
-              numberOfLines={2}
-            >
-              {item.title}
-            </CustomText>
-            {item.subtitle && !isRedundantSubtitle(item.title, item.subtitle) ? (
-              <CustomText style={styles.bannerSub} numberOfLines={1}>{item.subtitle}</CustomText>
-            ) : null}
-            <View style={styles.bannerPlayRow}>
-              <View style={styles.bannerPlayBtn}>
-                <LinearGradient
-                  colors={[theme.colors.primary, theme.colors.secondary]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFillObject}
-                />
-                <MaterialIcons name="play-arrow" size={15} color={theme.colors.onPrimary} />
-                <CustomText style={styles.bannerPlayText}>
-                  {item.type === 'video' ? 'Watch' : 'Play'}
-                </CustomText>
-              </View>
-              {item.duration ? (
-                <CustomText variant="caption" style={styles.bannerDuration}>{item.duration}</CustomText>
-              ) : null}
-            </View>
-          </View>
-          <View style={{ width: artSize, height: artSize, alignSelf: 'center', flexShrink: 0, borderRadius: 18, overflow: 'hidden', margin: 10 }}>
-            <AppImage
-              uri={item.imageUrl}
-              resizeMode="cover"
-              style={{ width: artSize, height: artSize } as ImageStyle}
-            />
-          </View>
-        </View>
-      </View>
-      </View>
-    </TVTouchable>
-  );
-}
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
@@ -310,18 +245,25 @@ export default function HomeScreen() {
   );
 
   const newRelease = useMemo(() => {
-    const candidates = [...feed.videos, ...feed.music]
+    // 1. Look for explicit upcoming premieres or tagged latest-releases first
+    const explicit = [...feed.recent, ...feed.music, ...feed.videos].find(
+      (item) => item.id !== featured?.id && (item.isUpcoming || item.appSections?.includes('latest-releases') || Boolean(item.trailerUrl)),
+    );
+    if (explicit) return explicit;
+
+    const candidates = [...feed.recent, ...feed.videos, ...feed.music]
       .filter((item) => item.id !== featured?.id)
       .sort((a, b) => {
-        const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
-        const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+        const aTime = a.releaseDate ? Date.parse(a.releaseDate) : (a.createdAt ? Date.parse(a.createdAt) : 0);
+        const bTime = b.releaseDate ? Date.parse(b.releaseDate) : (b.createdAt ? Date.parse(b.createdAt) : 0);
         return bTime - aTime;
       });
     const candidate = candidates[0] ?? null;
-    if (!candidate?.createdAt) return null;
-    const isActuallyRecent = Date.now() - Date.parse(candidate.createdAt) <= NEW_RELEASE_WINDOW_MS;
+    if (!candidate) return null;
+    const releaseTime = candidate.releaseDate ? Date.parse(candidate.releaseDate) : (candidate.createdAt ? Date.parse(candidate.createdAt) : 0);
+    const isActuallyRecent = releaseTime > 0 && Math.abs(Date.now() - releaseTime) <= NEW_RELEASE_WINDOW_MS;
     return isActuallyRecent ? candidate : null;
-  }, [feed.videos, feed.music, featured]);
+  }, [feed.recent, feed.videos, feed.music, featured]);
 
   // Fire-and-forget: this is analytics, not a precondition for navigation.
   // Awaiting it (a SecureStore read + network POST) used to make every card
@@ -379,6 +321,15 @@ export default function HomeScreen() {
         <LiveNowBanner item={liveSessions[0]} onPress={() => openItem(liveSessions[0]!, 'home_live_banner')} />
       ) : null}
 
+      {newRelease ? (
+        <FadeIn replayKey={contentReadyKey} delay={nextEntranceDelay()}>
+          <LatestReleaseCard
+            item={newRelease}
+            onPlay={(item) => openItem(item, 'home_latest_release')}
+          />
+        </FadeIn>
+      ) : null}
+
       {feed.continueListening.length > 0 ? (
         <FadeIn replayKey={contentReadyKey} delay={nextEntranceDelay()}>
           <ContinueRow items={continueItems} onPress={(item) => openItem(item, 'home_continue')} />
@@ -423,12 +374,6 @@ export default function HomeScreen() {
               cardVariant="portrait"
             />
           </View>
-        </FadeIn>
-      ) : null}
-
-      {newRelease ? (
-        <FadeIn replayKey={contentReadyKey} delay={nextEntranceDelay()}>
-          <NewContentBanner item={newRelease} onPress={() => openItem(newRelease, 'home_new_release')} />
         </FadeIn>
       ) : null}
 

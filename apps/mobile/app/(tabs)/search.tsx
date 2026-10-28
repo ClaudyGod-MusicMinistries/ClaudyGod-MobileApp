@@ -488,21 +488,11 @@ export default function Search() {
             <TVTouchable accessibilityLabel="Clear search" onPress={() => { setQuery(''); invalidateSearch(); }} showFocusBorder={false} style={styles.clearBtn}>
               <MaterialIcons name="close" size={18} color={theme.colors.textSecondary} />
             </TVTouchable>
+          ) : isSearching ? (
+            <View style={styles.clearBtn}>
+              <MaterialIcons name="hourglass-top" size={16} color={theme.colors.primary} />
+            </View>
           ) : null}
-          <TVTouchable
-            onPress={() => void runSearch()}
-            accessibilityLabel="Submit search"
-            showFocusBorder={false}
-            style={[
-              styles.searchSubmitBtn,
-              {
-                width: device.isTV ? 44 : 32, height: device.isTV ? 44 : 32,
-                borderRadius: device.isTV ? 22 : 16, opacity: isSearching ? 0.72 : 1,
-              },
-            ]}
-          >
-            <MaterialIcons name={isSearching ? 'hourglass-top' : 'arrow-forward'} size={device.isTV ? 20 : 16} color={theme.colors.textInverse} />
-          </TVTouchable>
         </Animated.View>
 
         {/* Category filter pills */}

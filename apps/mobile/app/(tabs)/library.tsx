@@ -680,7 +680,7 @@ export default function LibraryScreen() {
         </View>
 
         {error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
-        {syncError ? <ErrorState message={syncError} onRetry={() => void refreshLibrary()} /> : null}
+        {syncError && !syncError.includes('Offline downloads') ? <ErrorState message={syncError} onRetry={() => void refreshLibrary()} /> : null}
         {activeTab === 'downloads' && downloadSyncError ? (
           <SurfaceCard tone="subtle" style={{ padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <MaterialIcons name="info-outline" size={20} color={theme.colors.primary} />

@@ -23,6 +23,10 @@ export interface MobileFeedItem {
   sponsorName?: string;
   placement?: string;
   campaignId?: string;
+  releaseDate?: string;
+  isUpcoming?: boolean;
+  trailerUrl?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface MobileFeedRail {
