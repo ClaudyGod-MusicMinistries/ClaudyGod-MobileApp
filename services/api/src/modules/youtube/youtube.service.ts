@@ -11,21 +11,33 @@ const log = createLogger('youtube.service');
 // depend on i.ytimg.com — falls back to the source URL if the fetch/upload fails,
 // since a broken re-host shouldn't block an otherwise-valid import.
 async function rehostThumbnail(videoId: string, sourceUrl: string): Promise<string> {
-  if (!env.S3_ENABLED || !sourceUrl) {
-    return sourceUrl || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  if (!env.S3_ENABLED || (!sourceUrl && !videoId)) {
+    return sourceUrl || (videoId ? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg` : '');
   }
   const urlsToTry = [
-    sourceUrl,
     `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
+    `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+    `https://i.ytimg.com/vi/${videoId}/sddefault.jpg`,
+    `https://img.youtube.com/vi/${videoId}/sddefault.jpg`,
+    sourceUrl,
     `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
     `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-  ];
+  ].filter(Boolean);
   for (const url of urlsToTry) {
     try {
-      const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        },
+      });
       if (!response.ok) continue;
       const contentType = response.headers.get('content-type') || 'image/jpeg';
       const arrayBuffer = await response.arrayBuffer();
+      // Skip YouTube's ~1097 byte blank placeholder for missing maxres/sd
+      if (arrayBuffer.byteLength < 1500 && (url.includes('maxresdefault') || url.includes('sddefault'))) {
+        continue;
+      }
       if (arrayBuffer.byteLength < 500) continue;
       const key = `content/youtube-thumbnails/${videoId}.jpg`;
       await putObjectBuffer({
@@ -40,7 +52,7 @@ async function rehostThumbnail(videoId: string, sourceUrl: string): Promise<stri
     }
   }
   log.warn('Failed to rehost YouTube thumbnail, falling back to source URL', { videoId, sourceUrl });
-  return sourceUrl || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  return sourceUrl || `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 }
 
 // In-memory cache for hot thumbnails (max 300 entries, 1-hour TTL)
@@ -54,6 +66,9 @@ export async function getYouTubeThumbnailBuffer(videoId: string): Promise<{ buff
 
   const urlsToTry = [
     `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
+    `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+    `https://i.ytimg.com/vi/${videoId}/sddefault.jpg`,
+    `https://img.youtube.com/vi/${videoId}/sddefault.jpg`,
     `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
     `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
     `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`,
@@ -70,8 +85,8 @@ export async function getYouTubeThumbnailBuffer(videoId: string): Promise<{ buff
       if (!response.ok) continue;
       const contentType = response.headers.get('content-type') || 'image/jpeg';
       const arrayBuffer = await response.arrayBuffer();
-      // YouTube returns a ~1097 byte blank placeholder when maxres is absent
-      if (arrayBuffer.byteLength < 1500 && url.includes('maxresdefault')) {
+      // YouTube returns a ~1097 byte blank placeholder when maxres/sd is absent
+      if (arrayBuffer.byteLength < 1500 && (url.includes('maxresdefault') || url.includes('sddefault'))) {
         continue;
       }
       if (arrayBuffer.byteLength > 200) {
@@ -267,20 +282,21 @@ function pickThumbnail(
   },
   videoId?: string,
 ): string {
-  // Return the creator's exact high-res custom thumbnail when available:
-  // 1. maxres (1280x720) - 16:9 exact upload on YouTube
-  // 2. standard (640x480)
-  // 3. high (480x360)
-  // 4. medium (320x180)
-  // 5. default (120x90)
-  // 6. Direct CDN fallback using standard YouTube pattern: https://i.ytimg.com/vi/${videoId}/hqdefault.jpg
+  // Always prioritize max resolution HD:
+  // 1. YouTube API maxres (1280x720)
+  // 2. Direct maxresdefault URL (1280x720)
+  // 3. standard (640x480)
+  // 4. high (480x360)
+  // 5. medium (320x180)
+  // 6. default (120x90)
+  if (thumbnails?.maxres?.url) return thumbnails.maxres.url;
+  if (videoId) return `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
   return (
-    thumbnails?.maxres?.url ||
     thumbnails?.standard?.url ||
     thumbnails?.high?.url ||
     thumbnails?.medium?.url ||
     thumbnails?.default?.url ||
-    (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : 'https://i.ytimg.com/vi/default/hqdefault.jpg')
+    'https://i.ytimg.com/vi/default/hqdefault.jpg'
   );
 }
 

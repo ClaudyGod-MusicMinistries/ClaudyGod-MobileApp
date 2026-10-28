@@ -479,8 +479,11 @@ function onThumbnailError(video: YouTubeVideoItem, event: Event): void {
   const proxyUrl = `${API_URL}/v1/youtube/thumbnail/${video.youtubeVideoId}`;
   if (!target.src.includes(`/v1/youtube/thumbnail/${video.youtubeVideoId}`)) {
     target.src = proxyUrl;
+  } else if (!target.src.includes('sddefault.jpg') && !target.src.includes('hqdefault.jpg')) {
+    target.src = `https://i.ytimg.com/vi/${video.youtubeVideoId}/sddefault.jpg`;
+  } else if (!target.src.includes('hqdefault.jpg')) {
+    target.src = `https://i.ytimg.com/vi/${video.youtubeVideoId}/hqdefault.jpg`;
   } else {
-    // If the proxy itself cannot fetch from YouTube, use a clean brand asset fallback so the card NEVER breaks
     target.src = BRAND_LOGO_URL;
   }
 }

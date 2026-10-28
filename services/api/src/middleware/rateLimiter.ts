@@ -4,6 +4,7 @@ import type { Options as RateLimitOptions } from 'express-rate-limit';
 import { RedisStore, type RedisReply } from 'rate-limit-redis';
 import type { Request, Response, NextFunction } from 'express';
 import { resolveAuthenticatedUser } from '../modules/auth/authIdentity.service';
+import { getAuthTokenFromRequest } from '../modules/auth/authSessionCookie';
 import { hasMinRole } from '../modules/auth/auth.types';
 import { redis } from '../infra/redis';
 import { rateLimitRejectedTotal } from '../lib/metrics';
@@ -51,9 +52,13 @@ const passOnStoreError = true;
 // normally — only MODERATOR+ staff sessions are exempt.
 async function isStaffSession(req: Request): Promise<boolean> {
   const authorization = req.header('authorization');
-  if (!authorization?.startsWith('Bearer ')) return false;
+  const cookieToken = getAuthTokenFromRequest(req);
+  const token = authorization?.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length).trim()
+    : cookieToken?.trim() ?? '';
+  if (!token) return false;
   try {
-    const user = await resolveAuthenticatedUser(authorization.slice('Bearer '.length).trim());
+    const user = await resolveAuthenticatedUser(token);
     return hasMinRole(user.role, 'MODERATOR');
   } catch {
     return false;
@@ -63,7 +68,7 @@ async function isStaffSession(req: Request): Promise<boolean> {
 // General API rate limiter
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per windowMs
+  max: 2000, // 2000 requests per windowMs for unauthenticated consumers
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
@@ -71,7 +76,10 @@ export const apiLimiter = rateLimit({
   passOnStoreError,
   handler: rejectionHandler('api'),
   skip: async (req: Request) =>
-    process.env.NODE_ENV === 'development' || isStaffSession(req),
+    process.env.NODE_ENV === 'development' ||
+    req.path.includes('/youtube/thumbnail/') ||
+    req.path.startsWith('/health') ||
+    (await isStaffSession(req)),
 });
 
 // Strict rate limiter for auth attempts
