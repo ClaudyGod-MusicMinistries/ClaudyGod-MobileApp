@@ -1,4 +1,4 @@
-import type { AppConfig } from '@/api/types';
+import type { AppConfig, SocialLink } from '@/api/types';
 
 export const MOBILE_CONTENT_TYPE_OPTIONS = ['audio', 'video', 'playlist', 'announcement', 'live'] as const;
 export const MOBILE_SECTION_RAIL_MIN_ITEMS = 6;
@@ -126,7 +126,7 @@ export function createTeamMember(): Record<string, unknown> {
   return { name: 'New team member', role: 'Role', desc: 'Describe their role.' };
 }
 
-export function createSocialLink(): Record<string, unknown> {
+export function createSocialLink(): SocialLink {
   return { icon: 'public', label: 'New link', url: 'https://' };
 }
 

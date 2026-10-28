@@ -471,16 +471,21 @@
         </div>
 
         <div class="space-y-3">
-          <h3 class="text-sm font-bold text-ink">Social links</h3>
-          <div class="space-y-2">
-            <div v-for="(socialItem, sIdx) in config.about.social" :key="sIdx" class="grid grid-cols-1 sm:grid-cols-6 gap-2 sm:items-end">
-              <AppInput v-model="socialItem.icon" label="Icon" placeholder="public" />
-              <AppInput v-model="socialItem.label" label="Label" placeholder="Website" />
-              <AppInput v-model="socialItem.url" label="URL" class="sm:col-span-3" placeholder="https://claudygod.org" />
-              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeSocialLink(sIdx)">Remove</AppButton>
-            </div>
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-ink">Social links</h3>
+            <AppButton variant="secondary" size="xs" @click="addSocialLink">+ Add</AppButton>
           </div>
-          <AppButton variant="secondary" size="xs" @click="addSocialLink">+ Add link</AppButton>
+          <AppCard v-for="(social, idx) in config.about.social" :key="idx" class="p-4 space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <AppInput v-model="social.icon" label="Icon" placeholder="public" />
+                <AppInput v-model="social.label" label="Label" placeholder="Website" />
+              </div>
+              <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeSocialLink(idx)">Remove</AppButton>
+            </div>
+            <AppInput v-model="social.url" label="Website or profile URL" placeholder="https://claudygod.org" />
+          </AppCard>
+          <AppButton variant="secondary" size="sm" @click="addSocialLink">+ Add social link</AppButton>
         </div>
       </div>
 
@@ -1001,11 +1006,11 @@ function removeTeamMember(idx: number): void {
 }
 
 function addSocialLink(): void {
-  config.value?.about.social.push(createSocialLink() as unknown as AppConfig['about']['social'][number]);
+  config.value.about.social.push(createSocialLink());
 }
 
 function removeSocialLink(idx: number): void {
-  config.value?.about.social.splice(idx, 1);
+  config.value.about.social.splice(idx, 1);
 }
 
 function ensureCurrencyOptions(): AppConfig['donate']['currencyOptions'] {
