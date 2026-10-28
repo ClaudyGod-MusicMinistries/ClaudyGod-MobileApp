@@ -154,10 +154,39 @@ const useStyles = makeStyles((theme) => ({
 
 const ss = StyleSheet.create({
   // External pill (YouTube)
-  externalPill: {
+  topActionsRow: {
     position: 'absolute',
     top: 10,
     right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    zIndex: 10,
+  },
+  fullscreenPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: mediaTokens.overlay,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: mediaTokens.border,
+  },
+  fullscreenContainer: {
+    position: (Platform.OS === 'web' ? 'fixed' : 'absolute') as any,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 99999,
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
+    borderWidth: 0,
+  },
+  externalPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -325,9 +354,41 @@ function EmbedPlayer({
   const theme  = useAppTheme();
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<View>(null);
   const reduceMotion = useReducedMotion();
   const shimmerOpacity = useRef(new Animated.Value(1)).current;
   const shimmerAnim = useRef<Animated.CompositeAnimation | null>(null);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen?.();
+          setIsFullscreen(false);
+        } else {
+          const el = containerRef.current as any;
+          if (el?.requestFullscreen) {
+            await el.requestFullscreen();
+            setIsFullscreen(true);
+          } else {
+            setIsFullscreen((prev) => !prev);
+          }
+        }
+      } else {
+        setIsFullscreen((prev) => !prev);
+      }
+    } catch {
+      setIsFullscreen((prev) => !prev);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
 
   useEffect(() => {
     setLoaded(false);
@@ -351,13 +412,15 @@ function EmbedPlayer({
     Animated.timing(shimmerOpacity, { toValue: 0, duration: reduceMotion ? 0 : 280, useNativeDriver: USE_NATIVE_DRIVER }).start();
   };
 
+  const actualHeight = isFullscreen ? '100%' : height;
+
   return (
-    <View style={styles.container}>
-      <View style={{ height, backgroundColor: mediaTokens.canvas }}>
+    <View ref={containerRef} style={[styles.container, isFullscreen && ss.fullscreenContainer]}>
+      <View style={{ height: actualHeight, backgroundColor: mediaTokens.canvas }}>
         {!error ? (
           <WebView
             source={{ uri: embedUrl }}
-            style={{ width: '100%', height, backgroundColor: mediaTokens.canvas }}
+            style={{ width: '100%', height: actualHeight, backgroundColor: mediaTokens.canvas }}
             allowsFullscreenVideo
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
@@ -386,19 +449,29 @@ function EmbedPlayer({
           </View>
         ) : null}
 
-        {/* Open externally — top-right pill, appears after load */}
+        {/* Open externally and fullscreen actions — top-right pill */}
         {loaded ? (
-          <Pressable
-            onPress={() => void openExternalUrl(sourceUri)}
-            style={ss.externalPill}
-          >
-            <MaterialIcons name="open-in-new" size={12} color={mediaTokens.textMuted} />
-            <CustomText style={ss.externalPillText}>YouTube</CustomText>
-          </Pressable>
+          <View style={ss.topActionsRow}>
+            <Pressable
+              onPress={toggleFullscreen}
+              style={ss.fullscreenPill}
+              accessibilityLabel={isFullscreen ? 'Exit full screen' : 'Full screen'}
+            >
+              <MaterialIcons name={isFullscreen ? 'fullscreen-exit' : 'fullscreen'} size={14} color={mediaTokens.text} />
+              <CustomText style={ss.externalPillText}>{isFullscreen ? 'Exit' : 'Full screen'}</CustomText>
+            </Pressable>
+            <Pressable
+              onPress={() => void openExternalUrl(sourceUri)}
+              style={ss.externalPill}
+            >
+              <MaterialIcons name="open-in-new" size={12} color={mediaTokens.textMuted} />
+              <CustomText style={ss.externalPillText}>YouTube</CustomText>
+            </Pressable>
+          </View>
         ) : null}
       </View>
 
-      {title ? <TitleRow title={title} /> : null}
+      {title && !isFullscreen ? <TitleRow title={title} /> : null}
     </View>
   );
 }
@@ -428,7 +501,7 @@ function post(msg) { if (window.ReactNativeWebView) window.ReactNativeWebView.po
 function onYouTubeIframeAPIReady() {
   player = new YT.Player('player', {
     videoId: '${videoId}',
-    playerVars: { controls: 0, modestbranding: 1, rel: 0, iv_load_policy: 3, playsinline: 1, autoplay: 1, fs: 0 },
+    playerVars: { controls: 0, modestbranding: 1, rel: 0, iv_load_policy: 3, playsinline: 1, autoplay: 1, fs: 1 },
     events: {
       onReady: function() {
         post({ type: 'ready' });
@@ -473,6 +546,48 @@ function YouTubeIframePlayer({
   const [isBuffering, setIsBuffering] = useState(true);
   const [controlsShown, setControlsShown] = useState(true);
   const [error, setError] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<View>(null);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen?.();
+          setIsFullscreen(false);
+        } else {
+          const el = containerRef.current as any;
+          if (el?.requestFullscreen) {
+            await el.requestFullscreen();
+            setIsFullscreen(true);
+          } else {
+            setIsFullscreen((prev) => !prev);
+          }
+        }
+      } else {
+        webviewRef.current?.injectJavaScript(`
+          (function() {
+            var el = document.getElementById('player') || document.querySelector('iframe');
+            if (el) {
+              var req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+              if (req) { req.call(el); }
+            }
+          })();
+          true;
+        `);
+        setIsFullscreen((prev) => !prev);
+      }
+    } catch {
+      setIsFullscreen((prev) => !prev);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
 
   const controlsOpacity = useRef(new Animated.Value(1)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -580,19 +695,15 @@ function YouTubeIframePlayer({
     );
   }
 
+  const actualHeight = isFullscreen ? '100%' : height;
+
   return (
-    <View style={styles.container}>
-      <Pressable style={{ height }} onPress={bringUpControls}>
+    <View ref={containerRef} style={[styles.container, isFullscreen && ss.fullscreenContainer]}>
+      <Pressable style={{ height: actualHeight }} onPress={bringUpControls}>
         <WebView
           ref={webviewRef}
-          // A raw `source={{ html }}` with no baseUrl loads as an opaque/about:blank
-          // origin on Android. YouTube's IFrame Player API does its own origin
-          // checks internally and can silently error out of that origin — this is
-          // what actually produced the "Could not load video" fallback, confirmed
-          // by the same video's oEmbed endpoint (a real embeddability check)
-          // returning success. A real HTTPS origin we control fixes it.
           source={{ html, baseUrl: 'https://claudygod.org' }}
-          style={{ width: '100%', height, backgroundColor: mediaTokens.canvas }}
+          style={{ width: '100%', height: actualHeight, backgroundColor: mediaTokens.canvas }}
           allowsFullscreenVideo
           allowsInlineMediaPlayback
           mediaPlaybackRequiresUserAction={false}
@@ -658,6 +769,14 @@ function YouTubeIframePlayer({
               <CustomText style={ss.timeText}>{formatTime(currentTime)}</CustomText>
               <ProgressBar progress={progress} onSeek={seekToRatio} />
               <CustomText style={ss.timeText}>{formatTime(duration)}</CustomText>
+              <Pressable
+                onPress={toggleFullscreen}
+                style={ss.fsBtn}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                accessibilityLabel={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
+              >
+                <MaterialIcons name={isFullscreen ? 'fullscreen-exit' : 'fullscreen'} size={22} color={mediaTokens.text} />
+              </Pressable>
             </View>
 
             {/* Minimal attribution — required for IFrame API compliance */}
@@ -669,7 +788,7 @@ function YouTubeIframePlayer({
         ) : null}
       </Pressable>
 
-      {title ? <TitleRow title={title} /> : null}
+      {title && !isFullscreen ? <TitleRow title={title} /> : null}
     </View>
   );
 }
@@ -703,6 +822,47 @@ function NativeVideoPlayer({
   const [duration, setDuration] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
   const [controlsShown, setControlsShown] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const videoViewRef = useRef<any>(null);
+  const containerRef = useRef<View>(null);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (videoViewRef.current?.enterFullscreen) {
+        if (isFullscreen) {
+          await videoViewRef.current?.exitFullscreen?.();
+          setIsFullscreen(false);
+        } else {
+          await videoViewRef.current?.enterFullscreen?.();
+          setIsFullscreen(true);
+        }
+      } else if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen?.();
+          setIsFullscreen(false);
+        } else {
+          const el = containerRef.current as any;
+          if (el?.requestFullscreen) {
+            await el.requestFullscreen();
+            setIsFullscreen(true);
+          } else {
+            setIsFullscreen((prev) => !prev);
+          }
+        }
+      } else {
+        setIsFullscreen((prev) => !prev);
+      }
+    } catch {
+      setIsFullscreen((prev) => !prev);
+    }
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
 
   const controlsOpacity = useRef(new Animated.Value(1)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -788,13 +948,16 @@ function NativeVideoPlayer({
 
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
 
+  const actualHeight = isFullscreen ? '100%' : height;
+
   return (
-    <View style={styles.container}>
-      <Pressable style={{ height }} onPress={bringUpControls}>
+    <View ref={containerRef} style={[styles.container, isFullscreen && ss.fullscreenContainer]}>
+      <Pressable style={{ height: actualHeight }} onPress={bringUpControls}>
         {/* Video surface */}
         <VideoView
+          ref={videoViewRef}
           player={player}
-          style={{ width: '100%', height }}
+          style={{ width: '100%', height: actualHeight }}
           nativeControls={false}
           contentFit="contain"
           allowsFullscreen
@@ -881,23 +1044,19 @@ function NativeVideoPlayer({
               <ProgressBar progress={progress} onSeek={seekToRatio} />
               <CustomText style={ss.timeText}>{formatTime(duration)}</CustomText>
               <Pressable
-                onPress={() => {
-                  /* expo-video handles fullscreen natively when user taps fullscreen button;
-                     we expose the VideoView's built-in allowsFullscreen — this just
-                     re-shows controls as a user feedback. */
-                  bringUpControls();
-                }}
+                onPress={toggleFullscreen}
                 style={ss.fsBtn}
                 hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                accessibilityLabel={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
               >
-                <MaterialIcons name="fullscreen" size={22} color={mediaTokens.textMuted} />
+                <MaterialIcons name={isFullscreen ? 'fullscreen-exit' : 'fullscreen'} size={22} color={mediaTokens.text} />
               </Pressable>
             </View>
           </Animated.View>
         ) : null}
       </Pressable>
 
-      {title ? <TitleRow title={title} /> : null}
+      {title && !isFullscreen ? <TitleRow title={title} /> : null}
     </View>
   );
 }
