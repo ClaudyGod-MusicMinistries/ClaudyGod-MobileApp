@@ -12,27 +12,105 @@ const log = createLogger('youtube.service');
 // since a broken re-host shouldn't block an otherwise-valid import.
 async function rehostThumbnail(videoId: string, sourceUrl: string): Promise<string> {
   if (!env.S3_ENABLED || !sourceUrl) {
-    return sourceUrl;
+    return sourceUrl || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
   }
-  try {
-    const response = await fetch(sourceUrl);
-    if (!response.ok) {
-      return sourceUrl;
+  const urlsToTry = [
+    sourceUrl,
+    `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
+    `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+  ];
+  for (const url of urlsToTry) {
+    try {
+      const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (!response.ok) continue;
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const arrayBuffer = await response.arrayBuffer();
+      if (arrayBuffer.byteLength < 500) continue;
+      const key = `content/youtube-thumbnails/${videoId}.jpg`;
+      await putObjectBuffer({
+        bucket: env.SUPABASE_STORAGE_BUCKET,
+        key,
+        contentType,
+        body: Buffer.from(arrayBuffer),
+      });
+      return buildPublicObjectUrl(key);
+    } catch {
+      continue;
     }
-    const contentType = response.headers.get('content-type') || 'image/jpeg';
-    const arrayBuffer = await response.arrayBuffer();
-    const key = `content/youtube-thumbnails/${videoId}.jpg`;
-    await putObjectBuffer({
-      bucket: env.SUPABASE_STORAGE_BUCKET,
-      key,
-      contentType,
-      body: Buffer.from(arrayBuffer),
-    });
-    return buildPublicObjectUrl(key);
-  } catch (error) {
-    log.warn('Failed to rehost YouTube thumbnail, falling back to source URL', { videoId, error });
-    return sourceUrl;
   }
+  log.warn('Failed to rehost YouTube thumbnail, falling back to source URL', { videoId, sourceUrl });
+  return sourceUrl || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+}
+
+// In-memory cache for hot thumbnails (max 300 entries, 1-hour TTL)
+const thumbnailCache = new Map<string, { buffer: Buffer; contentType: string; expiresAt: number }>();
+
+export async function getYouTubeThumbnailBuffer(videoId: string): Promise<{ buffer: Buffer; contentType: string }> {
+  const cached = thumbnailCache.get(videoId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { buffer: cached.buffer, contentType: cached.contentType };
+  }
+
+  const urlsToTry = [
+    `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
+    `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+    `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`,
+  ];
+
+  for (const url of urlsToTry) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        },
+      });
+      if (!response.ok) continue;
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const arrayBuffer = await response.arrayBuffer();
+      // YouTube returns a ~1097 byte blank placeholder when maxres is absent
+      if (arrayBuffer.byteLength < 1500 && url.includes('maxresdefault')) {
+        continue;
+      }
+      if (arrayBuffer.byteLength > 200) {
+        const buffer = Buffer.from(arrayBuffer);
+        if (thumbnailCache.size > 300) {
+          const firstKey = thumbnailCache.keys().next().value;
+          if (firstKey) thumbnailCache.delete(firstKey);
+        }
+        thumbnailCache.set(videoId, { buffer, contentType, expiresAt: Date.now() + 3600_000 });
+
+        if (env.S3_ENABLED) {
+          void putObjectBuffer({
+            bucket: env.SUPABASE_STORAGE_BUCKET,
+            key: `content/youtube-thumbnails/${videoId}.jpg`,
+            contentType,
+            body: buffer,
+          }).catch(() => undefined);
+        }
+
+        return { buffer, contentType };
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  // Graceful dark 16:9 branded SVG placeholder if all YouTube endpoints fail or are blocked
+  const fallbackSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="100%" height="100%" fill="#0d0e15"/>
+  <circle cx="640" cy="360" r="70" fill="#7c3aed" opacity="0.2"/>
+  <polygon points="620,320 680,360 620,400" fill="#a78bfa"/>
+  <text x="640" y="470" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="600" fill="#94a3b8" text-anchor="middle">ClaudyGod Ministry</text>
+</svg>`.trim();
+
+  return {
+    buffer: Buffer.from(fallbackSvg, 'utf8'),
+    contentType: 'image/svg+xml',
+  };
 }
 
 export interface YouTubeVideoItem {
@@ -92,6 +170,7 @@ interface YouTubeSearchResponse {
       description?: string;
       channelTitle?: string;
       publishedAt?: string;
+      liveBroadcastContent?: string;
       thumbnails?: {
         maxres?: { url?: string };
         standard?: { url?: string };
@@ -110,7 +189,19 @@ interface YouTubeVideosResponse {
     id?: string;
     contentDetails?: { duration?: string };
     liveStreamingDetails?: { concurrentViewers?: string };
-    snippet?: { liveBroadcastContent?: string };
+    snippet?: {
+      liveBroadcastContent?: string;
+      title?: string;
+      description?: string;
+      channelTitle?: string;
+      thumbnails?: {
+        maxres?: { url?: string };
+        standard?: { url?: string };
+        high?: { url?: string };
+        medium?: { url?: string };
+        default?: { url?: string };
+      };
+    };
   }>;
   error?: { message?: string };
 }
@@ -146,24 +237,50 @@ function ensureYouTubeConfigured(channelIdentifierOverride?: string): void {
   }
 }
 
-function pickThumbnail(thumbnails?: {
-  maxres?: { url?: string };
-  standard?: { url?: string };
-  high?: { url?: string };
-  medium?: { url?: string };
-  default?: { url?: string };
-}): string {
-  // maxres/standard are real video-frame captures; high/medium/default (hqdefault/
-  // mqdefault) are auto-generated by YouTube and often have black letterbox bars
-  // baked into the pixels for videos not recorded at exactly 4:3 — prefer the ones
-  // less likely to be letterboxed before falling back to the guaranteed-present ones.
+export function decodeHtmlEntities(input?: string): string {
+  if (!input) return '';
+  return input
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, dec) => {
+      try {
+        return String.fromCharCode(Number(dec));
+      } catch {
+        return _;
+      }
+    });
+}
+
+function pickThumbnail(
+  thumbnails?: {
+    maxres?: { url?: string };
+    standard?: { url?: string };
+    high?: { url?: string };
+    medium?: { url?: string };
+    default?: { url?: string };
+  },
+  videoId?: string,
+): string {
+  // Return the creator's exact high-res custom thumbnail when available:
+  // 1. maxres (1280x720) - 16:9 exact upload on YouTube
+  // 2. standard (640x480)
+  // 3. high (480x360)
+  // 4. medium (320x180)
+  // 5. default (120x90)
+  // 6. Direct CDN fallback using standard YouTube pattern: https://i.ytimg.com/vi/${videoId}/hqdefault.jpg
   return (
     thumbnails?.maxres?.url ||
     thumbnails?.standard?.url ||
     thumbnails?.high?.url ||
     thumbnails?.medium?.url ||
     thumbnails?.default?.url ||
-    'https://i.ytimg.com/vi/default/hqdefault.jpg'
+    (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : 'https://i.ytimg.com/vi/default/hqdefault.jpg')
   );
 }
 
@@ -383,18 +500,24 @@ export async function fetchYouTubeVideos(input?: {
 
   const rawItems: Array<Omit<YouTubeVideoItem, 'contentId' | 'contentVisibility'>> = searchItems.map((item) => {
     const id = item.id!.videoId!;
-    const snippet = item.snippet!;
+    const searchSnippet = item.snippet!;
     const details = detailsById.get(id);
-    const liveBroadcastContent = details?.snippet?.liveBroadcastContent;
+    const videoSnippet = details?.snippet || searchSnippet;
+    const liveBroadcastContent = videoSnippet.liveBroadcastContent ?? details?.snippet?.liveBroadcastContent;
     const isLive = liveBroadcastContent === 'live';
+
+    const title = decodeHtmlEntities(videoSnippet.title || searchSnippet.title || 'Untitled YouTube Video');
+    const description = decodeHtmlEntities(videoSnippet.description || searchSnippet.description || '');
+    const channelTitle = decodeHtmlEntities(videoSnippet.channelTitle || searchSnippet.channelTitle || 'YouTube Channel');
+    const thumbnailUrl = pickThumbnail(videoSnippet.thumbnails || searchSnippet.thumbnails, id);
 
     return {
       youtubeVideoId: id,
-      title: snippet.title || 'Untitled YouTube Video',
-      description: snippet.description || '',
-      channelTitle: snippet.channelTitle || 'YouTube Channel',
-      publishedAt: snippet.publishedAt || new Date().toISOString(),
-      thumbnailUrl: pickThumbnail(snippet.thumbnails),
+      title,
+      description,
+      channelTitle,
+      publishedAt: searchSnippet.publishedAt || new Date().toISOString(),
+      thumbnailUrl,
       url: `https://www.youtube.com/watch?v=${id}`,
       duration: isLive ? 'LIVE' : formatIsoDuration(details?.contentDetails?.duration),
       isLive,
@@ -402,15 +525,15 @@ export async function fetchYouTubeVideos(input?: {
         ? Number(details.liveStreamingDetails.concurrentViewers)
         : undefined,
       suggestedAppSections: deriveSuggestedAppSections({
-        title: snippet.title || 'Untitled YouTube Video',
-        description: snippet.description || '',
-        channelTitle: snippet.channelTitle || 'YouTube Channel',
+        title,
+        description,
+        channelTitle,
         isLive,
       }),
       suggestedTags: deriveSuggestedTags({
-        title: snippet.title || 'Untitled YouTube Video',
-        description: snippet.description || '',
-        channelTitle: snippet.channelTitle || 'YouTube Channel',
+        title,
+        description,
+        channelTitle,
         isLive,
       }),
     };
@@ -457,8 +580,8 @@ async function upsertYouTubeVideoToContent(params: {
     [params.youtubeVideoId, params.url],
   );
 
-  const title = params.title.trim().slice(0, 180);
-  const description = [params.description, `YouTube Channel: ${params.channelTitle}`]
+  const title = decodeHtmlEntities(params.title).trim().slice(0, 180);
+  const description = [decodeHtmlEntities(params.description), `YouTube Channel: ${params.channelTitle}`]
     .filter(Boolean)
     .join('\n\n')
     .slice(0, 5000);

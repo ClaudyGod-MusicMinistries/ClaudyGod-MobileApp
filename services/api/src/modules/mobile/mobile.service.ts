@@ -192,13 +192,26 @@ const buildRankScore = (item: MobileFeedItem, playCount: number): number => {
   return recencyScore + sectionBoost + liveBoost + engagementBoost + sourceBoost;
 };
 
+const resolveContentImageUrl = (row: PublishedContentRow): string | null => {
+  if (row.thumbnail_url && row.thumbnail_url.trim()) {
+    return row.thumbnail_url;
+  }
+  if (row.source_kind === 'youtube' && row.media_url) {
+    const match = row.media_url.match(/(?:v=|\/embed\/|youtu\.be\/|\/v\/)([a-zA-Z0-9_-]{11})/);
+    if (match?.[1]) {
+      return `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg`;
+    }
+  }
+  return FALLBACK_IMAGE;
+};
+
 const toMobileFeedItem = (row: PublishedContentRow): MobileFeedItem => ({
   id: row.id,
   title: row.title,
   description: row.description,
   subtitle: row.channel_name || row.author_display_name || 'ClaudyGod',
   type: row.content_type,
-  imageUrl: row.thumbnail_url || FALLBACK_IMAGE,
+  imageUrl: resolveContentImageUrl(row),
   mediaUrl: row.media_url ?? undefined,
   duration: row.duration_label ?? undefined,
   channelName: row.channel_name ?? undefined,
@@ -215,7 +228,7 @@ const toYouTubeFeedItem = (item: YouTubeVideoItem): MobileFeedItem => ({
   description: item.description || 'Latest release from the ministry YouTube feed.',
   subtitle: item.channelTitle || 'ClaudyGod',
   type: item.isLive ? 'live' : 'video',
-  imageUrl: item.thumbnailUrl || FALLBACK_IMAGE,
+  imageUrl: item.thumbnailUrl || (item.youtubeVideoId ? `https://i.ytimg.com/vi/${item.youtubeVideoId}/hqdefault.jpg` : FALLBACK_IMAGE),
   mediaUrl: item.url,
   duration: item.duration || undefined,
   channelName: item.channelTitle || undefined,

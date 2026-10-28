@@ -8,12 +8,31 @@ import { youtubeImportSchema, youtubeListQuerySchema, youtubeSyncSchema } from '
 import {
   fetchYouTubeVideos,
   getYouTubeSyncStatus,
+  getYouTubeThumbnailBuffer,
   importYouTubeSelectionsToContent,
   listYouTubeImportQueue,
   syncYouTubeVideosToContent,
 } from './youtube.service';
 
 export const youtubeRouter = Router();
+
+// Public thumbnail proxy — allows browsers on networks that block or connection-reset
+// i.ytimg.com (net::ERR_CONNECTION_RESET) to load thumbnails reliably through the ClaudyGod API.
+youtubeRouter.get(
+  '/thumbnail/:videoId',
+  asyncHandler(async (req, res) => {
+    const videoId = req.params.videoId;
+    if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+      res.status(400).end();
+      return;
+    }
+    const result = await getYouTubeThumbnailBuffer(videoId);
+    res.setHeader('Content-Type', result.contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+    res.status(200).send(result.buffer);
+  }),
+);
+
 youtubeRouter.use(authenticate, requirePrivilegedMfa, requireCapability('youtube.manage'));
 
 youtubeRouter.get(

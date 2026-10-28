@@ -202,7 +202,15 @@ export default function PlaySection() {
 
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
   const allQueue = useMemo(
-    () => dedupeFeedItems([...(routeItem ? [routeItem] : []), ...feed.music, ...feed.mostPlayed, ...feed.recommendations, ...feed.playlists, ...feed.recent]),
+    () => dedupeFeedItems([
+      ...(routeItem ? [routeItem] : []),
+      ...feed.music,
+      ...feed.mostPlayed,
+      ...feed.recommendations,
+      ...feed.playlists,
+      ...feed.recent,
+      ...(feed.music.length === 0 ? feed.videos : []),
+    ]),
     [feed, routeItem],
   );
 
@@ -428,17 +436,17 @@ export default function PlaySection() {
       ) : null}
 
       {/* ── Worship Songs & Ministration ─────────────────────────────────── */}
-      {feed.music.length > 0 ? (
+      {(feed.music.length > 0 || feed.videos.length > 0) ? (
         <View style={styles.sectionRow}>
           <SectionLabel
             title="Worship & Praise"
             accent="Featured"
-            actionLabel={feed.music.length > 6 ? 'See all' : undefined}
-            onAction={feed.music.length > 6 ? () => router.push(APP_ROUTES.tabs.search) : undefined}
+            actionLabel={(feed.music.length || feed.videos.length) > 6 ? 'See all' : undefined}
+            onAction={(feed.music.length || feed.videos.length) > 6 ? () => router.push(APP_ROUTES.tabs.search) : undefined}
           />
           <ContentRail
             title=""
-            items={feed.music}
+            items={feed.music.length > 0 ? feed.music : feed.videos}
             loading={loading}
             onPressItem={(item) => void openItem(item, 'music_worship_rail')}
             cardVariant="portrait"
