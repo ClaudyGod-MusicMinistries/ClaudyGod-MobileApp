@@ -119,7 +119,6 @@
                 :alt="decodeHtmlEntities(video.title)"
                 loading="lazy"
                 referrerpolicy="no-referrer"
-                crossorigin="anonymous"
                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 @error="onThumbnailError(video, $event)"
               />
@@ -291,7 +290,6 @@
               :src="getThumbnailUrl(sendModalVideo)"
               :alt="decodeHtmlEntities(sendModalVideo.title)"
               referrerpolicy="no-referrer"
-              crossorigin="anonymous"
               class="w-full h-full object-cover"
               @error="onThumbnailError(sendModalVideo, $event)"
             />

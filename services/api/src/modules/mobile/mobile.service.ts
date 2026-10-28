@@ -34,6 +34,7 @@ interface PublishedContentRow {
   created_at: string | Date;
   updated_at: string | Date;
   author_display_name: string | null;
+  metadata: Record<string, unknown> | null;
 }
 
 interface LiveSessionFeedRow {
@@ -75,6 +76,7 @@ interface SectionDetailRow {
   live_status: LiveSessionStatus | null;
   viewer_count: number | string | null;
   sort_order: number | null;
+  metadata: Record<string, unknown> | null;
 }
 
 const FALLBACK_IMAGE = null;
@@ -117,8 +119,12 @@ const classifyRail = (item: MobileFeedItem): 'music' | 'video' | 'playlist' | 'a
     return 'music';
   }
   if (item.type === 'video') {
+    // Explicit section tags matching music or worship
+    if (item.appSections.some((s) => /music|worship|song|praise/i.test(s))) {
+      return 'music';
+    }
     const signals = textForSignals(item);
-    if (/(worship|praise|song|music|choir|hymn|album|track|ministration)/.test(signals)) {
+    if (/(worship|praise|song|music|choir|hymn|album|track|ministration|gospel|alleluia|hallelujah|yahweh|lord|jesus|god|king|glory|adoration|soul|melody|acoustic|anthem|official|midnight cry|devotion|meditation)/.test(signals)) {
       return 'music';
     }
     if (/(announcement|update|event|conference|schedule|service time|notice)/.test(signals)) {
@@ -208,22 +214,33 @@ const resolveContentImageUrl = (row: PublishedContentRow): string | null => {
   return FALLBACK_IMAGE;
 };
 
-const toMobileFeedItem = (row: PublishedContentRow): MobileFeedItem => ({
-  id: row.id,
-  title: row.title,
-  description: row.description,
-  subtitle: row.channel_name || row.author_display_name || 'ClaudyGod',
-  type: row.content_type,
-  imageUrl: resolveContentImageUrl(row),
-  mediaUrl: row.media_url ?? undefined,
-  duration: row.duration_label ?? undefined,
-  channelName: row.channel_name ?? undefined,
-  sourceKind: row.source_kind,
-  appSections: normalizeTextList(row.app_sections),
-  tags: normalizeTextList(row.tags),
-  createdAt: toIso(row.created_at),
-  updatedAt: toIso(row.updated_at),
-});
+const toMobileFeedItem = (row: PublishedContentRow): MobileFeedItem => {
+  const metadata = (row.metadata && typeof row.metadata === 'object') ? row.metadata : undefined;
+  const releaseDate = typeof metadata?.releaseDate === 'string' ? metadata.releaseDate : undefined;
+  const isUpcoming = Boolean(metadata?.isUpcoming);
+  const trailerUrl = typeof metadata?.trailerUrl === 'string' ? metadata.trailerUrl : undefined;
+
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    subtitle: row.channel_name || row.author_display_name || 'ClaudyGod',
+    type: row.content_type,
+    imageUrl: resolveContentImageUrl(row),
+    mediaUrl: row.media_url ?? undefined,
+    duration: row.duration_label ?? undefined,
+    channelName: row.channel_name ?? undefined,
+    sourceKind: row.source_kind,
+    appSections: normalizeTextList(row.app_sections),
+    tags: normalizeTextList(row.tags),
+    createdAt: toIso(row.created_at),
+    updatedAt: toIso(row.updated_at),
+    releaseDate,
+    isUpcoming,
+    trailerUrl,
+    metadata,
+  };
+};
 
 const toYouTubeFeedItem = (item: YouTubeVideoItem): MobileFeedItem => ({
   id: `yt:${item.youtubeVideoId}`,
@@ -333,6 +350,7 @@ const loadPublishedContent = async (limit = 120): Promise<MobileFeedItem[]> => {
          c.tags,
          c.created_at,
          c.updated_at,
+         c.metadata,
          u.display_name AS author_display_name
        FROM content_items c
        INNER JOIN app_users u ON u.id = c.author_id
@@ -377,6 +395,7 @@ const loadContentTaggedIntoSections = async (tokens: string[]): Promise<MobileFe
          c.tags,
          c.created_at,
          c.updated_at,
+         c.metadata,
          u.display_name AS author_display_name
        FROM content_items c
        INNER JOIN app_users u ON u.id = c.author_id
@@ -444,6 +463,7 @@ const loadFeaturedContent = async (): Promise<MobileFeedItem | null> => {
          c.tags,
          c.created_at,
          c.updated_at,
+         c.metadata,
          u.display_name AS author_display_name
        FROM content_items c
        INNER JOIN app_users u ON u.id = c.author_id
@@ -468,6 +488,7 @@ const loadFeaturedContent = async (): Promise<MobileFeedItem | null> => {
            c.tags,
            c.created_at,
            c.updated_at,
+           c.metadata,
            u.display_name AS author_display_name
          FROM content_items c
          INNER JOIN app_users u ON u.id = c.author_id
@@ -706,9 +727,11 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
   const videos = unifiedPool.filter((item) => classifyRail(item) === 'video');
   const playlists = unifiedPool.filter((item) => classifyRail(item) === 'playlist');
   const announcements = unifiedPool.filter((item) => classifyRail(item) === 'announcement');
-  const recent = [...unifiedPool].sort(
-    (left, right) => Date.parse(right.updatedAt || right.createdAt) - Date.parse(left.updatedAt || left.createdAt),
-  );
+  const recent = [...unifiedPool].sort((left, right) => {
+    const leftDate = Date.parse(left.releaseDate || left.updatedAt || left.createdAt);
+    const rightDate = Date.parse(right.releaseDate || right.updatedAt || right.createdAt);
+    return (Number.isFinite(rightDate) ? rightDate : 0) - (Number.isFinite(leftDate) ? leftDate : 0);
+  });
 
   const sponsoredRails = await buildSponsoredRails(mobileConfigResult.config);
 
@@ -769,7 +792,8 @@ export const getMobileSectionDetail = async (params: {
         c.media_url, c.thumbnail_url, c.source_kind::text AS source_kind,
         c.channel_name, c.duration_label, c.app_sections, c.tags,
         c.created_at, c.updated_at, u.display_name AS author_display_name,
-        NULL::text AS live_status, NULL::integer AS viewer_count, c.sort_order
+        NULL::text AS live_status, NULL::integer AS viewer_count, c.sort_order,
+        c.metadata
       FROM content_items c
       INNER JOIN app_users u ON u.id = c.author_id
       WHERE c.visibility = 'published'
@@ -799,7 +823,8 @@ export const getMobileSectionDetail = async (params: {
         CASE ls.status WHEN 'live' THEN 'LIVE' WHEN 'scheduled' THEN 'Upcoming' ELSE 'Replay' END AS duration_label,
         ls.app_sections, ls.tags, COALESCE(ls.started_at, ls.scheduled_for, ls.created_at) AS created_at,
         ls.updated_at, host.display_name AS author_display_name,
-        ls.status::text AS live_status, ls.viewer_count, NULL::integer AS sort_order
+        ls.status::text AS live_status, ls.viewer_count, NULL::integer AS sort_order,
+        NULL::jsonb AS metadata
       FROM live_sessions ls
       LEFT JOIN app_users host ON host.id = ls.created_by
       WHERE 'live' = ANY($2::text[])

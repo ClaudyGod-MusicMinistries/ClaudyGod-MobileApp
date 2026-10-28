@@ -40,7 +40,7 @@ export function ContentList({ title, items, onPressItem, onMorePress }: {
 
             return (
               <TVTouchable
-                key={`${title ?? 'content'}-${item.id}`}
+                key={`${title ?? 'content'}-${item.id}-${index}`}
                 onPress={() => onPressItem(item)}
                 showFocusBorder={false}
                 style={useGrid ? { width: `${Math.floor(100 / numCols) - 1}%` } : undefined}

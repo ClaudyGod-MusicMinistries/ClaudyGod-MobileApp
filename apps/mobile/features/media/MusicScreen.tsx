@@ -33,6 +33,7 @@ import {
   ContentList,
   ContentRail,
   EmptyState,
+  LatestReleaseCard,
   PremiumHero,
   PremiumPage,
   SectionLabel,
@@ -205,14 +206,21 @@ export default function PlaySection() {
     () => dedupeFeedItems([
       ...(routeItem ? [routeItem] : []),
       ...feed.music,
+      ...feed.recent,
       ...feed.mostPlayed,
       ...feed.recommendations,
       ...feed.playlists,
-      ...feed.recent,
-      ...(feed.music.length === 0 ? feed.videos : []),
+      ...feed.videos,
     ]),
     [feed, routeItem],
   );
+
+  const latestMusicRelease = useMemo(() => {
+    const pool = [...feed.recent, ...feed.music, ...feed.videos];
+    return pool.find(
+      (item) => item.isUpcoming || item.appSections?.includes('latest-releases') || Boolean(item.trailerUrl),
+    ) ?? feed.music[0] ?? feed.recent[0] ?? null;
+  }, [feed.recent, feed.music, feed.videos]);
 
   const filteredQueue = useMemo(() => {
     let pool = allQueue;
@@ -365,6 +373,16 @@ export default function PlaySection() {
 
       {/* ── Filter chips ─────────────────────────────────────────────────── */}
       <FilterChips active={filter} onChange={setFilter} />
+
+      {/* ── Latest Music Release / Premiere Spotlight ── */}
+      {latestMusicRelease && latestMusicRelease.id !== nowPlaying?.id ? (
+        <View style={{ marginVertical: 4 }}>
+          <LatestReleaseCard
+            item={latestMusicRelease}
+            onPlay={(item) => void playItem(item, 'music_latest_release')}
+          />
+        </View>
+      ) : null}
 
       {/* ── Up next queue ────────────────────────────────────────────────── */}
       {upNext.length > 0 ? (

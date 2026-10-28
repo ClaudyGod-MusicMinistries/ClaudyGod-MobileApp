@@ -176,7 +176,7 @@
         <template #cell-title="{ row }">
           <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-md bg-bg-2 border border-border overflow-hidden flex-shrink-0">
-              <img v-if="row.thumbnailUrl" :src="resolveThumbnail(row.thumbnailUrl as string)" alt="" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" class="w-full h-full object-cover" />
+              <img v-if="row.thumbnailUrl" :src="resolveThumbnail(row.thumbnailUrl as string)" alt="" loading="lazy" referrerpolicy="no-referrer" class="w-full h-full object-cover" />
               <div v-else class="w-full h-full flex items-center justify-center">
                 <component :is="contentIcon(String(row.type))" class="w-5 h-5 text-ink-muted" :stroke-width="1.7" />
               </div>
@@ -191,6 +191,12 @@
               <div class="flex items-center gap-2 mt-1.5 text-[10px] text-ink-muted">
                 <span v-if="row.duration">{{ row.duration }}</span>
                 <span v-if="row.isFeatured" class="text-primary font-semibold">Featured</span>
+                <span v-if="(row.metadata as any)?.isUpcoming" class="text-purple-400 font-semibold bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
+                  Premiere{{ (row.metadata as any)?.releaseDate ? ` · ${(row.metadata as any).releaseDate}` : '' }}
+                </span>
+                <span v-else-if="(row.appSections as string[])?.includes('latest-releases')" class="text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                  Latest Release
+                </span>
               </div>
             </div>
           </div>

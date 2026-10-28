@@ -27,6 +27,8 @@ youtubeRouter.get(
       return;
     }
     const result = await getYouTubeThumbnailBuffer(videoId);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     res.setHeader('Content-Type', result.contentType);
     res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
     res.status(200).send(result.buffer);

@@ -48,7 +48,7 @@
               <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Thumbnail</p>
               <div v-if="form.thumbnailUrl" class="relative group">
                 <div class="aspect-square w-full max-w-[220px] rounded-2xl overflow-hidden border border-border bg-bg-1">
-                  <img :src="resolveThumbnail(form.thumbnailUrl)" alt="Artwork" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" class="w-full h-full object-cover" />
+                  <img :src="resolveThumbnail(form.thumbnailUrl)" alt="Artwork" loading="lazy" referrerpolicy="no-referrer" class="w-full h-full object-cover" />
                 </div>
                 <button
                   type="button"
@@ -73,6 +73,72 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 border-t border-border/60 mt-1">
             <AppInput v-model="form.channelName" label="Channel / artist" placeholder="ClaudyGod Music" hint="Shown on the mobile content card" class="mt-3" />
             <AppInput v-model="form.duration" label="Duration" placeholder="4:32" hint="Manually-uploaded content doesn't auto-detect this" class="mt-3" />
+          </div>
+        </AppCard>
+
+        <!-- Release & Premiere Schedule (Spotify / Apple Music style) -->
+        <AppCard class="p-5 space-y-4">
+          <SectionHeading icon="media" label="Release & Premiere Schedule" />
+          <p class="text-xs text-ink-muted">
+            Configure release timing for music, messages, or videos. Upcoming releases showcase as premiere cards on mobile with countdowns and trailer video previews.
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs font-medium text-ink-muted mb-1.5">Release Status</p>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  :class="[
+                    'flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all text-center',
+                    !isUpcomingRelease
+                      ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-400 shadow-sm'
+                      : 'bg-surface border-border text-ink-muted hover:border-border-hover'
+                  ]"
+                  @click="isUpcomingRelease = false"
+                >
+                  ● Out Now
+                </button>
+                <button
+                  type="button"
+                  :class="[
+                    'flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all text-center',
+                    isUpcomingRelease
+                      ? 'bg-primary/20 border-primary text-primary-soft shadow-sm'
+                      : 'bg-surface border-border text-ink-muted hover:border-border-hover'
+                  ]"
+                  @click="isUpcomingRelease = true"
+                >
+                  ★ Scheduled Premiere
+                </button>
+              </div>
+            </div>
+
+            <AppInput
+              v-model="releaseDateInput"
+              type="date"
+              label="Release date"
+              hint="Date of official premiere or release"
+            />
+          </div>
+
+          <div class="space-y-1.5 pt-2 border-t border-border/60">
+            <AppInput
+              v-model="trailerUrlInput"
+              label="Trailer / Teaser Video URL"
+              placeholder="https://www.youtube.com/watch?v=... or direct video link"
+              hint="Short video teaser shown to listeners before release or on the Latest Release spotlight card"
+            />
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-border/60">
+            <div>
+              <p class="text-xs font-medium text-ink-muted">Spotlight in Latest Releases</p>
+              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">
+                Automatically feature this item in the mobile app's dedicated Latest Release shelf.
+              </p>
+            </div>
+            <AppToggle v-model="featureInLatestReleases" />
           </div>
         </AppCard>
 
@@ -300,6 +366,11 @@ const LEGACY_SECTION_ALIASES: Record<string, string> = {
 const form = ref<FormState>(emptyForm());
 const metadataError = ref('');
 
+const isUpcomingRelease = ref(false);
+const releaseDateInput = ref('');
+const trailerUrlInput = ref('');
+const featureInLatestReleases = ref(false);
+
 const compatibleSectionOptions = computed(() =>
   configuredSectionOptions.value.filter((section) => section.contentTypes.includes(form.value.type)),
 );
@@ -382,6 +453,13 @@ onMounted(async () => {
         isFeatured: c.isFeatured ?? false,
         metadata: c.metadata && Object.keys(c.metadata).length ? JSON.stringify(c.metadata, null, 2) : '',
       };
+      if (c.metadata && typeof c.metadata === 'object') {
+        const meta = c.metadata as Record<string, unknown>;
+        if (typeof meta.isUpcoming === 'boolean') isUpcomingRelease.value = meta.isUpcoming;
+        if (typeof meta.releaseDate === 'string') releaseDateInput.value = meta.releaseDate;
+        if (typeof meta.trailerUrl === 'string') trailerUrlInput.value = meta.trailerUrl;
+      }
+      featureInLatestReleases.value = form.value.appSections.includes('latest-releases');
     }
   }
 });
@@ -450,6 +528,34 @@ async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void>
       ui.addToast({ tone: 'danger', title: 'Custom metadata is not valid JSON' });
       return;
     }
+  }
+
+  if (isUpcomingRelease.value || releaseDateInput.value.trim() || trailerUrlInput.value.trim()) {
+    if (!metadata) metadata = {};
+    if (isUpcomingRelease.value) {
+      metadata.isUpcoming = true;
+    } else {
+      delete metadata.isUpcoming;
+    }
+    if (releaseDateInput.value.trim()) {
+      metadata.releaseDate = releaseDateInput.value.trim();
+    } else {
+      delete metadata.releaseDate;
+    }
+    if (trailerUrlInput.value.trim()) {
+      metadata.trailerUrl = trailerUrlInput.value.trim();
+    } else {
+      delete metadata.trailerUrl;
+    }
+    if (Object.keys(metadata).length === 0) {
+      metadata = undefined;
+    }
+  }
+
+  if (featureInLatestReleases.value && !form.value.appSections.includes('latest-releases')) {
+    form.value.appSections.push('latest-releases');
+  } else if (!featureInLatestReleases.value && form.value.appSections.includes('latest-releases')) {
+    form.value.appSections = form.value.appSections.filter((s) => s !== 'latest-releases');
   }
 
   const tags = form.value.tags.split(',').map((t) => t.trim()).filter(Boolean);

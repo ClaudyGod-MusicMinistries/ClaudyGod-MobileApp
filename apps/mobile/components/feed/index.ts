@@ -18,3 +18,4 @@ export { ContentShortcuts, type ContentShortcut } from './ContentShortcuts';
 export { LiveNowBanner } from './LiveNowBanner';
 export { WordOfDayCard } from './WordOfDayCard';
 export { SectionLabel } from './SectionLabel';
+export { LatestReleaseCard } from './LatestReleaseCard';

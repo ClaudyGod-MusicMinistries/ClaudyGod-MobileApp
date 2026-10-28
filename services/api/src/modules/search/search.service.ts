@@ -69,8 +69,12 @@ export async function searchContent(
     let paramIdx = 3;
 
     if (type) {
-      conditions.push(`ci.content_type = $${paramIdx++}`);
-      params.push(type);
+      if (type === 'audio') {
+        conditions.push(`(ci.content_type = 'audio' OR 'music' = ANY(ci.app_sections) OR 'music-featured' = ANY(ci.app_sections) OR array_to_string(ci.tags, ' ') ILIKE '%music%' OR array_to_string(ci.tags, ' ') ILIKE '%worship%')`);
+      } else {
+        conditions.push(`ci.content_type = $${paramIdx++}`);
+        params.push(type);
+      }
     }
 
     if (normalizedTags.length > 0) {
