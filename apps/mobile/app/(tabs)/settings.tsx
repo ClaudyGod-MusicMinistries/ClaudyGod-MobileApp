@@ -510,7 +510,23 @@ export default function SettingsScreen() {
 
   const settingsHubSections = useMemo(() => {
     const configured = getSettingsHubSections(appConfig);
-    return configured.length ? configured : DEFAULT_QUICK_ACCESS_SECTIONS;
+    const rawSections = configured.length ? configured : DEFAULT_QUICK_ACCESS_SECTIONS;
+
+    // Filter out misplaced items (e.g. Library inside Settings) and avoid duplicated destinations
+    const seenDestinations = new Set<string>();
+    return rawSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => {
+          // The Library has its own dedicated primary bottom tab and should never appear in Settings
+          if (item.destination === 'tabs.library' || item.id === 'library') return false;
+          // Prevent duplicate navigation entries across multiple groups
+          if (seenDestinations.has(item.destination)) return false;
+          seenDestinations.add(item.destination);
+          return true;
+        }),
+      }))
+      .filter((section) => section.items.length > 0);
   }, [appConfig]);
 
   const [notifications,   setNotifications]   = useState(true);
@@ -807,20 +823,26 @@ export default function SettingsScreen() {
           ? section.title
           : section.id.includes('privacy')
           ? 'Data & Privacy'
-          : section.id.includes('support')
-          ? 'Ministry & Community'
+          : section.id.includes('giving') || section.id.includes('ministry') || section.id.includes('support')
+          ? 'Ministry & Giving'
+          : section.id.includes('help')
+          ? 'Help & Support'
           : 'About & Legal';
 
         const subtitle = section.id.includes('privacy')
           ? 'Manage your personal data, exports, and account deletion'
-          : section.id.includes('support')
-          ? 'Partner with us, get support, and share worship'
+          : section.id.includes('giving') || section.id.includes('ministry') || section.id.includes('support')
+          ? 'Partner with us, support the ministry, and share worship'
+          : section.id.includes('help')
+          ? 'FAQs, contact channels, and community support'
           : 'Official policies, terms, and ministry information';
 
         const icon: AppIconName = section.id.includes('privacy')
           ? 'security'
-          : section.id.includes('support')
+          : section.id.includes('giving') || section.id.includes('ministry') || section.id.includes('support')
           ? 'volunteer-activism'
+          : section.id.includes('help')
+          ? 'help-outline'
           : 'info-outline';
 
         return (

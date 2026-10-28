@@ -19,6 +19,7 @@ import { trackContentPlay } from '../../services/supabaseAnalytics';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+import { addRecentSearch, clearRecentSearches, getRecentSearches } from '../../lib/localUserStorage';
 import {
   ContentList,
   ContentRail,
@@ -103,6 +104,63 @@ const useStyles = makeStyles((theme) => ({
 
   // Search TextInput base
   searchInput: { flex: 1 },
+
+  // Cross-category intelligent recommendations
+  crossCategoryCard: {
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.subtleFill,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryBorder,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginVertical: 10,
+  },
+  crossCategoryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primarySurface,
+  },
+  crossCategoryTextWrap: { flex: 1, minWidth: 0 },
+  crossCategoryTitle: {
+    color: theme.colors.text,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  crossCategorySubtitle: {
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  crossCategoryBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.primary,
+  },
+  crossCategoryBtnText: {
+    color: theme.colors.onPrimary,
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  recentHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  clearRecentBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  clearRecentText: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    fontWeight: '600',
+  },
 }));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -207,10 +265,13 @@ export default function Search() {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<SearchCategory>('All');
   const [remoteResults, setRemoteResults] = useState<FeedCardItem[] | null>(null);
+  const [crossCategoryResults, setCrossCategoryResults] = useState<FeedCardItem[]>([]);
+  const [crossCategoryMatches, setCrossCategoryMatches] = useState<{ category: SearchCategory; count: number }[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const focusProgress = useRef(new Animated.Value(0)).current;
   const searchRequestId = useRef(0);
   const { feed, loading, error, refresh } = useContentFeed();
@@ -248,7 +309,8 @@ export default function Search() {
     const normalized = requestedQuery.trim();
     if (!normalized) {
       setRemoteResults(null);
-      showToast({ title: 'Search is empty', message: 'Enter a title, artist, or topic.', tone: 'warning' });
+      setCrossCategoryResults([]);
+      setCrossCategoryMatches([]);
       return;
     }
     const requestId = ++searchRequestId.current;
@@ -260,25 +322,65 @@ export default function Search() {
         queryKey: ['search', normalized, type ?? 'All'],
         queryFn: () => fetchSearchResults(normalized, type),
       });
+
       if (requestId === searchRequestId.current) {
         setRemoteResults(results);
-        if (!results.length) showToast({ title: 'No matches', message: 'Try another word or category.', tone: 'info' });
+        void addRecentSearch(normalized).then(setRecentSearches);
+
+        // Cross-category intelligence: If 0 results in the active category, check other categories
+        if (results.length === 0 && requestedCategory !== 'All') {
+          try {
+            const allCatResults = await queryClient.fetchQuery({
+              queryKey: ['search', normalized, 'All'],
+              queryFn: () => fetchSearchResults(normalized),
+            });
+            if (requestId === searchRequestId.current && allCatResults.length > 0) {
+              setCrossCategoryResults(allCatResults);
+              const counts: Partial<Record<SearchCategory, number>> = {};
+              for (const item of allCatResults) {
+                const cat = normalizeCategory(item.type);
+                if (cat) counts[cat] = (counts[cat] ?? 0) + 1;
+              }
+              const matches = Object.entries(counts)
+                .map(([cat, count]) => ({ category: cat as SearchCategory, count: count ?? 0 }))
+                .filter((entry) => entry.count > 0 && entry.category !== requestedCategory)
+                .sort((a, b) => b.count - a.count);
+              setCrossCategoryMatches(matches);
+            } else if (requestId === searchRequestId.current) {
+              setCrossCategoryResults([]);
+              setCrossCategoryMatches([]);
+            }
+          } catch {
+            // Non-blocking fallback
+          }
+        } else {
+          setCrossCategoryResults([]);
+          setCrossCategoryMatches([]);
+        }
+
+        if (!results.length && crossCategoryMatches.length === 0) {
+          showToast({ title: 'No matches in this category', message: 'Try another category or keyword.', tone: 'info' });
+        }
       }
     } catch (error) {
       if (requestId === searchRequestId.current) {
         const message = error instanceof Error ? error.message : 'Unable to complete search.';
         setRemoteResults([]);
+        setCrossCategoryResults([]);
+        setCrossCategoryMatches([]);
         setSearchError(message);
         showToast({ title: 'Search failed', message, tone: 'warning' });
       }
     } finally {
       if (requestId === searchRequestId.current) setIsSearching(false);
     }
-  }, [activeCategory, query, showToast, queryClient]);
+  }, [activeCategory, crossCategoryMatches.length, query, queryClient, showToast]);
 
   const invalidateSearch = useCallback(() => {
     searchRequestId.current += 1;
     setRemoteResults(null);
+    setCrossCategoryResults([]);
+    setCrossCategoryMatches([]);
     setSearchError(null);
     setIsSearching(false);
   }, []);
@@ -299,6 +401,20 @@ export default function Search() {
 
   const hasQuery = query.trim().length > 0;
 
+  // Debounced live typing search (350ms)
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      invalidateSearch();
+      return;
+    }
+    if (trimmed.length < 2) return;
+    const timer = setTimeout(() => {
+      void runSearch(trimmed, activeCategory);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [query, activeCategory, runSearch, invalidateSearch]);
+
   useEffect(() => {
     Animated.timing(focusProgress, {
       toValue: searchFocused ? 1 : 0,
@@ -312,6 +428,9 @@ export default function Search() {
     void fetchTrendingSearches(8).then((items) => {
       if (active) setTrendingSearches(items);
     });
+    void getRecentSearches().then((items) => {
+      if (active) setRecentSearches(items);
+    });
     return () => {
       active = false;
     };
@@ -322,6 +441,12 @@ export default function Search() {
     setActiveCategory('All');
     invalidateSearch();
     void runSearch(term, 'All');
+  };
+
+  const applyRecentSearch = (term: string) => {
+    setQuery(term);
+    invalidateSearch();
+    void runSearch(term, activeCategory);
   };
 
   const animatedSearchStyle = {
@@ -415,6 +540,31 @@ export default function Search() {
       {error && !hasQuery ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
       {searchError && hasQuery ? <ErrorState message={searchError} onRetry={() => void runSearch()} /> : null}
 
+      {/* ── Recent searches ── */}
+      {!hasQuery && recentSearches.length > 0 ? (
+        <View style={styles.shortcutGap}>
+          <View style={styles.recentHeaderRow}>
+            <SectionLabel title="Recent searches" accent="History" subtitle="Tap to search again" />
+            <TVTouchable onPress={() => void clearRecentSearches().then(() => setRecentSearches([]))} style={styles.clearRecentBtn}>
+              <CustomText style={styles.clearRecentText}>Clear all</CustomText>
+            </TVTouchable>
+          </View>
+          <View style={styles.shortcutRow}>
+            {recentSearches.map((term) => (
+              <TVTouchable
+                key={term}
+                onPress={() => applyRecentSearch(term)}
+                showFocusBorder={false}
+                style={styles.shortcutChip}
+              >
+                <MaterialIcons name="history" size={14} color={theme.colors.textMuted} />
+                <CustomText style={styles.shortcutText}>{term}</CustomText>
+              </TVTouchable>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
       {/* ── Trending searches — real, aggregated from what people actually search ── */}
       {!hasQuery && trendingSearches.length > 0 ? (
         <View style={styles.shortcutGap}>
@@ -464,8 +614,52 @@ export default function Search() {
             </CustomText>
             <CustomText variant="caption" style={styles.resultMetaText}>{labelForCategory(activeCategory)}</CustomText>
           </View>
-          <ContentList title={`Results for "${query.trim()}"`} items={filtered} onPressItem={(item) => void openResult(item)} />
-          {!loading && !isSearching && !searchError && !filtered.length ? (
+
+          {/* Smart cross-category banner when current category filter returns 0 */}
+          {filtered.length === 0 && crossCategoryMatches.length > 0 ? (
+            <SurfaceCard tone="strong" style={styles.crossCategoryCard}>
+              <View style={styles.crossCategoryIcon}>
+                <MaterialIcons name="lightbulb" size={20} color={theme.colors.primary} />
+              </View>
+              <View style={styles.crossCategoryTextWrap}>
+                <CustomText variant="title" style={styles.crossCategoryTitle}>
+                  No matches in {labelForCategory(activeCategory)}
+                </CustomText>
+                <CustomText variant="caption" style={styles.crossCategorySubtitle}>
+                  Found {crossCategoryResults.length} {crossCategoryResults.length === 1 ? 'match' : 'matches'} in {crossCategoryMatches.map(m => labelForCategory(m.category)).join(', ')}.
+                </CustomText>
+              </View>
+              <TVTouchable
+                onPress={() => {
+                  const targetCat = crossCategoryMatches[0]?.category ?? 'All';
+                  setActiveCategory(targetCat);
+                  setRemoteResults(crossCategoryResults.filter(item => targetCat === 'All' || item.type === targetCat));
+                }}
+                showFocusBorder={false}
+                style={styles.crossCategoryBtn}
+              >
+                <CustomText style={styles.crossCategoryBtnText}>
+                  View in {labelForCategory(crossCategoryMatches[0]?.category ?? 'All')} →
+                </CustomText>
+              </TVTouchable>
+            </SurfaceCard>
+          ) : null}
+
+          {/* Primary Results */}
+          {filtered.length > 0 ? (
+            <ContentList title={`Results for "${query.trim()}"`} items={filtered} onPressItem={(item) => void openResult(item)} />
+          ) : null}
+
+          {/* Fallback cross-category suggestions rail */}
+          {filtered.length === 0 && crossCategoryResults.length > 0 ? (
+            <ContentList
+              title={`Discovered in other categories for "${query.trim()}"`}
+              items={crossCategoryResults.slice(0, 10)}
+              onPressItem={(item) => void openResult(item)}
+            />
+          ) : null}
+
+          {!loading && !isSearching && !searchError && !filtered.length && crossCategoryResults.length === 0 ? (
             <EmptyState
               title="No results found"
               message="Try another title, artist, topic, or category."

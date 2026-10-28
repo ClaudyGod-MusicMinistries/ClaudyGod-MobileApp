@@ -58,8 +58,14 @@ export async function searchContent(
   let page: CursorPage<SearchResultItem>;
   {
     const params: unknown[] = [normalized, limit + 1];
-    const conditions: string[] = ["ci.visibility = 'published'", "ci.search_vector @@ websearch_to_tsquery('english', $1)"];
-    const liveConditions: string[] = ["ls.status <> 'cancelled'", "ls.search_vector @@ websearch_to_tsquery('english', $1)"];
+    const conditions: string[] = [
+      "ci.visibility = 'published'",
+      "(ci.search_vector @@ websearch_to_tsquery('english', $1) OR ci.title ILIKE ('%' || $1 || '%') OR ci.description ILIKE ('%' || $1 || '%') OR ci.channel_name ILIKE ('%' || $1 || '%'))",
+    ];
+    const liveConditions: string[] = [
+      "ls.status <> 'cancelled'",
+      "(ls.search_vector @@ websearch_to_tsquery('english', $1) OR ls.title ILIKE ('%' || $1 || '%') OR ls.description ILIKE ('%' || $1 || '%'))",
+    ];
     let paramIdx = 3;
 
     if (type) {
@@ -94,7 +100,7 @@ export async function searchContent(
            websearch_to_tsquery('english', $1),
            'MaxWords=10, MinWords=5, ShortWord=3, HighlightAll=false'
          ) AS highlight,
-         ts_rank_cd(ls.search_vector, websearch_to_tsquery('english', $1)) AS rank
+         COALESCE(NULLIF(ts_rank_cd(ls.search_vector, websearch_to_tsquery('english', $1)), 0), CASE WHEN ls.title ILIKE ('%' || $1 || '%') THEN 0.5 ELSE 0.1 END) AS rank
        FROM live_sessions ls
        ${liveWhereClause}`
       : '';
@@ -124,7 +130,7 @@ export async function searchContent(
          websearch_to_tsquery('english', $1),
          'MaxWords=10, MinWords=5, ShortWord=3, HighlightAll=false'
        ) AS highlight,
-       ts_rank_cd(ci.search_vector, websearch_to_tsquery('english', $1)) AS rank
+       COALESCE(NULLIF(ts_rank_cd(ci.search_vector, websearch_to_tsquery('english', $1)), 0), CASE WHEN ci.title ILIKE ('%' || $1 || '%') THEN 0.5 ELSE 0.1 END) AS rank
      FROM content_items ci
      ${whereClause}
      ${liveUnion}

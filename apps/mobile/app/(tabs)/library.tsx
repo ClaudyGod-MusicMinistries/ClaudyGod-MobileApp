@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Image, Share, View } from 'react-native';
+import { Image, Share, TextInput, View } from 'react-native';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -37,8 +37,8 @@ import {
 type LibTab = 'saved' | 'history' | 'downloads';
 
 const TABS: { id: LibTab; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }[] = [
-  { id: 'saved',     label: 'Saved',     icon: 'bookmark' },
-  { id: 'history',   label: 'History',   icon: 'history' },
+  { id: 'saved', label: 'Saved', icon: 'bookmark' },
+  { id: 'history', label: 'History', icon: 'history' },
   { id: 'downloads', label: 'Downloads', icon: 'download-done' },
 ];
 
@@ -68,36 +68,36 @@ const useStyles = makeStyles((theme) => ({
     borderWidth: 1,
     marginLeft: 'auto',
   },
-  overviewStatusReady:   { backgroundColor: theme.colors.successSurface, borderColor: theme.colors.successBorder },
+  overviewStatusReady: { backgroundColor: theme.colors.successSurface, borderColor: theme.colors.successBorder },
   overviewStatusSyncing: { backgroundColor: theme.colors.infoSurface, borderColor: theme.colors.infoBorder },
-  overviewStatusDot:       { width: 7, height: 7, borderRadius: 4 },
-  overviewStatusDotReady:  { backgroundColor: theme.colors.success },
-  overviewStatusDotSyncing:{ backgroundColor: theme.colors.info },
-  overviewStatusText:        { fontWeight: '700' },
-  overviewStatusTextReady:   { color: theme.colors.success },
+  overviewStatusDot: { width: 7, height: 7, borderRadius: 4 },
+  overviewStatusDotReady: { backgroundColor: theme.colors.success },
+  overviewStatusDotSyncing: { backgroundColor: theme.colors.info },
+  overviewStatusText: { fontWeight: '700' },
+  overviewStatusTextReady: { color: theme.colors.success },
   overviewStatusTextSyncing: { color: theme.colors.info },
   tabBar: {
     flexDirection: 'row', gap: theme.spacing.xs, padding: theme.spacing.xxs,
     borderRadius: theme.radius.xl, backgroundColor: theme.colors.subtleFill,
     borderWidth: 1, borderColor: theme.colors.border,
   },
-  tabBtn:         { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.xs, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.xs, borderRadius: theme.radius.lg, borderWidth: 1 },
-  tabBtnActive:   { backgroundColor: theme.colors.controlSelectedSurface, borderColor: theme.colors.controlSelectedBorder },
+  tabBtn: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.xs, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.xs, borderRadius: theme.radius.lg, borderWidth: 1 },
+  tabBtnActive: { backgroundColor: theme.colors.controlSelectedSurface, borderColor: theme.colors.controlSelectedBorder },
   tabBtnInactive: { backgroundColor: 'transparent', borderColor: 'transparent' },
-  tabLabel:       { fontSize: 12.5 },
+  tabLabel: { fontSize: 12.5 },
   tabLabelActive: { fontWeight: '700', color: theme.colors.controlSelectedText },
-  tabLabelInactive:{ fontWeight: '500', color: theme.colors.textMuted },
-  badgeWrap:      { minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
-  badgeActive:    { backgroundColor: theme.colors.controlSelectedIconSurface },
-  badgeInactive:  { backgroundColor: theme.colors.subtleFillStrong },
-  badgeText:      { fontSize: 9, fontWeight: '700' },
-  badgeTextActive:{ color: theme.colors.controlSelectedText },
+  tabLabelInactive: { fontWeight: '500', color: theme.colors.textMuted },
+  badgeWrap: { minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
+  badgeActive: { backgroundColor: theme.colors.controlSelectedIconSurface },
+  badgeInactive: { backgroundColor: theme.colors.subtleFillStrong },
+  badgeText: { fontSize: 9, fontWeight: '700' },
+  badgeTextActive: { color: theme.colors.controlSelectedText },
   badgeTextInactive: { color: theme.colors.primary },
-  sectionGap:     { gap: 12 },
+  sectionGap: { gap: 12 },
   collectionSection: { gap: theme.layout.sectionGap },
 
   // Saved-tab empty state (ported from the former Favourites screen)
-  emptyCard:         { padding: theme.spacing.xl, alignItems: 'center', gap: 18 },
+  emptyCard: { padding: theme.spacing.xl, alignItems: 'center', gap: 18 },
   emptyIconBox: {
     width: 72, height: 72, borderRadius: theme.radius.xxl,
     alignItems: 'center', justifyContent: 'center',
@@ -105,23 +105,23 @@ const useStyles = makeStyles((theme) => ({
     borderWidth: 1.5, borderColor: theme.colors.primaryBorder,
   },
   emptyLogo: { width: 48, height: 48, borderRadius: theme.radius.xl },
-  emptyTextWrap:     { alignItems: 'center', gap: 8 },
-  emptyTitle:        { color: theme.colors.text, textAlign: 'center' },
-  emptyBody:         { color: theme.colors.textSecondary, textAlign: 'center', maxWidth: 360 },
-  emptyActions:      { gap: theme.spacing.sm, alignSelf: 'stretch' },
+  emptyTextWrap: { alignItems: 'center', gap: 8 },
+  emptyTitle: { color: theme.colors.text, textAlign: 'center' },
+  emptyBody: { color: theme.colors.textSecondary, textAlign: 'center', maxWidth: 360 },
+  emptyActions: { gap: theme.spacing.sm, alignSelf: 'stretch' },
 
   // Saved-tab responsive grid
-  gridWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  gridItem:     { minWidth: 130 },
+  gridWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  gridItem: { minWidth: 130 },
 
   // Downloads-in-progress rows
   downloadingCard: { padding: theme.spacing.md, gap: 10 },
-  downloadingRow:  { gap: 6 },
-  downloadingTop:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-  downloadingTitle:{ color: theme.colors.text, flexShrink: 1 },
-  downloadingPct:  { color: theme.colors.textMuted },
-  progressTrack:   { height: 4, borderRadius: 2, backgroundColor: theme.colors.subtleFill, overflow: 'hidden' },
-  progressFill:    { height: 4, borderRadius: 2, backgroundColor: theme.colors.primary },
+  downloadingRow: { gap: 6 },
+  downloadingTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  downloadingTitle: { color: theme.colors.text, flexShrink: 1 },
+  downloadingPct: { color: theme.colors.textMuted },
+  progressTrack: { height: 4, borderRadius: 2, backgroundColor: theme.colors.subtleFill, overflow: 'hidden' },
+  progressFill: { height: 4, borderRadius: 2, backgroundColor: theme.colors.primary },
   collectionHero: {
     padding: theme.spacing.lg, gap: theme.spacing.md,
     borderColor: theme.colors.primaryBorder,
@@ -171,13 +171,113 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.subtleFill, borderWidth: 1, borderColor: theme.colors.border,
   },
   offlineBadge: { color: theme.colors.success },
+
+  libraryFilterRow: {
+    marginTop: theme.spacing.sm,
+    gap: 8,
+  },
+  librarySearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.subtleFill,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  librarySearchInput: {
+    flex: 1,
+    color: theme.colors.text,
+    fontSize: 12.5,
+    padding: 0,
+  },
+  filterPillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  filterPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.subtleFill,
+  },
+  filterPillActive: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySurface,
+  },
+  filterPillText: {
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  filterPillTextActive: {
+    color: theme.colors.primary,
+    fontWeight: '700',
+  },
+  sortToggleBtn: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.subtleFill,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  sortToggleText: {
+    color: theme.colors.textSecondary,
+    fontSize: 10.5,
+    fontWeight: '600',
+  },
+  guestBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    padding: 10,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryBorder,
+    marginTop: 8,
+  },
+  guestBannerTextWrap: { flex: 1 },
+  guestBannerTitle: {
+    color: theme.colors.primary,
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  guestBannerSubtitle: {
+    color: theme.colors.textSecondary,
+    fontSize: 10.5,
+    marginTop: 1,
+  },
+  guestBannerBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.primary,
+  },
+  guestBannerBtnText: {
+    color: theme.colors.onPrimary,
+    fontSize: 11,
+    fontWeight: '700',
+  },
 }));
 
 // ─── LibTabs ──────────────────────────────────────────────────────────────────
 
 function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: LibTab) => void; counts: Record<LibTab, number> }) {
   const styles = useStyles();
-  const theme  = useAppTheme();
+  const theme = useAppTheme();
   return (
     <View style={styles.tabBar}>
       {TABS.map((tab) => {
@@ -306,7 +406,7 @@ function LibraryMediaList({
   return (
     <FadeIn delay={70}>
       <View style={styles.mediaList}>
-      {items.map((item) => (
+        {items.map((item) => (
           <SurfaceCard key={`${kind}-${item.id}`} tone="default" style={styles.mediaRow}>
             <TVTouchable
               onPress={() => onPlay(item)}
@@ -340,7 +440,7 @@ function LibraryMediaList({
               ) : null}
             </View>
           </SurfaceCard>
-      ))}
+        ))}
       </View>
     </FadeIn>
   );
@@ -350,7 +450,7 @@ function LibraryMediaList({
 
 export default function LibraryScreen() {
   const styles = useStyles();
-  const theme  = useAppTheme();
+  const theme = useAppTheme();
   const router = useRouter();
   const device = useDeviceClass();
   const { showToast } = useToast();
@@ -360,9 +460,12 @@ export default function LibraryScreen() {
   const { isAuthenticated } = useAuth();
   const { downloads, syncError: downloadSyncError, refreshDownloads, deleteDownload } = useDownloads();
   const [activeTab, setActiveTab] = useState<LibTab>('saved');
-  const [removingId, setRemovingId]     = useState<string | null>(null);
+  const [filterQuery, setFilterQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<'all' | 'audio' | 'video' | 'playlist'>('all');
+  const [sortBy, setSortBy] = useState<'recent' | 'az'>('recent');
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<FeedCardItem | null>(null);
-  const [isRemoving, setIsRemoving]     = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [downloadRemoveTarget, setDownloadRemoveTarget] = useState<FeedCardItem | null>(null);
   const [isDeletingDownload, setIsDeletingDownload] = useState(false);
   const [historyClearOpen, setHistoryClearOpen] = useState(false);
@@ -407,12 +510,34 @@ export default function LibraryScreen() {
     [downloads],
   );
 
+  const filterAndSortItems = useCallback((list: FeedCardItem[]) => {
+    let result = list;
+    if (selectedType !== 'all') {
+      result = result.filter((item) => item.type === selectedType);
+    }
+    const q = filterQuery.trim().toLowerCase();
+    if (q) {
+      result = result.filter((item) =>
+        [item.title, item.subtitle, item.description].join(' ').toLowerCase().includes(q),
+      );
+    }
+    if (sortBy === 'az') {
+      result = [...result].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    }
+    return result;
+  }, [filterQuery, selectedType, sortBy]);
+
+  const displayedFavorites = useMemo(() => filterAndSortItems(favorites), [favorites, filterAndSortItems]);
+  const displayedHistory = useMemo(() => filterAndSortItems(history), [history, filterAndSortItems]);
+  const displayedDownloads = useMemo(() => filterAndSortItems(downloadedItems), [downloadedItems, filterAndSortItems]);
+
   const counts: Record<LibTab, number> = { saved: favorites.length, history: history.length, downloads: downloadedItems.length };
 
-  const featured   = favorites[0] ?? null;
+  const hasFilterActive = filterQuery.trim().length > 0 || selectedType !== 'all';
+  const featured   = !hasFilterActive && sortBy === 'recent' ? (displayedFavorites[0] ?? null) : null;
   const numCols    = device.isTV ? 5 : device.isLargeDesktop ? 4 : device.isDesktop ? 3 : device.isTablet ? 3 : 2;
   const colPercent = `${Math.floor(100 / numCols) - 1}%` as const;
-  const gridItems  = useMemo(() => favorites.slice(featured ? 1 : 0), [favorites, featured]);
+  const gridItems  = useMemo(() => (featured ? displayedFavorites.slice(1) : displayedFavorites), [displayedFavorites, featured]);
 
   // Fire-and-forget, same as Home's openItem — awaiting this (a SecureStore
   // read + network POST) made every tap here wait on a round-trip before the
@@ -491,6 +616,67 @@ export default function LibraryScreen() {
       >
         <LibraryOverview counts={counts} loaded={loaded}>
           <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
+
+          {/* In-Library Search, Category Filter Chips & Sort Controls */}
+          <View style={styles.libraryFilterRow}>
+            <View style={styles.librarySearchBox}>
+              <MaterialIcons name="search" size={16} color={theme.colors.textSecondary} />
+              <TextInput
+                value={filterQuery}
+                onChangeText={setFilterQuery}
+                placeholder="Filter saved, history & downloads..."
+                placeholderTextColor={theme.colors.textMuted}
+                style={styles.librarySearchInput}
+              />
+              {filterQuery ? (
+                <TVTouchable onPress={() => setFilterQuery('')} showFocusBorder={false}>
+                  <MaterialIcons name="close" size={16} color={theme.colors.textSecondary} />
+                </TVTouchable>
+              ) : null}
+            </View>
+
+            <View style={styles.filterPillRow}>
+              {(['all', 'audio', 'video', 'playlist'] as const).map((type) => {
+                const active = selectedType === type;
+                const label = type === 'all' ? 'All' : type === 'audio' ? 'Music' : type === 'video' ? 'Videos' : 'Playlists';
+                return (
+                  <TVTouchable
+                    key={type}
+                    onPress={() => setSelectedType(type)}
+                    showFocusBorder={false}
+                    style={[styles.filterPill, active && styles.filterPillActive]}
+                  >
+                    <CustomText style={[styles.filterPillText, active && styles.filterPillTextActive]}>
+                      {label}
+                    </CustomText>
+                  </TVTouchable>
+                );
+              })}
+
+              <TVTouchable
+                onPress={() => setSortBy((prev) => (prev === 'recent' ? 'az' : 'recent'))}
+                showFocusBorder={false}
+                style={styles.sortToggleBtn}
+              >
+                <MaterialIcons name={sortBy === 'az' ? 'sort-by-alpha' : 'schedule'} size={14} color={theme.colors.primary} />
+                <CustomText style={styles.sortToggleText}>
+                  {sortBy === 'az' ? 'A-Z' : 'Recent'}
+                </CustomText>
+              </TVTouchable>
+            </View>
+
+            {!isAuthenticated ? (
+              <View style={styles.guestBanner}>
+                <View style={styles.guestBannerTextWrap}>
+                  <CustomText style={styles.guestBannerTitle}>Guest Mode</CustomText>
+                  <CustomText style={styles.guestBannerSubtitle}>Sign in to sync your library across devices</CustomText>
+                </View>
+                <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} showFocusBorder={false} style={styles.guestBannerBtn}>
+                  <CustomText style={styles.guestBannerBtnText}>Sign In</CustomText>
+                </TVTouchable>
+              </View>
+            ) : null}
+          </View>
         </LibraryOverview>
 
         {error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
@@ -531,6 +717,15 @@ export default function LibraryScreen() {
               </SurfaceCard>
             ) : null}
 
+            {loaded && favorites.length > 0 && displayedFavorites.length === 0 ? (
+              <SurfaceCard tone="subtle" style={styles.emptyCard}>
+                <MaterialIcons name="search-off" size={32} color={theme.colors.textMuted} />
+                <CustomText variant="heading" style={styles.emptyTitle}>No matching saved items</CustomText>
+                <CustomText variant="body" style={styles.emptyBody}>No saved items match your filter criteria.</CustomText>
+                <AppButton title="Clear filter" variant="secondary" size="sm" onPress={() => { setFilterQuery(''); setSelectedType('all'); }} />
+              </SurfaceCard>
+            ) : null}
+
             {featured ? (
               <FadeIn delay={70}>
                 <PremiumHero
@@ -548,25 +743,25 @@ export default function LibraryScreen() {
             {gridItems.length > 0 ? (
               <FadeIn delay={110}>
                 <View style={styles.collectionSection}>
-                  <SectionLabel title="All favourites" accent={`${favorites.length} saved`} subtitle="Your complete favourites collection" />
-                <View style={styles.gridWrap}>
-                  {gridItems.map((item) => (
-                    <View key={item.id} style={[styles.gridItem, { width: colPercent }]}>
-                      <FavoriteCard
-                        item={item}
-                        onPlay={() => void openItem(item, 'library_saved')}
-                        onShare={() => void shareItem(item)}
-                        onRemove={() => confirmRemove(item)}
-                        removing={removingId === item.id}
-                      />
-                    </View>
-                  ))}
-                </View>
+                  <SectionLabel title="All favourites" accent={`${displayedFavorites.length} saved`} subtitle="Your complete favourites collection" />
+                  <View style={styles.gridWrap}>
+                    {gridItems.map((item) => (
+                      <View key={item.id} style={[styles.gridItem, { width: colPercent }]}>
+                        <FavoriteCard
+                          item={item}
+                          onPlay={() => void openItem(item, 'library_saved')}
+                          onShare={() => void shareItem(item)}
+                          onRemove={() => confirmRemove(item)}
+                          removing={removingId === item.id}
+                        />
+                      </View>
+                    ))}
+                  </View>
                 </View>
               </FadeIn>
             ) : null}
 
-            {loaded && sectionItems.some(({ items }) => items.length > 0) ? (
+            {loaded && !hasFilterActive && sectionItems.some(({ items }) => items.length > 0) ? (
               sectionItems.map(({ section, items, overflowCount }) => (
                 items.length > 0 ? (
                   <View key={section.id} style={styles.collectionSection}>
@@ -579,7 +774,7 @@ export default function LibraryScreen() {
                   </View>
                 ) : null
               ))
-            ) : loaded && recommendedFallback.length > 0 ? (
+            ) : loaded && !hasFilterActive && recommendedFallback.length > 0 ? (
               <ContentList
                 title="Recommended for you"
                 items={recommendedFallback}
@@ -592,11 +787,18 @@ export default function LibraryScreen() {
         {activeTab === 'history' ? (
           <View style={styles.collectionSection}>
             <CollectionHeader kind="history" count={history.length} onClear={() => setHistoryClearOpen(true)} />
-            {loaded && history.length > 0 ? (
+            {loaded && displayedHistory.length > 0 ? (
               <View style={styles.sectionGap}>
-                <SectionLabel title="Recently played" accent={`${history.length} items`} subtitle="Most recent activity first" />
-                <LibraryMediaList items={history} kind="history" onPlay={(item) => void openItem(item, 'library_history')} />
+                <SectionLabel title="Recently played" accent={`${displayedHistory.length} items`} subtitle="Most recent activity first" />
+                <LibraryMediaList items={displayedHistory} kind="history" onPlay={(item) => void openItem(item, 'library_history')} />
               </View>
+            ) : loaded && history.length > 0 ? (
+              <SurfaceCard tone="subtle" style={styles.emptyCard}>
+                <MaterialIcons name="search-off" size={32} color={theme.colors.textMuted} />
+                <CustomText variant="heading" style={styles.emptyTitle}>No matching history items</CustomText>
+                <CustomText variant="body" style={styles.emptyBody}>No played items match your current filter.</CustomText>
+                <AppButton title="Clear filter" variant="secondary" size="sm" onPress={() => { setFilterQuery(''); setSelectedType('all'); }} />
+              </SurfaceCard>
             ) : loaded ? (
               <SurfaceCard tone="strong" style={styles.emptyCard}>
                 <View style={styles.emptyIconBox}><Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={styles.emptyLogo} /></View>
@@ -632,16 +834,23 @@ export default function LibraryScreen() {
               </SurfaceCard>
             ) : null}
 
-            {downloadedItems.length > 0 ? (
+            {displayedDownloads.length > 0 ? (
               <View style={styles.sectionGap}>
-                <SectionLabel title="Downloaded" accent={`${downloadedItems.length} offline`} subtitle="Stored and verified on this device" />
+                <SectionLabel title="Downloaded" accent={`${displayedDownloads.length} offline`} subtitle="Stored and verified on this device" />
                 <LibraryMediaList
-                  items={downloadedItems}
+                  items={displayedDownloads}
                   kind="downloads"
                   onPlay={(item) => void openItem(item, 'library_downloads')}
                   onRemove={setDownloadRemoveTarget}
                 />
               </View>
+            ) : downloadedItems.length > 0 ? (
+              <SurfaceCard tone="subtle" style={styles.emptyCard}>
+                <MaterialIcons name="search-off" size={32} color={theme.colors.textMuted} />
+                <CustomText variant="heading" style={styles.emptyTitle}>No matching downloads</CustomText>
+                <CustomText variant="body" style={styles.emptyBody}>No downloaded items match your current filter.</CustomText>
+                <AppButton title="Clear filter" variant="secondary" size="sm" onPress={() => { setFilterQuery(''); setSelectedType('all'); }} />
+              </SurfaceCard>
             ) : downloadingItems.length === 0 ? (
               <SurfaceCard tone="strong" style={styles.emptyCard}>
                 <View style={styles.emptyIconBox}><Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={styles.emptyLogo} /></View>

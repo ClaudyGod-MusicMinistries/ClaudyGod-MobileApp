@@ -22,14 +22,14 @@ export const SETTINGS_DESTINATION_OPTIONS = [
   { value: 'tabs.library', label: 'Library tab' },
   { value: 'tabs.search', label: 'Search tab' },
   { value: 'tabs.settings', label: 'Settings tab' },
-  { value: 'settings.privacy', label: 'Privacy' },
+  { value: 'settings.privacy', label: 'Data & Privacy Controls' },
   { value: 'settings.privacyPolicy', label: 'Privacy Policy' },
   { value: 'settings.terms', label: 'Terms of Service' },
-  { value: 'settings.donate', label: 'Donate' },
-  { value: 'settings.help', label: 'Help' },
-  { value: 'settings.about', label: 'About' },
-  { value: 'settings.rate', label: 'Rate app' },
-  { value: 'settings.referral', label: 'Invite friends' },
+  { value: 'settings.donate', label: 'Support & Giving' },
+  { value: 'settings.help', label: 'Help & Support' },
+  { value: 'settings.about', label: 'About ClaudyGod' },
+  { value: 'settings.rate', label: 'Rate the App' },
+  { value: 'settings.referral', label: 'Invite Friends' },
 ] as const;
 
 export const AD_PLACEMENT_SCREEN_OPTIONS = [

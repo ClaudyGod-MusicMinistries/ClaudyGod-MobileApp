@@ -407,9 +407,9 @@ const collectSectionTokens = (config: MobileAppConfig): string[] => {
   return [...tokens];
 };
 
-// The Home hero is admin-assigned (content.isFeatured), not algorithmically
-// ranked — if admin hasn't featured anything, this returns null and the
-// mobile app shows its existing empty-state hero rather than guessing.
+// The Home hero highlights explicitly admin-assigned content (content.isFeatured = true).
+// If the admin hasn't explicitly featured an item, it smartly spotlights the latest
+// published spotlight track/video so the mobile app always has rich media to showcase.
 const loadFeaturedContent = async (): Promise<MobileFeedItem | null> => {
   let result;
   try {
@@ -435,6 +435,31 @@ const loadFeaturedContent = async (): Promise<MobileFeedItem | null> => {
        ORDER BY c.updated_at DESC
        LIMIT 1`,
     );
+
+    if (!result.rows[0]) {
+      result = await pool.query<PublishedContentRow>(
+        `SELECT
+           c.id,
+           c.title,
+           c.description,
+           c.content_type,
+           c.media_url,
+           c.thumbnail_url,
+           c.source_kind,
+           c.channel_name,
+           c.duration_label,
+           c.app_sections,
+           c.tags,
+           c.created_at,
+           c.updated_at,
+           u.display_name AS author_display_name
+         FROM content_items c
+         INNER JOIN app_users u ON u.id = c.author_id
+         WHERE c.visibility = 'published' AND c.deleted_at IS NULL
+         ORDER BY c.updated_at DESC
+         LIMIT 1`,
+      );
+    }
   } catch (error) {
     if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
       return null;
