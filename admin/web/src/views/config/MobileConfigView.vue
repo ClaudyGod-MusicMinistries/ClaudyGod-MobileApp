@@ -48,85 +48,184 @@
         </p>
 
         <div v-for="group in MOBILE_LAYOUT_GROUPS" :key="group.key" class="space-y-3">
-          <div class="flex items-center justify-between gap-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-border/40">
             <div>
-              <h3 class="text-sm font-bold text-ink">{{ group.title }} sections</h3>
-              <p class="text-xs text-ink-muted">{{ group.description }}</p>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-ink">{{ group.title }} sections</h3>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-surface-hover text-ink-muted border border-border">
+                  {{ config.layout[group.key]?.length ?? 0 }}
+                </span>
+              </div>
+              <p class="text-xs text-ink-muted mt-0.5">{{ group.description }}</p>
             </div>
-            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-surface-hover text-ink-muted border border-border">
-              {{ config.layout[group.key]?.length ?? 0 }} section{{ config.layout[group.key]?.length !== 1 ? 's' : '' }}
-            </span>
+            <div class="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                class="text-xs text-ink-muted hover:text-ink font-medium px-2 py-1 rounded hover:bg-surface-hover transition-colors"
+                @click="expandAllSections(group.key)"
+              >
+                Expand all
+              </button>
+              <button
+                type="button"
+                class="text-xs text-ink-muted hover:text-ink font-medium px-2 py-1 rounded hover:bg-surface-hover transition-colors"
+                @click="collapseAllSections(group.key)"
+              >
+                Collapse all
+              </button>
+              <AppButton variant="secondary" size="xs" @click="addSection(group.key)">+ Add section</AppButton>
+            </div>
           </div>
 
-          <div class="space-y-3">
-            <draggable
-              v-model="config.layout[group.key]"
-              item-key="id"
-              handle=".section-drag-handle"
-              ghost-class="opacity-40"
-              animation="150"
-              class="space-y-3"
+          <div class="space-y-2.5">
+            <div
+              v-for="(section, idx) in config.layout[group.key]"
+              :key="section.id"
+              :draggable="true"
+              @dragstart="handleDragStart(group.key, idx, $event)"
+              @dragover.prevent="handleDragOver(group.key, idx, $event)"
+              @dragenter.prevent="handleDragEnter(group.key, idx)"
+              @drop="handleDrop(group.key, idx)"
+              @dragend="handleDragEnd"
+              :class="[
+                'rounded-xl transition-all duration-150',
+                sectionDrag.groupKey === group.key && sectionDrag.fromIndex === idx
+                  ? 'opacity-30 border-dashed border-2 border-primary scale-[0.99]'
+                  : '',
+                sectionDrag.groupKey === group.key && sectionDrag.overIndex === idx && sectionDrag.fromIndex !== idx
+                  ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface shadow-md'
+                  : ''
+              ]"
             >
-              <template #item="{ element: section, index: idx }">
-                <AppCard class="p-4 space-y-3 border transition-shadow hover:shadow-sm">
-                  <!-- Section Header with Drag Handle, Order Badge, Move Buttons, and Remove -->
-                  <div class="flex items-center justify-between gap-3 pb-3 border-b border-border/60">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                      <button
-                        type="button"
-                        class="section-drag-handle p-1.5 -ml-1 text-ink-muted hover:text-ink cursor-grab active:cursor-grabbing rounded hover:bg-surface-hover transition-colors touch-none"
-                        :title="`Drag to reorder ${section.title || 'section'}`"
-                        :aria-label="`Drag to reorder ${section.title || 'section'}`"
-                      >
-                        <GripVertical class="w-4 h-4" />
-                      </button>
-                      <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary-soft border border-primary/20 shrink-0 tabular-nums">
-                        Position #{{ idx + 1 }}
-                      </span>
-                      <span class="text-xs font-semibold text-ink truncate">
-                        {{ section.title || 'Untitled section' }}
-                      </span>
-                    </div>
-
-                    <div class="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
-                        :disabled="idx === 0"
-                        title="Move section up"
-                        aria-label="Move section up"
-                        @click="moveSectionUp(group.key, idx)"
-                      >
-                        <ArrowUp class="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
-                        :disabled="idx === config.layout[group.key].length - 1"
-                        title="Move section down"
-                        aria-label="Move section down"
-                        @click="moveSectionDown(group.key, idx)"
-                      >
-                        <ArrowDown class="w-4 h-4" />
-                      </button>
-                      <div class="w-px h-3.5 bg-border mx-1" />
-                      <AppButton
-                        variant="ghost"
-                        size="xs"
-                        class="text-danger hover:bg-danger/10"
-                        title="Remove section"
-                        @click="removeSection(group.key, idx)"
-                      >
-                        Remove
-                      </AppButton>
-                    </div>
+              <AppCard class="p-0 border border-border hover:border-border-strong overflow-hidden">
+              <!-- Card Header Row (Always visible & interactive) -->
+              <div
+                class="flex items-center justify-between gap-3 p-3.5 select-none transition-colors rounded-t-[var(--radius-card)]"
+                :class="isSectionExpanded(section.id) ? 'bg-surface-hover/30 border-b border-border/50' : 'bg-surface'"
+              >
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                  <!-- Drag Handle -->
+                  <div
+                    class="p-1 -ml-1 text-ink-muted hover:text-ink cursor-grab active:cursor-grabbing rounded hover:bg-surface-hover transition-colors shrink-0"
+                    title="Drag to reorder"
+                  >
+                    <GripVertical class="w-4 h-4" />
                   </div>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <AppInput v-model="section.title" label="Title" placeholder="e.g. Nuggets of Truth" />
-                    <AppInput v-model="section.subtitle" label="Subtitle" placeholder="Short description shown under the title" />
-                  </div>
+                  <!-- Position Badge -->
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary-soft border border-primary/20 shrink-0 tabular-nums">
+                    #{{ idx + 1 }}
+                  </span>
 
+                  <!-- Title & ID pill -->
+                  <div class="min-w-0 flex items-center gap-2 flex-wrap cursor-pointer flex-1" @click="toggleSectionExpanded(section.id)">
+                    <span class="text-sm font-semibold text-ink truncate">
+                      {{ section.title || 'Untitled section' }}
+                    </span>
+                    <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-surface-hover text-ink-muted border border-border/60 shrink-0">
+                      Tag: {{ section.title || section.id }}
+                    </span>
+                    <!-- Content Types summary badges -->
+                    <div class="hidden md:flex items-center gap-1 shrink-0">
+                      <span
+                        v-for="ct in section.contentTypes"
+                        :key="ct"
+                        class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface border border-border/80 text-ink-muted"
+                      >
+                        {{ ct }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Reorder arrows & actions -->
+                <div class="flex items-center gap-1 shrink-0">
+                  <!-- Move to Top -->
+                  <button
+                    type="button"
+                    class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-20 disabled:pointer-events-none transition-colors hidden sm:inline-flex"
+                    :disabled="idx === 0"
+                    title="Move to top"
+                    aria-label="Move to top"
+                    @click.stop="moveSectionToTop(group.key, idx)"
+                  >
+                    <ChevronsUp class="w-4 h-4" />
+                  </button>
+
+                  <!-- Move Up -->
+                  <button
+                    type="button"
+                    class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-20 disabled:pointer-events-none transition-colors"
+                    :disabled="idx === 0"
+                    title="Move section up"
+                    aria-label="Move section up"
+                    @click.stop="moveSectionUp(group.key, idx)"
+                  >
+                    <ArrowUp class="w-4 h-4" />
+                  </button>
+
+                  <!-- Move Down -->
+                  <button
+                    type="button"
+                    class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-20 disabled:pointer-events-none transition-colors"
+                    :disabled="idx === config.layout[group.key].length - 1"
+                    title="Move section down"
+                    aria-label="Move section down"
+                    @click.stop="moveSectionDown(group.key, idx)"
+                  >
+                    <ArrowDown class="w-4 h-4" />
+                  </button>
+
+                  <!-- Move to Bottom -->
+                  <button
+                    type="button"
+                    class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-20 disabled:pointer-events-none transition-colors hidden sm:inline-flex"
+                    :disabled="idx === config.layout[group.key].length - 1"
+                    title="Move to bottom"
+                    aria-label="Move to bottom"
+                    @click.stop="moveSectionToBottom(group.key, idx)"
+                  >
+                    <ChevronsDown class="w-4 h-4" />
+                  </button>
+
+                  <span class="w-px h-3.5 bg-border mx-1"></span>
+
+                  <!-- Expand / Collapse Toggle -->
+                  <button
+                    type="button"
+                    class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors"
+                    :title="isSectionExpanded(section.id) ? 'Collapse section' : 'Expand section'"
+                    :aria-label="isSectionExpanded(section.id) ? 'Collapse section' : 'Expand section'"
+                    @click.stop="toggleSectionExpanded(section.id)"
+                  >
+                    <ChevronUp v-if="isSectionExpanded(section.id)" class="w-4 h-4" />
+                    <ChevronDown v-else class="w-4 h-4" />
+                  </button>
+
+                  <span class="w-px h-3.5 bg-border mx-1"></span>
+
+                  <!-- Remove Button -->
+                  <AppButton
+                    variant="ghost"
+                    size="xs"
+                    class="text-danger hover:bg-danger/10"
+                    title="Remove section"
+                    @click.stop="removeSection(group.key, idx)"
+                  >
+                    Remove
+                  </AppButton>
+                </div>
+              </div>
+
+              <!-- Card Body (Expandable) -->
+              <div v-show="isSectionExpanded(section.id)" class="p-4 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <AppInput v-model="section.title" label="Title" placeholder="e.g. Nuggets of Truth" />
+                  <AppInput v-model="section.subtitle" label="Subtitle" placeholder="Short description shown under the title" />
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="text-xs font-medium text-ink-soft">Eligible content types</label>
                   <div class="flex flex-wrap gap-2">
                     <button
                       v-for="ct in MOBILE_CONTENT_TYPE_OPTIONS"
@@ -135,7 +234,7 @@
                       :class="[
                         'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
                         section.contentTypes.includes(ct)
-                          ? 'bg-primary/20 border-primary/40 text-primary-soft'
+                          ? 'bg-primary/20 border-primary/40 text-primary-soft shadow-xs'
                           : 'bg-surface-hover border-border text-ink-muted hover:border-primary/30 hover:text-ink',
                       ]"
                       @click="toggleContentType(section, ct)"
@@ -143,44 +242,45 @@
                       {{ ct }}
                     </button>
                   </div>
+                </div>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <AppInput v-model="section.actionLabel" label="Action label" placeholder="Open" />
-                    <AppSelect v-model="section.destinationTab" label="Destination tab" :options="MOBILE_TAB_DESTINATION_OPTIONS_ARR" />
-                    <AppInput
-                      v-model.number="section.maxItems"
-                      type="number"
-                      label="Items shown in section rail"
-                      hint="Additional eligible items remain available through See all."
-                      :min="MOBILE_SECTION_RAIL_MIN_ITEMS"
-                      max="24"
-                    />
-                  </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <AppInput v-model="section.actionLabel" label="Action label" placeholder="Open" />
+                  <AppSelect v-model="section.destinationTab" label="Destination tab" :options="MOBILE_TAB_DESTINATION_OPTIONS_ARR" />
+                  <AppInput
+                    v-model.number="section.maxItems"
+                    type="number"
+                    label="Items shown in section rail"
+                    hint="Additional eligible items remain available through See all."
+                    :min="MOBILE_SECTION_RAIL_MIN_ITEMS"
+                    max="24"
+                  />
+                </div>
 
-                  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p class="text-[11px] text-ink-muted">
-                      Tag content into this section with: <span class="font-mono text-ink">{{ section.title || section.id }}</span>
-                    </p>
-                    <div class="flex items-center gap-2">
-                      <span
-                        v-if="sectionDiagnostics[diagnosticKey(group.key, section.id)]"
-                        class="text-xs font-semibold text-ink"
-                      >
-                        {{ sectionDeliverySummary(group.key, section) }}
-                      </span>
-                      <AppButton
-                        variant="secondary"
-                        size="xs"
-                        :loading="diagnosticLoadingKey === diagnosticKey(group.key, section.id)"
-                        @click="verifySection(group.key, section.id)"
-                      >
-                        Verify published content
-                      </AppButton>
-                    </div>
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-2 border-t border-border/40">
+                  <p class="text-[11px] text-ink-muted">
+                    Tag content into this section with: <span class="font-mono text-ink font-semibold">{{ section.title || section.id }}</span>
+                  </p>
+                  <div class="flex items-center gap-2">
+                    <span
+                      v-if="sectionDiagnostics[diagnosticKey(group.key, section.id)]"
+                      class="text-xs font-semibold text-ink"
+                    >
+                      {{ sectionDeliverySummary(group.key, section) }}
+                    </span>
+                    <AppButton
+                      variant="secondary"
+                      size="xs"
+                      :loading="diagnosticLoadingKey === diagnosticKey(group.key, section.id)"
+                      @click="verifySection(group.key, section.id)"
+                    >
+                      Verify published content
+                    </AppButton>
                   </div>
-                </AppCard>
-              </template>
-            </draggable>
+                </div>
+              </div>
+            </AppCard>
+          </div>
 
             <AppButton variant="secondary" size="sm" @click="addSection(group.key)">+ Add section</AppButton>
           </div>
@@ -242,7 +342,7 @@
                 >
                   <ArrowDown class="w-4 h-4" />
                 </button>
-                <div class="w-px h-3.5 bg-border mx-1" />
+                <span class="w-px h-3.5 bg-border mx-1"></span>
                 <AppButton variant="ghost" size="xs" class="text-danger" @click="removeSettingsHubSection(sIdx)">Remove section</AppButton>
               </div>
             </div>
@@ -475,15 +575,15 @@
             <h3 class="text-sm font-bold text-ink">Social links</h3>
             <AppButton variant="secondary" size="xs" @click="addSocialLink">+ Add</AppButton>
           </div>
-          <AppCard v-for="(social, idx) in config.about.social" :key="idx" class="p-4 space-y-3">
+          <AppCard v-for="(socialLink, idx) in config.about.social" :key="idx" class="p-4">
             <div class="flex items-start justify-between gap-3">
-              <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <AppInput v-model="social.icon" label="Icon" placeholder="public" />
-                <AppInput v-model="social.label" label="Label" placeholder="Website" />
+              <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <AppInput v-model="socialLink.icon" label="Icon" placeholder="public" />
+                <AppInput v-model="socialLink.label" label="Label" placeholder="Website" />
+                <AppInput v-model="socialLink.url" label="Link URL" placeholder="https://claudygod.org" />
               </div>
               <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeSocialLink(idx)">Remove</AppButton>
             </div>
-            <AppInput v-model="social.url" label="Website or profile URL" placeholder="https://claudygod.org" />
           </AppCard>
           <AppButton variant="secondary" size="sm" @click="addSocialLink">+ Add social link</AppButton>
         </div>
@@ -695,8 +795,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import draggable from 'vuedraggable';
-import { ArrowDown, ArrowUp, GripVertical } from 'lucide-vue-next';
+import {
+  ArrowDown, ArrowUp, GripVertical, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown,
+} from 'lucide-vue-next';
 import { useConfigStore } from '@/stores/config.store';
 import { useUiStore } from '@/stores/ui.store';
 import { getMobileSectionDiagnostic, type MobileSectionDiagnostic } from '@/api/config';
@@ -865,6 +966,97 @@ function moveSectionUp(groupKey: keyof AppConfig['layout'], idx: number): void {
 
 function moveSectionDown(groupKey: keyof AppConfig['layout'], idx: number): void {
   moveSection(groupKey, idx, idx + 1);
+}
+
+function moveSectionToTop(groupKey: keyof AppConfig['layout'], idx: number): void {
+  moveSection(groupKey, idx, 0);
+}
+
+function moveSectionToBottom(groupKey: keyof AppConfig['layout'], idx: number): void {
+  const list = config.value.layout[groupKey];
+  if (!list) return;
+  moveSection(groupKey, idx, list.length - 1);
+}
+
+// Native HTML5 Drag and Drop state & handlers
+interface SectionDragState {
+  groupKey: keyof AppConfig['layout'] | null;
+  fromIndex: number | null;
+  overIndex: number | null;
+}
+
+const sectionDrag = ref<SectionDragState>({
+  groupKey: null,
+  fromIndex: null,
+  overIndex: null,
+});
+
+function handleDragStart(groupKey: keyof AppConfig['layout'], idx: number, event: DragEvent): void {
+  sectionDrag.value = { groupKey, fromIndex: idx, overIndex: idx };
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', `${String(groupKey)}:${idx}`);
+  }
+}
+
+function handleDragOver(groupKey: keyof AppConfig['layout'], idx: number, event: DragEvent): void {
+  if (sectionDrag.value.groupKey !== groupKey) return;
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+  if (sectionDrag.value.overIndex !== idx) {
+    sectionDrag.value.overIndex = idx;
+  }
+}
+
+function handleDragEnter(groupKey: keyof AppConfig['layout'], idx: number): void {
+  if (sectionDrag.value.groupKey !== groupKey) return;
+  sectionDrag.value.overIndex = idx;
+}
+
+function handleDrop(groupKey: keyof AppConfig['layout'], toIndex: number): void {
+  if (
+    sectionDrag.value.groupKey === groupKey &&
+    sectionDrag.value.fromIndex !== null &&
+    sectionDrag.value.fromIndex !== toIndex
+  ) {
+    moveSection(groupKey, sectionDrag.value.fromIndex, toIndex);
+  }
+  handleDragEnd();
+}
+
+function handleDragEnd(): void {
+  sectionDrag.value = {
+    groupKey: null,
+    fromIndex: null,
+    overIndex: null,
+  };
+}
+
+// Expand / Collapse state per section
+const expandedSections = ref<Record<string, boolean>>({});
+
+function isSectionExpanded(sectionId: string): boolean {
+  return expandedSections.value[sectionId] !== false;
+}
+
+function toggleSectionExpanded(sectionId: string): void {
+  expandedSections.value[sectionId] = !isSectionExpanded(sectionId);
+}
+
+function expandAllSections(groupKey: keyof AppConfig['layout']): void {
+  const list = config.value.layout[groupKey] ?? [];
+  for (const s of list) {
+    expandedSections.value[s.id] = true;
+  }
+}
+
+function collapseAllSections(groupKey: keyof AppConfig['layout']): void {
+  const list = config.value.layout[groupKey] ?? [];
+  for (const s of list) {
+    expandedSections.value[s.id] = false;
+  }
 }
 
 function moveSettingsHubSection(fromIdx: number, toIdx: number): void {
