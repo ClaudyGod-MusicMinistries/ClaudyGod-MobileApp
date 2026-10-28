@@ -284,7 +284,7 @@ export default function HomeScreen() {
   const { config: appConfig } = useMobileAppConfig();
   const { user: account } = useAuth();
 
-  const featured = feed.featured ?? null;
+  const featured = feed.featured ?? feed.topPicks[0] ?? feed.ranked[0] ?? null;
 
   // Excludes `featured` — otherwise a live featured item shows "LIVE NOW" in
   // the hero and the exact same session repeats immediately below it in

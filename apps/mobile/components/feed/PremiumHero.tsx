@@ -66,16 +66,48 @@ export function PremiumHero({
     return (
       // Keyed distinctly from the real-hero branch below so React remounts
       // (and replays the entrance) when a featured item actually arrives,
-      // instead of silently updating this instance's children in place —
-      // which is what made the empty→real swap feel like an unannounced jolt.
+      // instead of silently updating this instance's children in place.
       <FadeIn key="hero-empty" delay={30} duration={400}>
         <View style={styles.heroEmptyCard}>
           <LinearGradient
-            colors={[theme.colors.primarySurface, 'transparent']}
+            colors={[theme.colors.primarySurface, theme.colors.surface, 'transparent']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={common.fill}
           />
+
+          {/* Premium Ambient Header Pill */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 12,
+            paddingVertical: 5,
+            borderRadius: theme.radius.pill,
+            backgroundColor: theme.colors.primarySurface,
+            borderWidth: 1,
+            borderColor: theme.colors.primaryBorder,
+            marginBottom: 16,
+          }}>
+            {/* Visualizer Waveform Simulator */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2.5, height: 12 }}>
+              <View style={{ width: 2.5, height: 6, borderRadius: 1.5, backgroundColor: theme.colors.primary }} />
+              <View style={{ width: 2.5, height: 12, borderRadius: 1.5, backgroundColor: theme.colors.primary }} />
+              <View style={{ width: 2.5, height: 8, borderRadius: 1.5, backgroundColor: theme.colors.primary }} />
+              <View style={{ width: 2.5, height: 11, borderRadius: 1.5, backgroundColor: theme.colors.primary }} />
+              <View style={{ width: 2.5, height: 5, borderRadius: 1.5, backgroundColor: theme.colors.primary }} />
+            </View>
+            <CustomText style={{
+              color: theme.colors.primary,
+              fontSize: 10.5,
+              fontWeight: '700',
+              letterSpacing: 0.8,
+              textTransform: 'uppercase',
+            }}>
+              Ministry Stream · 24/7 Worship
+            </CustomText>
+          </View>
+
           <View style={styles.heroEmptyIconShadowWrap}>
             <View style={styles.heroEmptyIconBox}>
               <LinearGradient
@@ -88,15 +120,15 @@ export function PremiumHero({
             </View>
           </View>
 
-          <CustomText variant="heading" style={styles.heroEmptyTitle} numberOfLines={1}>
-            {title ?? 'Nothing playing yet'}
+          <CustomText variant="heading" style={[styles.heroEmptyTitle, { fontSize: 20, fontWeight: '700' }]} numberOfLines={1}>
+            {title ?? 'Start your worship stream'}
           </CustomText>
-          <CustomText variant="body" style={styles.heroEmptySubtitle} numberOfLines={2}>
-            {subtitle ?? 'Pick something to get started.'}
+          <CustomText variant="body" style={[styles.heroEmptySubtitle, { fontSize: 13, lineHeight: 18, marginTop: 6 }]} numberOfLines={2}>
+            {subtitle ?? 'Music, videos, and live moments.'}
           </CustomText>
 
           {(primaryAction || (secondaryLabel && secondaryAction)) ? (
-            <View style={styles.heroEmptyCtaRow}>
+            <View style={[styles.heroEmptyCtaRow, { marginTop: 20 }]}>
               {primaryAction ? (
                 <AppButton
                   title={resolvedPrimaryLabel}

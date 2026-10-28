@@ -6,10 +6,12 @@ const KEYS = {
   history:     'claudygod.user.history',
   preferences: 'claudygod.user.preferences',
   downloads:   'claudygod.user.downloads',
+  searches:    'claudygod.user.searches',
 } as const;
 
 const MAX_FAVORITES = 200;
 const MAX_HISTORY   = 100;
+const MAX_SEARCHES  = 8;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -113,6 +115,32 @@ export async function saveDownload(download: LocalDownload): Promise<void> {
 
 export async function removeDownload(contentId: string): Promise<void> {
   await updateJSON<LocalDownload[]>(KEYS.downloads, [], (current) => current.filter((entry) => entry.contentId !== contentId));
+}
+
+// ── Search History ──────────────────────────────────────────────────────────
+
+export async function getRecentSearches(): Promise<string[]> {
+  return readJSON<string[]>(KEYS.searches, []);
+}
+
+export async function addRecentSearch(query: string): Promise<string[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return getRecentSearches();
+  return updateJSON<string[]>(KEYS.searches, [], (current) => {
+    const filtered = current.filter((item) => item.toLowerCase() !== trimmed.toLowerCase());
+    return [trimmed, ...filtered].slice(0, MAX_SEARCHES);
+  });
+}
+
+export async function removeRecentSearch(query: string): Promise<string[]> {
+  const trimmed = query.trim();
+  return updateJSON<string[]>(KEYS.searches, [], (current) =>
+    current.filter((item) => item.toLowerCase() !== trimmed.toLowerCase()),
+  );
+}
+
+export async function clearRecentSearches(): Promise<void> {
+  await writeJSON<string[]>(KEYS.searches, []);
 }
 
 // ── Clear all ──────────────────────────────────────────────────────────────
