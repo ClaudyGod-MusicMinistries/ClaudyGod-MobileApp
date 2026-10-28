@@ -176,7 +176,7 @@
         <template #cell-title="{ row }">
           <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-md bg-bg-2 border border-border overflow-hidden flex-shrink-0">
-              <img v-if="row.thumbnailUrl" :src="row.thumbnailUrl as string" alt="" class="w-full h-full object-cover" />
+              <img v-if="row.thumbnailUrl" :src="resolveThumbnail(row.thumbnailUrl as string)" alt="" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" class="w-full h-full object-cover" />
               <div v-else class="w-full h-full flex items-center justify-center">
                 <component :is="contentIcon(String(row.type))" class="w-5 h-5 text-ink-muted" :stroke-width="1.7" />
               </div>
@@ -278,6 +278,7 @@ import { useContentStore } from '@/stores/content.store';
 import { useConfigStore } from '@/stores/config.store';
 import { useUiStore } from '@/stores/ui.store';
 import { listContent, reorderContent } from '@/api/content';
+import { API_URL } from '@/api/client';
 import type { ContentItem } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
@@ -338,6 +339,15 @@ const sectionOptions = computed(() => {
   }
   return [...map.entries()].map(([value, label]) => ({ value, label }));
 });
+
+function resolveThumbnail(url: string | null | undefined): string {
+  if (!url) return '';
+  const match = url.match(/(?:vi\/|vi%2F|v=|\/v\/)([a-zA-Z0-9_-]{11})/);
+  if (match?.[1] && (url.includes('i.ytimg.com') || url.includes('youtube.com'))) {
+    return `${API_URL}/v1/youtube/thumbnail/${match[1]}`;
+  }
+  return url;
+}
 
 function setReorderScope(scope: 'type' | 'section'): void {
   reorderScope.value = scope;

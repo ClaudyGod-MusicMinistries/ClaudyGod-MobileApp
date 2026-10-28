@@ -216,10 +216,10 @@ export const useFeedStyles = makeStyles((theme) => ({
   emptyTitle:    { color: theme.colors.text, fontSize: 15, fontWeight: '700' },
   emptyMessage:  { color: theme.colors.textMuted, marginTop: 4, lineHeight: 19, fontSize: 13, maxWidth: 520 },
   emptyActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
-  emptyActionsStacked: { alignSelf: 'stretch', flexWrap: 'wrap' },
+  emptyActionsStacked: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   emptyAction: {
-    minHeight: 40, paddingHorizontal: 14, borderRadius: theme.radius.md,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
+    minHeight: 36, paddingHorizontal: 16, borderRadius: theme.radius.pill,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
   },
   emptyActionPrimary: { backgroundColor: theme.colors.primary },
   emptyActionSecondary: { backgroundColor: theme.colors.subtleFill, borderWidth: 1, borderColor: theme.colors.border },

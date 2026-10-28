@@ -40,27 +40,29 @@ const useStyles = makeStyles((theme) => ({
   errorBody: { color: theme.colors.textSecondary },
   outerPad: { gap: theme.spacing.lg, paddingTop: theme.layout.sectionGap },
   paginationShell: {
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
     alignItems: 'center',
+    gap: 8,
   },
   paginationCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    padding: 4,
+    gap: 6,
+    padding: 3,
     borderRadius: theme.radius.pill,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.border,
+    alignSelf: 'center',
     ...theme.shadows.sm,
   },
   pageNavBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    gap: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: theme.radius.pill,
     backgroundColor: theme.colors.subtleFill,
   },
@@ -72,7 +74,7 @@ const useStyles = makeStyles((theme) => ({
   },
   pageNavText: {
     color: theme.colors.text,
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
   },
   pageNavTextPrimary: {
@@ -82,12 +84,12 @@ const useStyles = makeStyles((theme) => ({
     color: theme.colors.textMuted,
   },
   pageIndicatorPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   pageIndicatorText: {
     color: theme.colors.textSecondary,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '600',
   },
   scrollFill: { flex: 1, backgroundColor: 'transparent' },
@@ -233,7 +235,7 @@ export default function SectionDetailScreen() {
                     style={[styles.pageNavBtn, (loading || detail.page <= 1) && styles.pageNavBtnDisabled]}
                     accessibilityLabel="Previous page"
                   >
-                    <MaterialIcons name="chevron-left" size={18} color={detail.page <= 1 ? theme.colors.textMuted : theme.colors.text} />
+                    <MaterialIcons name="chevron-left" size={16} color={detail.page <= 1 ? theme.colors.textMuted : theme.colors.text} />
                     <CustomText style={[styles.pageNavText, detail.page <= 1 && styles.pageNavTextDisabled]}>Previous</CustomText>
                   </TVTouchable>
 
@@ -251,7 +253,7 @@ export default function SectionDetailScreen() {
                     accessibilityLabel="Next page"
                   >
                     <CustomText style={[styles.pageNavText, styles.pageNavTextPrimary, !detail.hasMore && styles.pageNavTextDisabled]}>Next</CustomText>
-                    <MaterialIcons name="chevron-right" size={18} color={!detail.hasMore ? theme.colors.textMuted : theme.colors.onPrimary} />
+                    <MaterialIcons name="chevron-right" size={16} color={!detail.hasMore ? theme.colors.textMuted : theme.colors.onPrimary} />
                   </TVTouchable>
                 </View>
               </View>

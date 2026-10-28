@@ -45,11 +45,11 @@ const useStyles = makeStyles((theme) => ({
   searchInputBase: {
     borderRadius: 999, borderWidth: 1,
     flexDirection: 'row', alignItems: 'center',
-    paddingLeft: 16, paddingRight: 8, gap: 10,
+    paddingLeft: 14, paddingRight: 6, gap: 8,
   },
 
   // Clear button
-  clearBtn: { padding: 6 },
+  clearBtn: { padding: 4 },
 
   // Submit button (static part)
   searchSubmitBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primary },
@@ -496,12 +496,12 @@ export default function Search() {
             style={[
               styles.searchSubmitBtn,
               {
-                width: device.isTV ? 48 : 38, height: device.isTV ? 48 : 38,
-                borderRadius: device.isTV ? 24 : 19, opacity: isSearching ? 0.72 : 1,
+                width: device.isTV ? 44 : 32, height: device.isTV ? 44 : 32,
+                borderRadius: device.isTV ? 22 : 16, opacity: isSearching ? 0.72 : 1,
               },
             ]}
           >
-            <MaterialIcons name={isSearching ? 'hourglass-top' : 'arrow-forward'} size={device.isTV ? 22 : 18} color={theme.colors.textInverse} />
+            <MaterialIcons name={isSearching ? 'hourglass-top' : 'arrow-forward'} size={device.isTV ? 20 : 16} color={theme.colors.textInverse} />
           </TVTouchable>
         </Animated.View>
 
@@ -662,9 +662,12 @@ export default function Search() {
           {!loading && !isSearching && !searchError && !filtered.length && crossCategoryResults.length === 0 ? (
             <EmptyState
               title="No results found"
-              message="Try another title, artist, topic, or category."
+              message={activeCategory !== 'All' ? `No results for "${query.trim()}" in ${labelForCategory(activeCategory)}. Try searching all categories or another keyword.` : 'Try another title, artist, topic, or category.'}
               actionLabel="Clear search"
               onAction={() => { setQuery(''); invalidateSearch(); }}
+              secondaryActionLabel={activeCategory !== 'All' ? 'Search all categories' : undefined}
+              secondaryActionIcon="search"
+              onSecondaryAction={activeCategory !== 'All' ? () => { setActiveCategory('All'); void runSearch(query.trim(), 'All'); } : undefined}
               icon="search-off"
             />
           ) : null}

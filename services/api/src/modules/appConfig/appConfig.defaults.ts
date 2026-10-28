@@ -230,7 +230,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         id: 'music-featured',
         title: 'Up next',
         subtitle: 'Music, playlists, and audio-first releases.',
-        contentTypes: ['audio', 'playlist'],
+        contentTypes: ['audio', 'video', 'playlist'],
         actionLabel: 'Listen',
         destinationTab: 'player',
         maxItems: 12,

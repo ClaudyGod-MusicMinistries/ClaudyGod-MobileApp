@@ -60,11 +60,11 @@ export async function searchContent(
     const params: unknown[] = [normalized, limit + 1];
     const conditions: string[] = [
       "ci.visibility = 'published'",
-      "(ci.search_vector @@ websearch_to_tsquery('english', $1) OR ci.title ILIKE ('%' || $1 || '%') OR ci.description ILIKE ('%' || $1 || '%') OR ci.channel_name ILIKE ('%' || $1 || '%'))",
+      "(ci.search_vector @@ websearch_to_tsquery('english', $1) OR ci.title ILIKE ('%' || $1 || '%') OR ci.description ILIKE ('%' || $1 || '%') OR ci.channel_name ILIKE ('%' || $1 || '%') OR array_to_string(ci.tags, ' ') ILIKE ('%' || $1 || '%') OR array_to_string(ci.app_sections, ' ') ILIKE ('%' || $1 || '%'))",
     ];
     const liveConditions: string[] = [
       "ls.status <> 'cancelled'",
-      "(ls.search_vector @@ websearch_to_tsquery('english', $1) OR ls.title ILIKE ('%' || $1 || '%') OR ls.description ILIKE ('%' || $1 || '%'))",
+      "(ls.search_vector @@ websearch_to_tsquery('english', $1) OR ls.title ILIKE ('%' || $1 || '%') OR ls.description ILIKE ('%' || $1 || '%') OR array_to_string(ls.tags, ' ') ILIKE ('%' || $1 || '%'))",
     ];
     let paramIdx = 3;
 

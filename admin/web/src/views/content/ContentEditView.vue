@@ -48,7 +48,7 @@
               <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Thumbnail</p>
               <div v-if="form.thumbnailUrl" class="relative group">
                 <div class="aspect-square w-full max-w-[220px] rounded-2xl overflow-hidden border border-border bg-bg-1">
-                  <img :src="form.thumbnailUrl" alt="Artwork" class="w-full h-full object-cover" />
+                  <img :src="resolveThumbnail(form.thumbnailUrl)" alt="Artwork" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" class="w-full h-full object-cover" />
                 </div>
                 <button
                   type="button"
@@ -190,6 +190,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useContentStore } from '@/stores/content.store';
 import { useConfigStore } from '@/stores/config.store';
 import { useUiStore } from '@/stores/ui.store';
+import { API_URL } from '@/api/client';
 import type { ContentCreateInput, ContentUpdateInput } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppInput from '@/components/ui/AppInput.vue';
@@ -222,6 +223,15 @@ const LAYOUT_GROUPS: { key: 'homeSections' | 'videoSections' | 'playerSections' 
   { key: 'playerSections', label: 'Player' },
   { key: 'librarySections', label: 'Library' },
 ];
+
+function resolveThumbnail(url: string | null | undefined): string {
+  if (!url) return '';
+  const match = url.match(/(?:vi\/|vi%2F|v=|\/v\/)([a-zA-Z0-9_-]{11})/);
+  if (match?.[1] && (url.includes('i.ytimg.com') || url.includes('youtube.com'))) {
+    return `${API_URL}/v1/youtube/thumbnail/${match[1]}`;
+  }
+  return url;
+}
 
 const configuredSectionOptions = computed(() => {
   const byId = new Map<string, { value: string; label: string; screens: string[]; contentTypes: string[] }>();

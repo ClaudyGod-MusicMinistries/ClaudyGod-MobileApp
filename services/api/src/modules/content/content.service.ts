@@ -588,7 +588,7 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
 
   if (normalized.search) {
     values.push(`%${normalized.search}%`);
-    conditions.push(`(c.title ILIKE $${values.length} OR c.description ILIKE $${values.length})`);
+    conditions.push(`(c.title ILIKE $${values.length} OR c.description ILIKE $${values.length} OR array_to_string(c.tags, ' ') ILIKE $${values.length} OR array_to_string(c.app_sections, ' ') ILIKE $${values.length})`);
   }
 
   if (normalized.updatedAfter) {
@@ -705,7 +705,7 @@ export const listManagedContent = async (
 
   if (normalized.search) {
     values.push(`%${normalized.search}%`);
-    conditions.push(`(c.title ILIKE $${values.length} OR c.description ILIKE $${values.length})`);
+    conditions.push(`(c.title ILIKE $${values.length} OR c.description ILIKE $${values.length} OR array_to_string(c.tags, ' ') ILIKE $${values.length} OR array_to_string(c.app_sections, ' ') ILIKE $${values.length})`);
   }
 
   if (normalized.updatedAfter) {

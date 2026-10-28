@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -412,15 +413,17 @@ function EmbedPlayer({
     Animated.timing(shimmerOpacity, { toValue: 0, duration: reduceMotion ? 0 : 280, useNativeDriver: USE_NATIVE_DRIVER }).start();
   };
 
-  const actualHeight = isFullscreen ? '100%' : height;
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const actualHeight = isFullscreen ? windowHeight : height;
+  const actualWidth = isFullscreen ? windowWidth : '100%';
 
   return (
-    <View ref={containerRef} style={[styles.container, isFullscreen && ss.fullscreenContainer]}>
-      <View style={{ height: actualHeight, backgroundColor: mediaTokens.canvas }}>
+    <View ref={containerRef} style={[styles.container, isFullscreen && ss.fullscreenContainer, isFullscreen && { width: actualWidth, height: actualHeight }]}>
+      <View style={{ width: actualWidth, height: actualHeight, backgroundColor: mediaTokens.canvas }}>
         {!error ? (
           <WebView
             source={{ uri: embedUrl }}
-            style={{ width: '100%', height: actualHeight, backgroundColor: mediaTokens.canvas }}
+            style={{ width: actualWidth, height: actualHeight, backgroundColor: mediaTokens.canvas }}
             allowsFullscreenVideo
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
@@ -537,6 +540,7 @@ function YouTubeIframePlayer({
 }) {
   const styles = useStyles();
   const theme = useAppTheme();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const webviewRef = useRef<WebView>(null);
   const html = useMemo(() => buildYouTubeBootstrapHtml(videoId), [videoId]);
 
@@ -695,15 +699,16 @@ function YouTubeIframePlayer({
     );
   }
 
-  const actualHeight = isFullscreen ? '100%' : height;
+  const actualHeight = isFullscreen ? windowHeight : height;
+  const actualWidth = isFullscreen ? windowWidth : '100%';
 
   return (
-    <View ref={containerRef} style={[styles.container, isFullscreen && ss.fullscreenContainer]}>
-      <Pressable style={{ height: actualHeight }} onPress={bringUpControls}>
+    <View ref={containerRef} style={[styles.container, isFullscreen && ss.fullscreenContainer, isFullscreen && { width: actualWidth, height: actualHeight }]}>
+      <Pressable style={{ width: actualWidth, height: actualHeight }} onPress={bringUpControls}>
         <WebView
           ref={webviewRef}
           source={{ html, baseUrl: 'https://claudygod.org' }}
-          style={{ width: '100%', height: actualHeight, backgroundColor: mediaTokens.canvas }}
+          style={{ width: actualWidth, height: actualHeight, backgroundColor: mediaTokens.canvas }}
           allowsFullscreenVideo
           allowsInlineMediaPlayback
           mediaPlaybackRequiresUserAction={false}
@@ -948,16 +953,18 @@ function NativeVideoPlayer({
 
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
 
-  const actualHeight = isFullscreen ? '100%' : height;
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const actualHeight = isFullscreen ? windowHeight : height;
+  const actualWidth = isFullscreen ? windowWidth : '100%';
 
   return (
-    <View ref={containerRef} style={[styles.container, isFullscreen && ss.fullscreenContainer]}>
-      <Pressable style={{ height: actualHeight }} onPress={bringUpControls}>
+    <View ref={containerRef} style={[styles.container, isFullscreen && ss.fullscreenContainer, isFullscreen && { width: actualWidth, height: actualHeight }]}>
+      <Pressable style={{ width: actualWidth, height: actualHeight }} onPress={bringUpControls}>
         {/* Video surface */}
         <VideoView
           ref={videoViewRef}
           player={player}
-          style={{ width: '100%', height: actualHeight }}
+          style={{ width: actualWidth, height: actualHeight }}
           nativeControls={false}
           contentFit="contain"
           allowsFullscreen

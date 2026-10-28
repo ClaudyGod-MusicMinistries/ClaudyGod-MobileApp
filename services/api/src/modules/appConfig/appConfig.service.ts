@@ -130,7 +130,7 @@ function normalizeSettingsHub(
   const configured = Array.isArray(sections) && sections.length
     ? sections.map((section) => ({ ...section, items: [...section.items] }))
     : DEFAULT_MOBILE_APP_CONFIG.settingsHub.sections.map((section) => ({ ...section, items: [...section.items] }));
-  const required = DEFAULT_MOBILE_APP_CONFIG.settingsHub.sections.find((section) => section.id === 'product-legal');
+  const required = DEFAULT_MOBILE_APP_CONFIG.settingsHub.sections.find((section) => section.id === 'product-legal' || section.id === 'about-legal');
   if (!required) return configured;
   const destinations = new Set(configured.flatMap((section) => section.items.map((item) => item.destination)));
   const missing = required.items.filter((item) => !destinations.has(item.destination));

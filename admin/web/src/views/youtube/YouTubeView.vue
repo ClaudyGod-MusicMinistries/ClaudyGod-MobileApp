@@ -115,10 +115,13 @@
             <!-- Thumbnail -->
             <div class="relative aspect-video bg-surface-strong overflow-hidden">
               <img
-                v-if="video.thumbnailUrl"
-                :src="video.thumbnailUrl"
-                :alt="video.title"
+                :src="getThumbnailUrl(video)"
+                :alt="decodeHtmlEntities(video.title)"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+                crossorigin="anonymous"
                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                @error="onThumbnailError(video, $event)"
               />
               <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/0 to-black/0 pointer-events-none" />
 
@@ -163,7 +166,7 @@
 
             <!-- Info -->
             <div class="p-3.5 space-y-2.5">
-              <p class="text-xs font-semibold text-ink line-clamp-2 leading-snug">{{ video.title }}</p>
+              <p class="text-xs font-semibold text-ink line-clamp-2 leading-snug">{{ decodeHtmlEntities(video.title) }}</p>
               <p class="text-[10px] text-ink-muted flex items-center gap-1">
                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 {{ formatDate(video.publishedAt) }}
@@ -284,10 +287,17 @@
       <div v-if="sendModalVideo" class="space-y-4">
         <div class="flex gap-3">
           <div class="w-20 aspect-video rounded-lg overflow-hidden bg-surface-strong shrink-0">
-            <img v-if="sendModalVideo.thumbnailUrl" :src="sendModalVideo.thumbnailUrl" :alt="sendModalVideo.title" class="w-full h-full object-cover" />
+            <img
+              :src="getThumbnailUrl(sendModalVideo)"
+              :alt="decodeHtmlEntities(sendModalVideo.title)"
+              referrerpolicy="no-referrer"
+              crossorigin="anonymous"
+              class="w-full h-full object-cover"
+              @error="onThumbnailError(sendModalVideo, $event)"
+            />
           </div>
           <div class="min-w-0">
-            <p class="text-xs font-semibold text-ink line-clamp-2 leading-snug">{{ sendModalVideo.title }}</p>
+            <p class="text-xs font-semibold text-ink line-clamp-2 leading-snug">{{ decodeHtmlEntities(sendModalVideo.title) }}</p>
             <p class="text-[11px] text-ink-muted mt-1">{{ sendModalVideo.channelTitle }} · {{ sendModalVideo.duration }}</p>
           </div>
         </div>
@@ -328,6 +338,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { getSyncStatus, triggerSync, listImportQueue, fetchChannelVideos, importVideos } from '@/api/youtube';
 import { deleteContent } from '@/api/content';
+import { API_URL } from '@/api/client';
+import { BRAND_LOGO_URL } from '@/utils/constants';
 import { useUiStore } from '@/stores/ui.store';
 import { useConfigStore } from '@/stores/config.store';
 import type { YouTubeSyncStatus, YouTubeImportItem, YouTubeVideoItem } from '@/api/types';
@@ -431,10 +443,47 @@ onMounted(async () => {
   isLoading.value = true;
   try {
     [syncStatus.value, importQueue.value] = await Promise.all([getSyncStatus(), listImportQueue()]);
+    if (syncStatus.value?.channelId && videos.value.length === 0) {
+      void loadVideos();
+    }
   } finally {
     isLoading.value = false;
   }
 });
+
+function decodeHtmlEntities(raw: string): string {
+  if (!raw) return '';
+  return raw
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)));
+}
+
+function getThumbnailUrl(video: YouTubeVideoItem): string {
+  // If the thumbnail is already rehosted to our own storage (e.g. Supabase storage), use it directly
+  if (video.thumbnailUrl && !video.thumbnailUrl.includes('i.ytimg.com') && !video.thumbnailUrl.includes('youtube.com')) {
+    return video.thumbnailUrl;
+  }
+  // Route through our backend thumbnail proxy so networks/browsers that block or connection-reset
+  // i.ytimg.com (net::ERR_CONNECTION_RESET) fetch reliably through our own domain
+  return `${API_URL}/v1/youtube/thumbnail/${video.youtubeVideoId}`;
+}
+
+function onThumbnailError(video: YouTubeVideoItem, event: Event): void {
+  const target = event.target as HTMLImageElement | null;
+  if (!target) return;
+  const proxyUrl = `${API_URL}/v1/youtube/thumbnail/${video.youtubeVideoId}`;
+  if (!target.src.includes(`/v1/youtube/thumbnail/${video.youtubeVideoId}`)) {
+    target.src = proxyUrl;
+  } else {
+    // If the proxy itself cannot fetch from YouTube, use a clean brand asset fallback so the card NEVER breaks
+    target.src = BRAND_LOGO_URL;
+  }
+}
 
 async function loadVideos(): Promise<void> {
   loadingVideos.value = true;
