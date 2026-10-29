@@ -448,18 +448,25 @@ onMounted(async () => {
   }
 });
 
-function decodeHtmlEntities(raw: string): string {
+function decodeHtmlEntities(raw?: string): string {
   if (!raw) return '';
-  return raw
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
-    .replace(/&amp;/g, '&');
+  let str = raw;
+  for (let i = 0; i < 3; i++) {
+    const prev = str;
+    str = str
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'")
+      .replace(/&#x2F;/g, '/')
+      .replace(/&apos;/g, "'")
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)));
+    if (str === prev) break;
+  }
+  return str;
 }
 
 function getThumbnailUrl(video: YouTubeVideoItem): string {
@@ -467,29 +474,28 @@ function getThumbnailUrl(video: YouTubeVideoItem): string {
   if (video.thumbnailUrl && !video.thumbnailUrl.includes('i.ytimg.com') && !video.thumbnailUrl.includes('youtube.com')) {
     return video.thumbnailUrl;
   }
-  // Route through our backend thumbnail proxy so networks/browsers that block or connection-reset
-  // i.ytimg.com (net::ERR_CONNECTION_RESET) fetch reliably through our own domain
-  return `${API_URL}/v1/youtube/thumbnail/${video.youtubeVideoId}`;
+  // Route through our backend thumbnail proxy with the source URL as a hint
+  // so networks that connection-reset i.ytimg.com load reliably through our domain
+  const qs = video.thumbnailUrl ? `?src=${encodeURIComponent(video.thumbnailUrl)}` : '';
+  return `${API_URL}/v1/youtube/thumbnail/${video.youtubeVideoId}${qs}`;
 }
 
-const FALLBACK_THUMBNAIL_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(`
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
-  <rect width="100%" height="100%" fill="#0d0e15"/>
-  <circle cx="320" cy="180" r="46" fill="#7c3aed" opacity="0.3"/>
-  <polygon points="310,160 340,180 310,200" fill="#a78bfa"/>
-  <text x="320" y="250" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#94a3b8" text-anchor="middle">ClaudyGod Ministry</text>
-</svg>
-`.trim())}`;
+const FALLBACK_THUMBNAIL_SVG =
+  'data:image/svg+xml;base64,' +
+  btoa(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">` +
+      `<rect width="100%" height="100%" fill="#0d0e15"/>` +
+      `<circle cx="320" cy="180" r="46" fill="#7c3aed" opacity="0.3"/>` +
+      `<polygon points="310,160 340,180 310,200" fill="#a78bfa"/>` +
+      `<text x="320" y="250" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#94a3b8" text-anchor="middle">ClaudyGod Ministry</text>` +
+      `</svg>`,
+  );
 
-function onThumbnailError(video: YouTubeVideoItem, event: Event): void {
+function onThumbnailError(_video: YouTubeVideoItem, event: Event): void {
   const target = event.target as HTMLImageElement | null;
   if (!target) return;
-  const proxyUrl = `${API_URL}/v1/youtube/thumbnail/${video.youtubeVideoId}`;
-  if (!target.src.includes(`/v1/youtube/thumbnail/${video.youtubeVideoId}`)) {
-    target.src = proxyUrl;
-  } else if (!target.src.includes('img.youtube.com')) {
-    target.src = `https://img.youtube.com/vi/${video.youtubeVideoId}/hqdefault.jpg`;
-  } else if (target.src !== FALLBACK_THUMBNAIL_SVG) {
+  // If the thumbnail fails to load, gracefully display the dark branded 16:9 placeholder
+  if (target.src !== FALLBACK_THUMBNAIL_SVG) {
     target.src = FALLBACK_THUMBNAIL_SVG;
   }
 }

@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import { ENV } from './config';
 import { CLIENT_VERSION, HTTP } from '../config/constants';
 import { reportBreadcrumb } from '../lib/sentry';
-import { getInstallationSession } from '../lib/installationSessionStorage';
+import { clearInstallationSession, ensureInstallationSession, getInstallationSession } from '../lib/installationSessionStorage';
 
 export class ApiError extends Error {
   status: number;
@@ -63,7 +63,19 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   }
 
   try {
-    const installationSession = await getInstallationSession();
+    let installationSession = await getInstallationSession();
+    if (
+      !installationSession &&
+      (path.startsWith('/v1/mobile/installations') || path.startsWith('/v1/mobile/recommendations')) &&
+      !path.includes('/register')
+    ) {
+      try {
+        installationSession = await ensureInstallationSession();
+      } catch {
+        // Fall back gracefully
+      }
+    }
+
     const response = await fetchWithTimeout(`${ENV.apiUrl}${path}`, {
       ...init,
       credentials: Platform.OS === 'web' ? 'include' : init?.credentials,
@@ -78,6 +90,13 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     });
 
     if (!response.ok) {
+      if (
+        response.status === 401 &&
+        (path.startsWith('/v1/mobile/installations') || path.startsWith('/v1/mobile/recommendations'))
+      ) {
+        void clearInstallationSession();
+      }
+
       let message = '';
       try {
         const contentType = response.headers.get('content-type') || '';

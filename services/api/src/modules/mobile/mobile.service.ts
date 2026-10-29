@@ -137,6 +137,20 @@ const classifyRail = (item: MobileFeedItem): 'music' | 'video' | 'playlist' | 'a
 
 const normalizeSectionToken = (value: string): string => value.trim().toLowerCase();
 
+const SECTION_ALIASES: Record<string, string> = {
+  music: 'music-featured',
+  'claudygod-music': 'music-featured',
+  videos: 'video-featured',
+  'claudygod-messages': 'video-featured',
+  home: 'home-featured',
+  latest: 'latest-releases',
+};
+
+const canonicalSection = (raw: string): string => {
+  const norm = normalizeSectionToken(raw);
+  return SECTION_ALIASES[norm] || norm;
+};
+
 // Content is tagged into a section by the admin's own id or title (see
 // admin/web ContentEditView.vue) — match either so a legacy title-based tag
 // still resolves after a section is renamed.
@@ -144,9 +158,19 @@ export const matchesConfiguredSection = (item: MobileFeedItem, section: MobileLa
   if (item.type === 'ad') {
     return false;
   }
-  const tokens = new Set([normalizeSectionToken(section.id), normalizeSectionToken(section.title)]);
-  return section.contentTypes.includes(item.type) &&
-    item.appSections.some((value) => tokens.has(normalizeSectionToken(value)));
+  const canonicalId = canonicalSection(section.id);
+  const tokens = new Set([
+    canonicalId,
+    normalizeSectionToken(section.id),
+    normalizeSectionToken(section.title),
+  ]);
+  return (
+    section.contentTypes.includes(item.type) &&
+    item.appSections.some((value) => {
+      const canonicalVal = canonicalSection(value);
+      return tokens.has(canonicalVal) || tokens.has(normalizeSectionToken(value));
+    })
+  );
 };
 
 // Ranked items actually tagged into this section. No type-based fallback: a
@@ -200,15 +224,12 @@ const buildRankScore = (item: MobileFeedItem, playCount: number): number => {
 
 const resolveContentImageUrl = (row: PublishedContentRow): string | null => {
   if (row.thumbnail_url && row.thumbnail_url.trim()) {
-    if (row.thumbnail_url.includes('i.ytimg.com') && row.thumbnail_url.includes('hqdefault.jpg')) {
-      return row.thumbnail_url.replace('hqdefault.jpg', 'maxresdefault.jpg');
-    }
     return row.thumbnail_url;
   }
   if (row.source_kind === 'youtube' && row.media_url) {
     const match = row.media_url.match(/(?:v=|\/embed\/|youtu\.be\/|\/v\/)([a-zA-Z0-9_-]{11})/);
     if (match?.[1]) {
-      return `https://i.ytimg.com/vi/${match[1]}/maxresdefault.jpg`;
+      return `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg`;
     }
   }
   return FALLBACK_IMAGE;
@@ -248,7 +269,7 @@ const toYouTubeFeedItem = (item: YouTubeVideoItem): MobileFeedItem => ({
   description: item.description || 'Latest release from the ministry YouTube feed.',
   subtitle: item.channelTitle || 'ClaudyGod',
   type: item.isLive ? 'live' : 'video',
-  imageUrl: item.thumbnailUrl || (item.youtubeVideoId ? `https://i.ytimg.com/vi/${item.youtubeVideoId}/maxresdefault.jpg` : FALLBACK_IMAGE),
+  imageUrl: item.thumbnailUrl || (item.youtubeVideoId ? `https://i.ytimg.com/vi/${item.youtubeVideoId}/hqdefault.jpg` : FALLBACK_IMAGE),
   mediaUrl: item.url,
   duration: item.duration || undefined,
   channelName: item.channelTitle || undefined,

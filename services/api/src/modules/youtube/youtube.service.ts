@@ -58,13 +58,17 @@ async function rehostThumbnail(videoId: string, sourceUrl: string): Promise<stri
 // In-memory cache for hot thumbnails (max 300 entries, 1-hour TTL)
 const thumbnailCache = new Map<string, { buffer: Buffer; contentType: string; expiresAt: number }>();
 
-export async function getYouTubeThumbnailBuffer(videoId: string): Promise<{ buffer: Buffer; contentType: string }> {
+export async function getYouTubeThumbnailBuffer(
+  videoId: string,
+  preferredUrl?: string,
+): Promise<{ buffer: Buffer; contentType: string }> {
   const cached = thumbnailCache.get(videoId);
   if (cached && cached.expiresAt > Date.now()) {
     return { buffer: cached.buffer, contentType: cached.contentType };
   }
 
   const urlsToTry = [
+    preferredUrl,
     `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
     `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
     `https://i.ytimg.com/vi/${videoId}/sddefault.jpg`,
@@ -72,11 +76,12 @@ export async function getYouTubeThumbnailBuffer(videoId: string): Promise<{ buff
     `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
     `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
     `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`,
-  ];
+  ].filter((u): u is string => Boolean(u && u.trim()));
 
   for (const url of urlsToTry) {
     try {
       const response = await fetch(url, {
+        signal: AbortSignal.timeout(3500),
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
