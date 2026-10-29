@@ -23,5 +23,10 @@ echo "$NODE_BIN_DIR" >> "${GITHUB_PATH:?GITHUB_PATH is required in CI}"
 corepack enable
 corepack prepare yarn@1.22.22 --activate
 
+# Resilient network timeouts and retries against transient npm registry 502/503/504 errors
+yarn config set network-timeout 300000 || true
+yarn config set network-retries 5 || true
+yarn config set network-concurrency 4 || true
+
 node --version
 yarn --version
