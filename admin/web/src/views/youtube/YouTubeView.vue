@@ -115,6 +115,7 @@
             <!-- Thumbnail -->
             <div class="relative aspect-video bg-surface-strong overflow-hidden">
               <img
+                v-if="!brokenImages.has(video.youtubeVideoId)"
                 :src="getThumbnailUrl(video)"
                 :alt="decodeHtmlEntities(video.title)"
                 loading="lazy"
@@ -122,6 +123,16 @@
                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 @error="onThumbnailError(video, $event)"
               />
+              <div
+                v-else
+                class="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-surface-hover/80 to-surface-strong text-center"
+              >
+                <div class="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center mb-1 text-primary-soft">
+                  <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <p class="text-[11px] font-semibold text-ink line-clamp-1 max-w-[85%]">{{ decodeHtmlEntities(video.title) }}</p>
+                <span class="text-[9px] text-ink-muted">ClaudyGod Ministry</span>
+              </div>
               <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/0 to-black/0 pointer-events-none" />
 
               <!-- Multi-select checkbox (only for not-yet-imported videos) -->
@@ -394,6 +405,7 @@ const syncStatus    = ref<YouTubeSyncStatus | null>(null);
 const importQueue   = ref<YouTubeImportItem[]>([]);
 const videos        = ref<YouTubeVideoItem[]>([]);
 const selected      = ref(new Set<string>());
+const brokenImages  = ref(new Set<string>());
 const searchQuery   = ref('');
 const globalVisibility = ref<'published' | 'draft'>('published');
 const globalContentType = ref<'video' | 'audio'>('video');
@@ -480,24 +492,9 @@ function getThumbnailUrl(video: YouTubeVideoItem): string {
   return `${API_URL}/v1/youtube/thumbnail/${video.youtubeVideoId}${qs}`;
 }
 
-const FALLBACK_THUMBNAIL_SVG =
-  'data:image/svg+xml;base64,' +
-  btoa(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">` +
-      `<rect width="100%" height="100%" fill="#0d0e15"/>` +
-      `<circle cx="320" cy="180" r="46" fill="#7c3aed" opacity="0.3"/>` +
-      `<polygon points="310,160 340,180 310,200" fill="#a78bfa"/>` +
-      `<text x="320" y="250" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#94a3b8" text-anchor="middle">ClaudyGod Ministry</text>` +
-      `</svg>`,
-  );
-
-function onThumbnailError(_video: YouTubeVideoItem, event: Event): void {
-  const target = event.target as HTMLImageElement | null;
-  if (!target) return;
-  // If the thumbnail fails to load, gracefully display the dark branded 16:9 placeholder
-  if (target.src !== FALLBACK_THUMBNAIL_SVG) {
-    target.src = FALLBACK_THUMBNAIL_SVG;
-  }
+function onThumbnailError(video: YouTubeVideoItem, _event: Event): void {
+  brokenImages.value.add(video.youtubeVideoId);
+  brokenImages.value = new Set(brokenImages.value);
 }
 
 async function loadVideos(): Promise<void> {
@@ -603,7 +600,8 @@ function openSendModal(video: YouTubeVideoItem): void {
   sendModalVideo.value = video;
   sendModalSections.value = [...video.suggestedAppSections];
   sendModalVisibility.value = 'published';
-  sendModalContentType.value = 'video';
+  const isAudioSignal = /(song|worship|praise|hymn|audio|album|track|single|melody)/i.test(`${video.title} ${video.description}`);
+  sendModalContentType.value = isAudioSignal && !/(full message|sermon|interview|conference)/i.test(video.title) ? 'audio' : 'video';
   sendModalOpen.value = true;
 }
 

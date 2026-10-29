@@ -145,7 +145,7 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
           viewabilityConfig={{ itemVisiblePercentThreshold: 55 }}
         />
       </View>
-      {items.length > visibleCount ? (
+      {device.isTV && items.length > visibleCount ? (
         <View style={styles.railPaginationOverlay}>
           <CustomText variant="caption" style={styles.railPaginationText} accessibilityLiveRegion="polite">
             {Math.min(firstVisibleIndex + 1, lastPageStart + 1)}–{Math.min(items.length, firstVisibleIndex + visibleCount)} of {items.length}

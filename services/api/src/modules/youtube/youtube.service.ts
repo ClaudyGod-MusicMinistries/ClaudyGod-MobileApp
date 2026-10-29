@@ -234,11 +234,6 @@ interface YouTubeChannelsResponse {
 const normalizeTextList = (items?: string[]): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
 
-const sectionRules = [
-  { section: 'music-featured', pattern: /(worship|praise|song|music|choir|hymn|album|track|ministration)/i },
-  { section: 'video-featured', pattern: /(message|sermon|teaching|conference|service|prayer|word|nugget|truth|daily word|devotion|scripture|verse|reflection)/i },
-] as const;
-
 const tagRules = [
   { tag: 'worship', pattern: /(worship|praise|hymn)/i },
   { tag: 'music', pattern: /(song|music|album|track|choir)/i },
@@ -259,22 +254,76 @@ function ensureYouTubeConfigured(channelIdentifierOverride?: string): void {
 
 export function decodeHtmlEntities(input?: string): string {
   if (!input) return '';
-  return input
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&#x27;/g, "'")
-    .replace(/&#x2F;/g, '/')
-    .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, dec) => {
-      try {
-        return String.fromCharCode(Number(dec));
-      } catch {
-        return _;
-      }
-    });
+  let str = input;
+  for (let i = 0; i < 3; i++) {
+    const prev = str;
+    str = str
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'")
+      .replace(/&#x2F;/g, '/')
+      .replace(/&apos;/g, "'")
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+        try {
+          return String.fromCharCode(parseInt(hex, 16));
+        } catch {
+          return _;
+        }
+      })
+      .replace(/&#(\d+);/g, (_, dec) => {
+        try {
+          return String.fromCharCode(Number(dec));
+        } catch {
+          return _;
+        }
+      });
+    if (str === prev) break;
+  }
+  return str;
+}
+
+export function inferContentType(video: {
+  title: string;
+  description?: string;
+  duration?: string;
+}): 'audio' | 'video' {
+  const text = `${video.title} ${video.description ?? ''}`.toLowerCase();
+
+  // Explicit audio signals
+  const isAudioExplicit =
+    /(official audio|audio release|audio track|studio audio|album track|official single|instrumental|acoustic version)/i.test(
+      text,
+    );
+  if (isAudioExplicit) return 'audio';
+
+  // Explicit video/teaching signals
+  const isVideoExplicit =
+    /(official video|music video|full message|sermon|teaching|conference|interview|podcast|broadcast|exhortation|bible study)/i.test(
+      text,
+    );
+  if (isVideoExplicit) return 'video';
+
+  // Music keywords: song, worship, praise, hymn, melody
+  const isMusic = /(song|worship|praise|hymn|melody|psalm|track|choir|gospel song)/i.test(text);
+
+  // Parse duration if available (e.g. "04:09", "28:32")
+  const durationParts = (video.duration ?? '').split(':').map(Number);
+  const totalSeconds =
+    durationParts.length === 2
+      ? (durationParts[0] ?? 0) * 60 + (durationParts[1] ?? 0)
+      : durationParts.length === 3
+        ? (durationParts[0] ?? 0) * 3600 + (durationParts[1] ?? 0) * 60 + (durationParts[2] ?? 0)
+        : 0;
+
+  // Typical music length (< 8 minutes) with music signals defaults to audio
+  if (isMusic && (totalSeconds === 0 || totalSeconds < 480)) {
+    return 'audio';
+  }
+
+  return 'video';
 }
 
 function pickThumbnail(
@@ -327,14 +376,39 @@ function deriveSuggestedAppSections(video: {
   description: string;
   channelTitle: string;
   isLive: boolean;
+  publishedAt?: string;
 }): string[] {
   const signals = buildVideoSignals(video);
-  const sections = sectionRules
-    .filter((rule) => rule.pattern.test(signals))
-    .map((rule) => rule.section);
+  const sections: string[] = [];
 
-  if (video.isLive && !sections.includes('video-featured')) {
+  const isMusic = /(worship|praise|song|music|choir|hymn|album|track|ministration|melody|psalm)/i.test(signals);
+  const isVideoOrMessage = /(message|sermon|teaching|conference|service|prayer|word|nugget|truth|daily word|devotion|scripture|verse|reflection|interview)/i.test(signals);
+
+  // Check upload recency: if published within 30 days (or upcoming/future release date), suggest 'latest-releases'
+  if (video.publishedAt) {
+    const publishedTime = new Date(video.publishedAt).getTime();
+    if (!isNaN(publishedTime)) {
+      const now = Date.now();
+      const ageDays = (now - publishedTime) / (1000 * 60 * 60 * 24);
+      if (ageDays <= 30 || publishedTime > now) {
+        sections.push('latest-releases');
+      }
+    }
+  }
+
+  if (isMusic) {
+    sections.push('music-featured');
+    if (!sections.includes('latest-releases')) {
+      sections.push('home-featured');
+    }
+  }
+
+  if (isVideoOrMessage || video.isLive) {
     sections.push('video-featured');
+  }
+
+  if (video.isLive && !sections.includes('home-featured')) {
+    sections.push('home-featured');
   }
 
   if (sections.length === 0) {
@@ -542,6 +616,7 @@ export async function fetchYouTubeVideos(input?: {
         description,
         channelTitle,
         isLive,
+        publishedAt: searchSnippet.publishedAt,
       }),
       suggestedTags: deriveSuggestedTags({
         title,
@@ -647,7 +722,7 @@ async function upsertYouTubeVideoToContent(params: {
       params.actorUserId,
       title,
       description || 'Imported from YouTube channel feed.',
-      params.contentType ?? 'video',
+      params.contentType ?? inferContentType({ title, description, duration: params.duration }),
       params.url,
       hostedThumbnailUrl,
       params.visibility,
@@ -696,6 +771,11 @@ export async function syncYouTubeVideosToContent(params: {
     for (const video of payload.items) {
       const resolvedSections = normalizeTextList([...(appSections ?? []), ...video.suggestedAppSections]);
       const resolvedTags = normalizeTextList([...sharedTags, ...video.suggestedTags]);
+      const inferredContentType = inferContentType({
+        title: video.title,
+        description: video.description,
+        duration: video.duration,
+      });
 
       const result = await upsertYouTubeVideoToContent({
         actorUserId: params.actorUserId,
@@ -709,6 +789,7 @@ export async function syncYouTubeVideosToContent(params: {
         visibility: params.visibility,
         appSections: resolvedSections,
         tags: resolvedTags,
+        contentType: inferredContentType,
       });
 
       if (result.created) {

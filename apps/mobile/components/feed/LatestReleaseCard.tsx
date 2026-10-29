@@ -1,10 +1,11 @@
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import type { FeedCardItem } from '../../services/contentService';
 import { CustomText } from '../CustomText';
+import { AppImage } from '../ui/AppImage';
 import { TVTouchable } from '../ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
 import { useLocalContent } from '../../hooks/useLocalContent';
@@ -134,8 +135,8 @@ export function LatestReleaseCard({ item, onPlay, onOpenTrailer }: LatestRelease
       {/* Media & Artwork Row */}
       <View style={styles.bodyRow}>
         <View style={[styles.artworkContainer, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
-          <Image
-            source={{ uri: item.imageUrl }}
+          <AppImage
+            uri={item.imageUrl}
             style={styles.artwork}
             resizeMode="cover"
           />
