@@ -17,7 +17,6 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useAuth } from '../../features/auth/AuthContext';
 import { getHomeLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOverflowCount } from '../../util/mobileLayout';
 import { useAppTheme } from '../../util/colorScheme';
-import { useDeviceClass } from '../../util/deviceClassConfig';
 import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
@@ -212,8 +211,6 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
 export default function HomeScreen() {
   const styles = useStyles();
   const router = useRouter();
-  const device = useDeviceClass();
-  const wideCards = device.isDesktop || device.isTV;
   const { feed, loading, refreshing, error, refresh } = useContentFeed();
   const { bibleVerse, adminWord }  = useWordOfDay();
   const { config: appConfig } = useMobileAppConfig();
@@ -337,31 +334,62 @@ export default function HomeScreen() {
       ) : null}
 
       <View style={styles.sectionsGap}>
-        {sectionItems.map(({ section, items, overflowCount }) => (
+        {sectionItems.map(({ section, items, overflowCount }, index) => (
           (loading || items.length > 0) ? (
-            <FadeIn key={section.id} replayKey={contentReadyKey} delay={nextEntranceDelay()}>
-              <View style={styles.sectionRow}>
-                <SectionLabel
-                  title={section.title}
-                  actionLabel={overflowCount > 0 ? (section.actionLabel || 'See all') : undefined}
-                  onAction={overflowCount > 0 ? () => router.push({
-                    pathname: APP_ROUTES.section.detail,
-                    params: { sectionId: section.id, screen: 'home', title: section.title },
-                  } as never) : undefined}
-                />
-                <ContentRail
-                  title=""
-                  items={items}
-                  onPressItem={(item) => openItem(item, `home_${section.id}`)}
-                  loading={loading}
-                  cardVariant={inferRailVariant(items)}
-                  hideWhenEmpty
-                />
-              </View>
-            </FadeIn>
+            <React.Fragment key={section.id}>
+              <FadeIn replayKey={contentReadyKey} delay={nextEntranceDelay()}>
+                <View style={styles.sectionRow}>
+                  <SectionLabel
+                    title={section.title}
+                    actionLabel={overflowCount > 0 ? (section.actionLabel || 'See all') : undefined}
+                    onAction={overflowCount > 0 ? () => router.push({
+                      pathname: APP_ROUTES.section.detail,
+                      params: { sectionId: section.id, screen: 'home', title: section.title },
+                    } as never) : undefined}
+                  />
+                  <ContentRail
+                    title=""
+                    items={items}
+                    onPressItem={(item) => openItem(item, `home_${section.id}`)}
+                    loading={loading}
+                    cardVariant={inferRailVariant(items)}
+                    hideWhenEmpty
+                  />
+                </View>
+              </FadeIn>
+
+              {/* In-between Section 1: Daily Scripture Card */}
+              {index === 0 && (adminWord ?? bibleVerse) ? (
+                <FadeIn replayKey={contentReadyKey} delay={nextEntranceDelay()}>
+                  <WordOfDayCard
+                    word={(adminWord ?? bibleVerse)!}
+                    label="Daily Scripture"
+                    onPress={() => router.push(APP_ROUTES.settingsPages.word)}
+                  />
+                </FadeIn>
+              ) : null}
+
+              {/* In-between Section 2: Partner with Ministry Card */}
+              {index === 1 ? (
+                <FadeIn replayKey={contentReadyKey} delay={nextEntranceDelay()}>
+                  <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
+                </FadeIn>
+              ) : null}
+            </React.Fragment>
           ) : null
         ))}
       </View>
+
+      {/* Fallback if fewer than 2 sections were rendered in the stream */}
+      {sectionItems.filter((s) => loading || s.items.length > 0).length === 0 && (adminWord ?? bibleVerse) ? (
+        <FadeIn replayKey={contentReadyKey} delay={nextEntranceDelay()}>
+          <WordOfDayCard
+            word={(adminWord ?? bibleVerse)!}
+            label="Daily Scripture"
+            onPress={() => router.push(APP_ROUTES.settingsPages.word)}
+          />
+        </FadeIn>
+      ) : null}
 
       {feed.recommendations.length > 0 ? (
         <FadeIn replayKey={contentReadyKey} delay={nextEntranceDelay()}>
@@ -387,21 +415,12 @@ export default function HomeScreen() {
         />
       ) : null}
 
-      <View style={wideCards ? styles.bottomCardsRow : styles.bottomCardsColumn}>
-        {adminWord ?? bibleVerse ? (
-          <View style={wideCards ? styles.bottomCardHalf : undefined}>
-            <WordOfDayCard
-              word={(adminWord ?? bibleVerse)!}
-              label={adminWord ? 'ClaudyGod Message' : 'Daily Scripture'}
-              onPress={() => router.push(APP_ROUTES.settingsPages.word)}
-            />
-          </View>
-        ) : null}
-
-        <View style={wideCards ? styles.bottomCardHalf : undefined}>
+      {/* Fallback if support card was not rendered between sections */}
+      {sectionItems.filter((s) => loading || s.items.length > 0).length < 2 ? (
+        <FadeIn replayKey={contentReadyKey} delay={nextEntranceDelay()}>
           <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
-        </View>
-      </View>
+        </FadeIn>
+      ) : null}
 
     </PremiumPage>
   );

@@ -30,7 +30,7 @@
 
       <!-- Layout Sections -->
       <div v-if="activeTab === 'layout'" class="space-y-6">
-        <!-- Header -->
+        <!-- Landing Header -->
         <AppCard class="p-4 space-y-3">
           <div>
             <h3 class="text-sm font-bold text-ink">Landing header</h3>
@@ -39,6 +39,63 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <AppInput v-model="config.hero.fallbackTitle" label="Title" placeholder="Start your worship stream" />
             <AppInput v-model="config.hero.fallbackSubtitle" label="Subtitle" placeholder="Music, videos, and live moments." />
+          </div>
+        </AppCard>
+
+        <!-- Latest Releases & Premieres Spotlight Section Card -->
+        <AppCard class="p-5 space-y-4 border-primary/30 bg-primary/5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
+                <Sparkles class="w-5 h-5" />
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-ink">Latest Releases & Premieres Section</h3>
+                <p class="text-xs text-ink-muted">
+                  Controls the spotlight release banner and dedicated release shelves across the mobile app.
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <RouterLink to="/content/new">
+                <AppButton size="xs" variant="primary">
+                  + New Release
+                </AppButton>
+              </RouterLink>
+              <RouterLink to="/content">
+                <AppButton size="xs" variant="secondary">
+                  Manage Content
+                </AppButton>
+              </RouterLink>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-border bg-surface p-3.5 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span
+                    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                    :class="hasLatestSectionInHome ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-surface-hover text-ink-muted border border-border'"
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full" :class="hasLatestSectionInHome ? 'bg-emerald-400 animate-pulse' : 'bg-ink-muted'" />
+                    {{ hasLatestSectionInHome ? 'Active on Home Tab' : 'Not yet added to Home Sections' }}
+                  </span>
+                  <span class="text-xs text-ink-muted font-mono">section: latest-releases</span>
+                </div>
+                <p class="text-xs text-ink-muted mt-1 leading-relaxed">
+                  Tag any audio track, video, or premiere with <code class="px-1.5 py-0.5 rounded bg-surface-strong text-primary font-mono text-[11px]">latest-releases</code> in Content Library to feature it prominently on the mobile app.
+                </p>
+              </div>
+              <AppButton
+                v-if="!hasLatestSectionInHome"
+                size="xs"
+                variant="secondary"
+                @click="addLatestReleaseSectionToHome"
+              >
+                + Add to Home Sections
+              </AppButton>
+            </div>
           </div>
         </AppCard>
 
@@ -780,7 +837,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import {
-  ArrowDown, ArrowUp, GripVertical, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown,
+  ArrowDown, ArrowUp, GripVertical, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown, Sparkles,
 } from 'lucide-vue-next';
 import { useConfigStore } from '@/stores/config.store';
 import { useUiStore } from '@/stores/ui.store';
@@ -932,6 +989,26 @@ function sectionDeliverySummary(groupKey: keyof AppConfig['layout'], section: Mo
 function addSection(groupKey: keyof AppConfig['layout']): void {
   if (!config.value) return;
   config.value.layout[groupKey].push(createLayoutSection(groupKey) as unknown as MobileLayoutSection);
+}
+
+const hasLatestSectionInHome = computed(() =>
+  config.value?.layout?.homeSections?.some((s) => s.id === 'latest-releases') ?? false,
+);
+
+function addLatestReleaseSectionToHome(): void {
+  if (!config.value) return;
+  if (!hasLatestSectionInHome.value) {
+    config.value.layout.homeSections.push({
+      id: 'latest-releases',
+      title: 'Latest Releases & Premieres',
+      subtitle: 'New songs, upcoming music videos, and ministry premieres.',
+      contentTypes: ['audio', 'video', 'playlist'],
+      actionLabel: 'Explore',
+      destinationTab: 'home',
+      maxItems: 12,
+    });
+    ui.addToast({ tone: 'success', title: 'Added Latest Releases to Home sections' });
+  }
 }
 
 function moveSection(groupKey: keyof AppConfig['layout'], fromIdx: number, toIdx: number): void {

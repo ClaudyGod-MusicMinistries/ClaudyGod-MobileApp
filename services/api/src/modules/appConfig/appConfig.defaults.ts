@@ -213,6 +213,15 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         destinationTab: 'home',
         maxItems: 12,
       },
+      {
+        id: 'latest-releases',
+        title: 'Latest Releases & Premieres',
+        subtitle: 'New songs, upcoming music videos, and ministry premieres.',
+        contentTypes: ['audio', 'video', 'playlist'],
+        actionLabel: 'Explore',
+        destinationTab: 'home',
+        maxItems: 12,
+      },
     ],
     videoSections: [
       {

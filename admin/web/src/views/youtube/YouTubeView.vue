@@ -31,13 +31,32 @@
               <p v-if="syncStatus?.channelId" class="text-[11px] text-ink-muted truncate">{{ syncStatus.channelId }}</p>
             </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
             <SearchInput :model-value="searchQuery" placeholder="Filter videos…" class="w-44" @update:model-value="searchQuery = $event" />
             <AppButton size="sm" :loading="loadingVideos" @click="loadVideos">
               <template #icon-left>
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
               </template>
               Load videos
+            </AppButton>
+            <AppButton
+              v-if="nextPageToken"
+              size="sm"
+              variant="secondary"
+              :loading="loadingAll"
+              title="Fetch all remaining videos from this channel"
+              @click="loadAllVideos"
+            >
+              Load all ({{ filteredVideos.length }}+)
+            </AppButton>
+            <AppButton
+              size="sm"
+              variant="secondary"
+              :loading="syncing"
+              title="Sync every video on this channel directly into Content"
+              @click="triggerSyncAll"
+            >
+              Sync all to Content
             </AppButton>
           </div>
         </div>
@@ -115,6 +134,7 @@
             <!-- Thumbnail -->
             <div class="relative aspect-video bg-surface-strong overflow-hidden">
               <img
+                v-if="!brokenImages.has(video.youtubeVideoId)"
                 :src="getThumbnailUrl(video)"
                 :alt="decodeHtmlEntities(video.title)"
                 loading="lazy"
@@ -122,6 +142,16 @@
                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 @error="onThumbnailError(video, $event)"
               />
+              <div
+                v-else
+                class="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-surface-hover/80 to-surface-strong text-center"
+              >
+                <div class="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center mb-1 text-primary-soft">
+                  <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <p class="text-[11px] font-semibold text-ink line-clamp-1 max-w-[85%]">{{ decodeHtmlEntities(video.title) }}</p>
+                <span class="text-[9px] text-ink-muted">ClaudyGod Ministry</span>
+              </div>
               <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/0 to-black/0 pointer-events-none" />
 
               <!-- Multi-select checkbox (only for not-yet-imported videos) -->
@@ -205,10 +235,13 @@
           </div>
         </div>
 
-        <!-- Load more -->
-        <div v-if="nextPageToken && !searchQuery" class="flex justify-center pt-2">
+        <!-- Load more & Load all -->
+        <div v-if="nextPageToken && !searchQuery" class="flex flex-wrap items-center justify-center gap-3 pt-2">
           <AppButton variant="secondary" size="sm" :loading="loadingMore" @click="loadMoreVideos">
-            Load more
+            Load more ({{ PAGE_SIZE }})
+          </AppButton>
+          <AppButton variant="secondary" size="sm" :loading="loadingAll" @click="loadAllVideos">
+            Load all channel videos
           </AppButton>
         </div>
       </div>
@@ -394,6 +427,7 @@ const syncStatus    = ref<YouTubeSyncStatus | null>(null);
 const importQueue   = ref<YouTubeImportItem[]>([]);
 const videos        = ref<YouTubeVideoItem[]>([]);
 const selected      = ref(new Set<string>());
+const brokenImages  = ref(new Set<string>());
 const searchQuery   = ref('');
 const globalVisibility = ref<'published' | 'draft'>('published');
 const globalContentType = ref<'video' | 'audio'>('video');
@@ -410,11 +444,12 @@ const sendModalSaving = ref(false);
 const isLoading     = ref(false);
 const loadingVideos = ref(false);
 const loadingMore   = ref(false);
+const loadingAll    = ref(false);
 const syncing       = ref(false);
 const importing     = ref(false);
 const deletingId    = ref<string | null>(null);
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 
 const filteredVideos = computed(() =>
   searchQuery.value.trim()
@@ -480,24 +515,9 @@ function getThumbnailUrl(video: YouTubeVideoItem): string {
   return `${API_URL}/v1/youtube/thumbnail/${video.youtubeVideoId}${qs}`;
 }
 
-const FALLBACK_THUMBNAIL_SVG =
-  'data:image/svg+xml;base64,' +
-  btoa(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">` +
-      `<rect width="100%" height="100%" fill="#0d0e15"/>` +
-      `<circle cx="320" cy="180" r="46" fill="#7c3aed" opacity="0.3"/>` +
-      `<polygon points="310,160 340,180 310,200" fill="#a78bfa"/>` +
-      `<text x="320" y="250" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#94a3b8" text-anchor="middle">ClaudyGod Ministry</text>` +
-      `</svg>`,
-  );
-
-function onThumbnailError(_video: YouTubeVideoItem, event: Event): void {
-  const target = event.target as HTMLImageElement | null;
-  if (!target) return;
-  // If the thumbnail fails to load, gracefully display the dark branded 16:9 placeholder
-  if (target.src !== FALLBACK_THUMBNAIL_SVG) {
-    target.src = FALLBACK_THUMBNAIL_SVG;
-  }
+function onThumbnailError(video: YouTubeVideoItem, _event: Event): void {
+  brokenImages.value.add(video.youtubeVideoId);
+  brokenImages.value = new Set(brokenImages.value);
 }
 
 async function loadVideos(): Promise<void> {
@@ -524,6 +544,36 @@ async function loadMoreVideos(): Promise<void> {
     ui.addToast({ tone: 'danger', title: 'Failed to load more videos', message: e instanceof Error ? e.message : undefined });
   } finally {
     loadingMore.value = false;
+  }
+}
+
+async function loadAllVideos(): Promise<void> {
+  loadingAll.value = true;
+  try {
+    if (videos.value.length === 0) {
+      const result = await fetchChannelVideos({ maxResults: PAGE_SIZE });
+      videos.value = result.items ?? [];
+      nextPageToken.value = result.nextPageToken;
+    }
+    let pages = 0;
+    while (nextPageToken.value && pages < 100) {
+      pages++;
+      const result = await fetchChannelVideos({ maxResults: PAGE_SIZE, pageToken: nextPageToken.value });
+      videos.value = [...videos.value, ...(result.items ?? [])];
+      nextPageToken.value = result.nextPageToken;
+    }
+    ui.addToast({
+      tone: 'success',
+      title: `Loaded ${videos.value.length} total videos from channel`,
+    });
+  } catch (e) {
+    ui.addToast({
+      tone: 'danger',
+      title: 'Failed to load all videos',
+      message: e instanceof Error ? e.message : undefined,
+    });
+  } finally {
+    loadingAll.value = false;
   }
 }
 
@@ -603,7 +653,8 @@ function openSendModal(video: YouTubeVideoItem): void {
   sendModalVideo.value = video;
   sendModalSections.value = [...video.suggestedAppSections];
   sendModalVisibility.value = 'published';
-  sendModalContentType.value = 'video';
+  const isAudioSignal = /(song|worship|praise|hymn|audio|album|track|single|melody)/i.test(`${video.title} ${video.description}`);
+  sendModalContentType.value = isAudioSignal && !/(full message|sermon|interview|conference)/i.test(video.title) ? 'audio' : 'video';
   sendModalOpen.value = true;
 }
 

@@ -43,9 +43,9 @@ jobs:
 
       - name: Install locked dependencies
         run: |
-          yarn --cwd ./services/api install --frozen-lockfile
-          yarn --cwd ./admin/web install --frozen-lockfile
-          yarn --cwd ./apps/mobile install --frozen-lockfile
+          yarn --cwd ./services/api install --frozen-lockfile --network-timeout 300000 --network-retries 5
+          yarn --cwd ./admin/web install --frozen-lockfile --network-timeout 300000 --network-retries 5
+          yarn --cwd ./apps/mobile install --frozen-lockfile --network-timeout 300000 --network-retries 5
 
       - name: Run repository quality, security, and deployment contracts
         run: bash ./scripts/prepush-all-checks.sh

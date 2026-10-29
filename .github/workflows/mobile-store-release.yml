@@ -53,7 +53,7 @@ jobs:
           done
 
       - name: Install mobile dependencies
-        run: yarn --cwd ./apps/mobile install --frozen-lockfile
+        run: yarn --cwd ./apps/mobile install --frozen-lockfile --network-timeout 300000 --network-retries 5
 
       - name: Run mobile quality and architecture gates
         run: |
