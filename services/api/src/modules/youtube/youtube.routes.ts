@@ -26,7 +26,10 @@ youtubeRouter.get(
       res.status(400).end();
       return;
     }
-    const result = await getYouTubeThumbnailBuffer(videoId);
+    const preferredSrc = typeof req.query.src === 'string' && req.query.src.startsWith('https://')
+      ? req.query.src
+      : undefined;
+    const result = await getYouTubeThumbnailBuffer(videoId, preferredSrc);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     res.setHeader('Content-Type', result.contentType);

@@ -1,9 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
-import Constants from 'expo-constants';
 import { apiFetch } from '../services/apiClient';
-import { clearInstallationSession, getInstallationSession, saveInstallationSession } from '../lib/installationSessionStorage';
+import { clearInstallationSession, ensureInstallationSession, getInstallationSession } from '../lib/installationSessionStorage';
 
 const attributedCodes = new Set<string>();
 
@@ -54,28 +52,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           session = null;
         }
       }
-      if (!session && Platform.OS === 'web') {
-        try {
-          const verified = await apiFetch<{ installation: { id: string } }>('/v1/mobile/installations/session');
-          if (active) {
-            setDeviceId(verified.installation.id);
-            setIsReady(true);
-            void Linking.getInitialURL().then((url) => attributeReferralFromUrl(url)).catch(() => undefined);
-          }
-          return;
-        } catch {
-          // No HttpOnly installation session yet; registration below creates it.
-        }
-      }
       if (!session) {
-        const result = await apiFetch<{ installation: { id: string }; credential: string }>('/v1/mobile/installations/register', {
-          method: 'POST',
-          body: JSON.stringify({ platform: Platform.OS === 'ios' || Platform.OS === 'android' || Platform.OS === 'web' ? Platform.OS : 'unknown', appVersion: Constants.expoConfig?.version ?? undefined }),
-        });
-        session = { installationId: result.installation.id, credential: result.credential };
-        await saveInstallationSession(session);
+        session = await ensureInstallationSession();
       }
-      if (active) {
+      if (active && session) {
         setDeviceId(session.installationId);
         setIsReady(true);
         void Linking.getInitialURL().then((url) => attributeReferralFromUrl(url)).catch(() => undefined);

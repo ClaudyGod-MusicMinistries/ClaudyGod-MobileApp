@@ -350,7 +350,7 @@ function resolveThumbnail(url: string | null | undefined): string {
   if (!url) return '';
   const match = url.match(/(?:vi\/|vi%2F|v=|\/v\/)([a-zA-Z0-9_-]{11})/);
   if (match?.[1] && (url.includes('i.ytimg.com') || url.includes('youtube.com'))) {
-    return `${API_URL}/v1/youtube/thumbnail/${match[1]}`;
+    return `${API_URL}/v1/youtube/thumbnail/${match[1]}?src=${encodeURIComponent(url)}`;
   }
   return url;
 }

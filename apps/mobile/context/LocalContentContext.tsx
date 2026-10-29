@@ -94,9 +94,12 @@ export function LocalContentProvider({ children }: { children: ReactNode }) {
             ...localHistory.filter((local) => !installationHistory.some((server) => server.id === local.id)),
           ].slice(0, 100);
         } catch (error) {
-          // A populated device cache remains a valid offline history. Surface
-          // the backend failure only when there is no cached collection to use.
-          if (localHistory.length === 0) {
+          // A populated device cache remains a valid offline history. If installation history
+          // encounters an auth/credential handshake error for an anonymous guest, fall back cleanly
+          // to local device storage rather than displaying a blocking error state.
+          const isAuthOrTransientError = error instanceof Error &&
+            (error.message.includes('401') || error.message.includes('Unauthorized') || error.message.includes('credential') || error.message.includes('temporarily unavailable'));
+          if (localHistory.length === 0 && !isAuthOrTransientError) {
             serverSyncError = error instanceof Error ? error.message : 'Installation history synchronization failed.';
           }
         }

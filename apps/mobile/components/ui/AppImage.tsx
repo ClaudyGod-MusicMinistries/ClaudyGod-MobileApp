@@ -72,21 +72,29 @@ export function AppImage({
 }: AppImageProps) {
   const styles = useStyles();
   const [loading, setLoading] = useState(true);
+  const [retryHq, setRetryHq] = useState(false);
   const [errored, setErrored] = useState(false);
 
   const handleLoad = () => setLoading(false);
 
   const handleError = () => {
+    if (!retryHq && uri && uri.includes('maxresdefault.jpg')) {
+      setRetryHq(true);
+      return;
+    }
     setErrored(true);
     setLoading(false);
   };
 
   const resolvedSource: ImageSource | number = (() => {
     if (source) return source;
-    const activeUri = errored
-      ? (fallbackUri ?? DEFAULT_CONTENT_IMAGE_URI)
-      : (uri ?? fallbackUri ?? DEFAULT_CONTENT_IMAGE_URI);
-    return { uri: activeUri };
+    if (errored) {
+      return { uri: fallbackUri ?? DEFAULT_CONTENT_IMAGE_URI };
+    }
+    if (retryHq && uri && uri.includes('maxresdefault.jpg')) {
+      return { uri: uri.replace('maxresdefault.jpg', 'hqdefault.jpg') };
+    }
+    return { uri: uri ?? fallbackUri ?? DEFAULT_CONTENT_IMAGE_URI };
   })();
 
   const containerStyle = [
