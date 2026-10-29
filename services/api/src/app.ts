@@ -295,8 +295,14 @@ export const createApp = () => {
   // Body parsing
   app.use(express.json({ limit: '3mb' }));
 
-  // Rate limiting
-  app.use(apiLimiter);
+  // Rate limiting - public image proxy bypasses rate limiter
+  app.use((req, res, next) => {
+    const url = req.originalUrl || req.path || '';
+    if (url.includes('/youtube/thumbnail/') || url.includes('/thumbnail/')) {
+      return next();
+    }
+    return apiLimiter(req, res, next);
+  });
   app.use(adminAuditMiddleware);
 
   // Health check (no auth needed)

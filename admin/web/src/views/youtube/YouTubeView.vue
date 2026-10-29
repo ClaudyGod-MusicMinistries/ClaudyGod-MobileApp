@@ -337,7 +337,6 @@ import { ref, computed, onMounted } from 'vue';
 import { getSyncStatus, triggerSync, listImportQueue, fetchChannelVideos, importVideos } from '@/api/youtube';
 import { deleteContent } from '@/api/content';
 import { API_URL } from '@/api/client';
-import { BRAND_LOGO_URL } from '@/utils/constants';
 import { useUiStore } from '@/stores/ui.store';
 import { useConfigStore } from '@/stores/config.store';
 import type { YouTubeSyncStatus, YouTubeImportItem, YouTubeVideoItem } from '@/api/types';
@@ -458,7 +457,9 @@ function decodeHtmlEntities(raw: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)));
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&amp;/g, '&');
 }
 
 function getThumbnailUrl(video: YouTubeVideoItem): string {
@@ -471,18 +472,25 @@ function getThumbnailUrl(video: YouTubeVideoItem): string {
   return `${API_URL}/v1/youtube/thumbnail/${video.youtubeVideoId}`;
 }
 
+const FALLBACK_THUMBNAIL_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <rect width="100%" height="100%" fill="#0d0e15"/>
+  <circle cx="320" cy="180" r="46" fill="#7c3aed" opacity="0.3"/>
+  <polygon points="310,160 340,180 310,200" fill="#a78bfa"/>
+  <text x="320" y="250" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#94a3b8" text-anchor="middle">ClaudyGod Ministry</text>
+</svg>
+`.trim())}`;
+
 function onThumbnailError(video: YouTubeVideoItem, event: Event): void {
   const target = event.target as HTMLImageElement | null;
   if (!target) return;
   const proxyUrl = `${API_URL}/v1/youtube/thumbnail/${video.youtubeVideoId}`;
   if (!target.src.includes(`/v1/youtube/thumbnail/${video.youtubeVideoId}`)) {
     target.src = proxyUrl;
-  } else if (!target.src.includes('sddefault.jpg') && !target.src.includes('hqdefault.jpg')) {
-    target.src = `https://i.ytimg.com/vi/${video.youtubeVideoId}/sddefault.jpg`;
-  } else if (!target.src.includes('hqdefault.jpg')) {
-    target.src = `https://i.ytimg.com/vi/${video.youtubeVideoId}/hqdefault.jpg`;
-  } else {
-    target.src = BRAND_LOGO_URL;
+  } else if (!target.src.includes('img.youtube.com')) {
+    target.src = `https://img.youtube.com/vi/${video.youtubeVideoId}/hqdefault.jpg`;
+  } else if (target.src !== FALLBACK_THUMBNAIL_SVG) {
+    target.src = FALLBACK_THUMBNAIL_SVG;
   }
 }
 

@@ -7,10 +7,41 @@ export type SectionContract = {
   contentTypes: Array<ContentType | 'live'>;
 };
 
+export const SYSTEM_SECTIONS: Record<string, SectionContract> = {
+  'home-featured': {
+    id: 'home-featured',
+    title: 'Featured / For You',
+    contentTypes: ['audio', 'video', 'live', 'playlist', 'announcement'],
+  },
+  'music-featured': {
+    id: 'music-featured',
+    title: 'Featured Worship & Praise',
+    contentTypes: ['audio', 'video', 'playlist'],
+  },
+  'video-featured': {
+    id: 'video-featured',
+    title: 'Featured Videos & Messages',
+    contentTypes: ['video', 'live'],
+  },
+  'latest-releases': {
+    id: 'latest-releases',
+    title: 'Latest Releases & Premieres',
+    contentTypes: ['audio', 'video', 'playlist'],
+  },
+  'library-saved': {
+    id: 'library-saved',
+    title: 'Library',
+    contentTypes: ['audio', 'video', 'playlist', 'live'],
+  },
+};
+
 const LEGACY_SECTION_ALIASES: Record<string, string> = {
   'claudygod-music': 'music-featured',
   'claudygod-messages': 'video-featured',
   'claudygod-nuggets-of-truth': 'video-featured',
+  music: 'music-featured',
+  videos: 'video-featured',
+  home: 'home-featured',
 };
 
 export function validateSectionAssignments(params: {
@@ -19,17 +50,46 @@ export function validateSectionAssignments(params: {
   configuredSections: SectionContract[];
   publishing: boolean;
 }): string[] {
-  const sectionsById = new Map(params.configuredSections.map((section) => [section.id, section]));
+  const sectionsById = new Map<string, SectionContract>();
+
+  // Seed with system default sections
+  for (const [id, sysSection] of Object.entries(SYSTEM_SECTIONS)) {
+    sectionsById.set(id, { ...sysSection, contentTypes: [...sysSection.contentTypes] });
+  }
+
+  // Merge explicitly configured sections from mobile config
+  for (const section of params.configuredSections) {
+    const existing = sectionsById.get(section.id);
+    if (existing) {
+      sectionsById.set(section.id, {
+        id: section.id,
+        title: section.title || existing.title,
+        contentTypes: [...new Set([...existing.contentTypes, ...section.contentTypes])],
+      });
+    } else {
+      sectionsById.set(section.id, {
+        id: section.id,
+        title: section.title,
+        contentTypes: [...section.contentTypes],
+      });
+    }
+  }
+
+  // Ensure music-featured always accepts video (worship ministrations & music videos)
+  const musicSection = sectionsById.get('music-featured');
+  if (musicSection && !musicSection.contentTypes.includes('video')) {
+    musicSection.contentTypes.push('video');
+  }
+
   const normalized = [
     ...new Set(
       params.assignedSectionIds
         .map((value) => {
           const trimmed = value.trim();
-          if (
-            !sectionsById.has(trimmed) &&
-            LEGACY_SECTION_ALIASES[trimmed] &&
-            sectionsById.has(LEGACY_SECTION_ALIASES[trimmed])
-          ) {
+          if (sectionsById.has(trimmed)) {
+            return trimmed;
+          }
+          if (LEGACY_SECTION_ALIASES[trimmed] && sectionsById.has(LEGACY_SECTION_ALIASES[trimmed])) {
             return LEGACY_SECTION_ALIASES[trimmed];
           }
           return trimmed;

@@ -68,18 +68,27 @@ async function isStaffSession(req: Request): Promise<boolean> {
 // General API rate limiter
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 2000, // 2000 requests per windowMs for unauthenticated consumers
+  max: 5000, // 5000 requests per windowMs for unauthenticated consumers
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
   store: redisStore('api'),
   passOnStoreError,
   handler: rejectionHandler('api'),
-  skip: async (req: Request) =>
-    process.env.NODE_ENV === 'development' ||
-    req.path.includes('/youtube/thumbnail/') ||
-    req.path.startsWith('/health') ||
-    (await isStaffSession(req)),
+  skip: async (req: Request) => {
+    if (process.env.NODE_ENV === 'development') return true;
+    const url = req.originalUrl || req.path || '';
+    if (
+      url.includes('/youtube/thumbnail/') ||
+      url.includes('/thumbnail/') ||
+      url.startsWith('/health') ||
+      url.startsWith('/v1/health') ||
+      url.startsWith('/api/health')
+    ) {
+      return true;
+    }
+    return isStaffSession(req);
+  },
 });
 
 // Strict rate limiter for auth attempts

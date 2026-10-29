@@ -299,22 +299,44 @@ function resolveThumbnail(url: string | null | undefined): string {
   return url;
 }
 
+const DEFAULT_SYSTEM_SECTIONS: Array<{ value: string; label: string; screens: string[]; contentTypes: string[] }> = [
+  { value: 'home-featured', label: 'Featured / For You', screens: ['Home'], contentTypes: ['audio', 'video', 'live', 'playlist', 'announcement'] },
+  { value: 'latest-releases', label: 'Latest Releases & Premieres', screens: ['Home', 'Music'], contentTypes: ['audio', 'video', 'playlist'] },
+  { value: 'music-featured', label: 'Featured Worship & Praise', screens: ['Player', 'Home'], contentTypes: ['audio', 'video', 'playlist'] },
+  { value: 'video-featured', label: 'Featured Videos & Messages', screens: ['Videos'], contentTypes: ['video', 'live'] },
+  { value: 'library-saved', label: 'Library Saved', screens: ['Library'], contentTypes: ['audio', 'video', 'playlist', 'live'] },
+];
+
 const configuredSectionOptions = computed(() => {
   const byId = new Map<string, { value: string; label: string; screens: string[]; contentTypes: string[] }>();
+  for (const sys of DEFAULT_SYSTEM_SECTIONS) {
+    byId.set(sys.value, { ...sys, screens: [...sys.screens], contentTypes: [...sys.contentTypes] });
+  }
+
   const layout = configStore.appConfig?.layout;
   if (layout) {
     for (const group of LAYOUT_GROUPS) {
       for (const section of layout[group.key] ?? []) {
         const existing = byId.get(section.id);
         if (existing) {
-          existing.screens.push(group.label);
+          if (!existing.screens.includes(group.label)) {
+            existing.screens.push(group.label);
+          }
           existing.contentTypes = [...new Set([...existing.contentTypes, ...section.contentTypes])];
+          if (section.title) existing.label = section.title;
         } else {
-          byId.set(section.id, { value: section.id, label: section.title, screens: [group.label], contentTypes: section.contentTypes });
+          byId.set(section.id, { value: section.id, label: section.title, screens: [group.label], contentTypes: [...section.contentTypes] });
         }
       }
     }
   }
+
+  // Ensure music-featured always accepts video (worship ministrations & gospel music videos)
+  const music = byId.get('music-featured');
+  if (music && !music.contentTypes.includes('video')) {
+    music.contentTypes.push('video');
+  }
+
   return [...byId.values()];
 });
 
@@ -376,8 +398,14 @@ const compatibleSectionOptions = computed(() =>
 );
 
 const invalidSections = computed(() => {
+  if (configStore.isLoading && !configStore.appConfig) {
+    return []; // Avoid false alarm flashes while layout config is actively loading
+  }
   const compatibleIds = new Set(compatibleSectionOptions.value.map((section) => section.value));
-  return form.value.appSections.filter((sectionId) => !compatibleIds.has(sectionId));
+  return form.value.appSections.filter((sectionId) => {
+    const canonical = LEGACY_SECTION_ALIASES[sectionId] ?? sectionId;
+    return !compatibleIds.has(canonical);
+  });
 });
 
 const assignmentError = computed(() => {
@@ -387,16 +415,18 @@ const assignmentError = computed(() => {
 });
 
 function toggleSection(value: string): void {
-  const idx = form.value.appSections.indexOf(value);
+  const canonical = LEGACY_SECTION_ALIASES[value] ?? value;
+  const idx = form.value.appSections.findIndex((s) => (LEGACY_SECTION_ALIASES[s] ?? s) === canonical);
   if (idx === -1) {
-    form.value.appSections.push(value);
+    form.value.appSections.push(canonical);
   } else {
     form.value.appSections.splice(idx, 1);
   }
 }
 
 function removeSection(value: string): void {
-  const idx = form.value.appSections.indexOf(value);
+  const canonical = LEGACY_SECTION_ALIASES[value] ?? value;
+  const idx = form.value.appSections.findIndex((s) => (LEGACY_SECTION_ALIASES[s] ?? s) === canonical);
   if (idx !== -1) {
     form.value.appSections.splice(idx, 1);
   }
@@ -404,7 +434,9 @@ function removeSection(value: string): void {
 
 function clearInvalidSections(): void {
   const compatibleIds = new Set(compatibleSectionOptions.value.map((section) => section.value));
-  form.value.appSections = form.value.appSections.filter((sectionId) => compatibleIds.has(sectionId));
+  form.value.appSections = form.value.appSections
+    .map((s) => LEGACY_SECTION_ALIASES[s] ?? s)
+    .filter((sectionId) => compatibleIds.has(sectionId));
 }
 
 function onMediaUploaded(payload: { url: string; sessionId: string }): void {
