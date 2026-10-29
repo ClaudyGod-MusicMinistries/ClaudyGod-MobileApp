@@ -282,22 +282,14 @@ function pickThumbnail(
   },
   videoId?: string,
 ): string {
-  // Always prioritize max resolution HD:
-  // 1. YouTube API maxres (1280x720)
-  // 2. Direct maxresdefault URL (1280x720)
-  // 3. standard (640x480)
-  // 4. high (480x360)
-  // 5. medium (320x180)
-  // 6. default (120x90)
+  // Always prioritize highest resolution available in YouTube API metadata:
   if (thumbnails?.maxres?.url) return thumbnails.maxres.url;
-  if (videoId) return `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
-  return (
-    thumbnails?.standard?.url ||
-    thumbnails?.high?.url ||
-    thumbnails?.medium?.url ||
-    thumbnails?.default?.url ||
-    'https://i.ytimg.com/vi/default/hqdefault.jpg'
-  );
+  if (thumbnails?.standard?.url) return thumbnails.standard.url;
+  if (thumbnails?.high?.url) return thumbnails.high.url;
+  if (thumbnails?.medium?.url) return thumbnails.medium.url;
+  if (thumbnails?.default?.url) return thumbnails.default.url;
+  if (videoId) return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  return 'https://i.ytimg.com/vi/default/hqdefault.jpg';
 }
 
 function formatIsoDuration(duration: string | undefined): string {

@@ -305,7 +305,7 @@ export default function PlaySection() {
 
   const upNext = useMemo<FeedCardItem[]>(() => {
     if (!nowPlaying) {
-      return filteredQueue.filter((card) => playbackByFeedId.has(card.id) && card.id !== firstPlayable?.id).slice(0, 8);
+      return filteredQueue.filter((card) => card.id !== firstPlayable?.id).slice(0, 8);
     }
     const order = activeOrder(playbackQueue);
     const upcoming = order.slice(playbackQueue.contextCursor + 1).map((idx) => playbackQueue.contextItems[idx]);
@@ -314,7 +314,7 @@ export default function PlaySection() {
       .map((id) => feedById.get(id))
       .filter((card): card is FeedCardItem => Boolean(card))
       .slice(0, 12);
-  }, [nowPlaying, filteredQueue, playbackByFeedId, firstPlayable, playbackQueue, feedById]);
+  }, [nowPlaying, filteredQueue, firstPlayable, playbackQueue, feedById]);
 
   if (error && !allQueue.length) {
     return (
