@@ -204,6 +204,35 @@ interface YouTubeSearchResponse {
   error?: { message?: string };
 }
 
+interface YouTubePlaylistItemsResponse {
+  items?: Array<{
+    id?: string;
+    contentDetails?: {
+      videoId?: string;
+      videoPublishedAt?: string;
+    };
+    snippet?: {
+      title?: string;
+      description?: string;
+      channelTitle?: string;
+      publishedAt?: string;
+      resourceId?: {
+        kind?: string;
+        videoId?: string;
+      };
+      thumbnails?: {
+        maxres?: { url?: string };
+        standard?: { url?: string };
+        high?: { url?: string };
+        medium?: { url?: string };
+        default?: { url?: string };
+      };
+    };
+  }>;
+  nextPageToken?: string;
+  error?: { message?: string };
+}
+
 interface YouTubeVideosResponse {
   items?: Array<{
     id?: string;
@@ -527,6 +556,24 @@ async function resolveChannelId(channelIdentifier: string): Promise<string> {
   return id;
 }
 
+export async function getUploadsPlaylistId(channelId: string): Promise<string> {
+  // If channelId is in standard UC... format, the uploads playlist is always UU...
+  if (channelId.startsWith('UC') && channelId.length >= 24) {
+    return `UU${channelId.slice(2)}`;
+  }
+  // Otherwise resolve from channels API contentDetails
+  try {
+    const res = await fetchJson<{ items?: Array<{ contentDetails?: { relatedPlaylists?: { uploads?: string } } }> }>(
+      `https://www.googleapis.com/youtube/v3/channels?key=${env.YOUTUBE_API_KEY}&part=contentDetails&id=${encodeURIComponent(channelId)}`,
+    );
+    const uploads = res.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+    if (uploads) return uploads;
+  } catch {
+    // Non-fatal, fallback to standard replacement
+  }
+  return channelId.startsWith('UC') ? `UU${channelId.slice(2)}` : channelId;
+}
+
 export async function fetchYouTubeVideos(input?: {
   channelId?: string;
   maxResults?: number;
@@ -543,31 +590,102 @@ export async function fetchYouTubeVideos(input?: {
   const channelId = await resolveChannelId(channelIdentifier);
   const maxResults = Math.min(Math.max(input?.maxResults ?? env.YOUTUBE_MAX_RESULTS, 1), 50);
 
-  const searchParams = new URLSearchParams({
-    key: env.YOUTUBE_API_KEY,
-    part: 'snippet',
-    channelId,
-    type: 'video',
-    order: 'date',
-    maxResults: String(maxResults),
-  });
-  if (input?.pageToken) {
-    searchParams.set('pageToken', input.pageToken);
+  let rawItemsMeta: Array<{
+    videoId: string;
+    publishedAt: string;
+    snippet: {
+      title?: string;
+      description?: string;
+      channelTitle?: string;
+      thumbnails?: {
+        maxres?: { url?: string };
+        standard?: { url?: string };
+        high?: { url?: string };
+        medium?: { url?: string };
+        default?: { url?: string };
+      };
+    };
+  }> = [];
+  let nextPageToken: string | null = null;
+
+  // Primary Strategy: Fetch from the Channel's Uploads Playlist.
+  // The uploads playlist is YouTube's authoritative, complete repository of EVERY video
+  // published on the channel (100% complete, no search index omissions, and 1 quota unit).
+  try {
+    const uploadsPlaylistId = await getUploadsPlaylistId(channelId);
+    const playlistParams = new URLSearchParams({
+      key: env.YOUTUBE_API_KEY,
+      part: 'snippet,contentDetails',
+      playlistId: uploadsPlaylistId,
+      maxResults: String(maxResults),
+    });
+    if (input?.pageToken) {
+      playlistParams.set('pageToken', input.pageToken);
+    }
+
+    const playlistRes = await fetchJson<YouTubePlaylistItemsResponse>(
+      `https://www.googleapis.com/youtube/v3/playlistItems?${playlistParams.toString()}`,
+    );
+
+    nextPageToken = playlistRes.nextPageToken ?? null;
+
+    for (const item of playlistRes.items || []) {
+      const videoId = item.contentDetails?.videoId || item.snippet?.resourceId?.videoId;
+      const title = item.snippet?.title;
+      // Skip private or deleted video entries that YouTube keeps in playlist metadata
+      if (!videoId || !item.snippet || title === 'Private video' || title === 'Deleted video') {
+        continue;
+      }
+      rawItemsMeta.push({
+        videoId,
+        publishedAt: item.contentDetails?.videoPublishedAt || item.snippet.publishedAt || new Date().toISOString(),
+        snippet: item.snippet,
+      });
+    }
+  } catch (err) {
+    log.warn('Uploads playlist query failed, falling back to search API', { error: err });
+    rawItemsMeta = [];
   }
 
-  const search = await fetchJson<YouTubeSearchResponse>(
-    `https://www.googleapis.com/youtube/v3/search?${searchParams.toString()}`,
-  );
+  // Fallback Strategy: If playlistItems returned nothing or failed, use search.list
+  if (rawItemsMeta.length === 0 && !input?.pageToken) {
+    const searchParams = new URLSearchParams({
+      key: env.YOUTUBE_API_KEY,
+      part: 'snippet',
+      channelId,
+      type: 'video',
+      order: 'date',
+      maxResults: String(maxResults),
+    });
+    if (input?.pageToken) {
+      searchParams.set('pageToken', input.pageToken);
+    }
 
-  const searchItems = (search.items || []).filter((item) => item.id?.videoId && item.snippet);
-  const videoIds = searchItems.map((item) => item.id!.videoId!).filter(Boolean);
+    const search = await fetchJson<YouTubeSearchResponse>(
+      `https://www.googleapis.com/youtube/v3/search?${searchParams.toString()}`,
+    );
+
+    nextPageToken = search.nextPageToken ?? null;
+
+    for (const item of search.items || []) {
+      const videoId = item.id?.videoId;
+      if (!videoId || !item.snippet) continue;
+      rawItemsMeta.push({
+        videoId,
+        publishedAt: item.snippet.publishedAt || new Date().toISOString(),
+        snippet: item.snippet,
+      });
+    }
+  }
+
+  const videoIds = rawItemsMeta.map((item) => item.videoId).filter(Boolean);
 
   if (videoIds.length === 0) {
     return {
       channelId,
       fetchedAt: new Date().toISOString(),
       items: [],
-      nextPageToken: search.nextPageToken ?? null,
+      nextPageToken,
     };
   }
 
@@ -585,25 +703,25 @@ export async function fetchYouTubeVideos(input?: {
     (videos.items || []).map((item) => [item.id || '', item]),
   );
 
-  const rawItems: Array<Omit<YouTubeVideoItem, 'contentId' | 'contentVisibility'>> = searchItems.map((item) => {
-    const id = item.id!.videoId!;
-    const searchSnippet = item.snippet!;
+  const rawItems: Array<Omit<YouTubeVideoItem, 'contentId' | 'contentVisibility'>> = rawItemsMeta.map((item) => {
+    const id = item.videoId;
+    const fallbackSnippet = item.snippet;
     const details = detailsById.get(id);
-    const videoSnippet = details?.snippet || searchSnippet;
-    const liveBroadcastContent = videoSnippet.liveBroadcastContent ?? details?.snippet?.liveBroadcastContent;
+    const videoSnippet = details?.snippet || fallbackSnippet;
+    const liveBroadcastContent = details?.snippet?.liveBroadcastContent;
     const isLive = liveBroadcastContent === 'live';
 
-    const title = decodeHtmlEntities(videoSnippet.title || searchSnippet.title || 'Untitled YouTube Video');
-    const description = decodeHtmlEntities(videoSnippet.description || searchSnippet.description || '');
-    const channelTitle = decodeHtmlEntities(videoSnippet.channelTitle || searchSnippet.channelTitle || 'YouTube Channel');
-    const thumbnailUrl = pickThumbnail(videoSnippet.thumbnails || searchSnippet.thumbnails, id);
+    const title = decodeHtmlEntities(videoSnippet.title || fallbackSnippet.title || 'Untitled YouTube Video');
+    const description = decodeHtmlEntities(videoSnippet.description || fallbackSnippet.description || '');
+    const channelTitle = decodeHtmlEntities(videoSnippet.channelTitle || fallbackSnippet.channelTitle || 'YouTube Channel');
+    const thumbnailUrl = pickThumbnail(videoSnippet.thumbnails || fallbackSnippet.thumbnails, id);
 
     return {
       youtubeVideoId: id,
       title,
       description,
       channelTitle,
-      publishedAt: searchSnippet.publishedAt || new Date().toISOString(),
+      publishedAt: item.publishedAt,
       thumbnailUrl,
       url: `https://www.youtube.com/watch?v=${id}`,
       duration: isLive ? 'LIVE' : formatIsoDuration(details?.contentDetails?.duration),
@@ -616,7 +734,7 @@ export async function fetchYouTubeVideos(input?: {
         description,
         channelTitle,
         isLive,
-        publishedAt: searchSnippet.publishedAt,
+        publishedAt: item.publishedAt,
       }),
       suggestedTags: deriveSuggestedTags({
         title,
@@ -631,7 +749,7 @@ export async function fetchYouTubeVideos(input?: {
     channelId,
     fetchedAt: new Date().toISOString(),
     items: await attachContentState(rawItems),
-    nextPageToken: search.nextPageToken ?? null,
+    nextPageToken,
   };
 }
 
@@ -639,7 +757,7 @@ export async function fetchYouTubeVideos(input?: {
 // enough to cover any realistic channel size while bounding YouTube API quota
 // usage and run time if something is misconfigured (e.g. a channel ID typo that
 // somehow still resolves).
-const SYNC_MAX_PAGES = 20;
+const SYNC_MAX_PAGES = 200;
 
 // The single place that turns one YouTube video into a content_items row — used
 // by both the full-channel sync and the explicit curated-selection import so

@@ -31,13 +31,32 @@
               <p v-if="syncStatus?.channelId" class="text-[11px] text-ink-muted truncate">{{ syncStatus.channelId }}</p>
             </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
             <SearchInput :model-value="searchQuery" placeholder="Filter videos…" class="w-44" @update:model-value="searchQuery = $event" />
             <AppButton size="sm" :loading="loadingVideos" @click="loadVideos">
               <template #icon-left>
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
               </template>
               Load videos
+            </AppButton>
+            <AppButton
+              v-if="nextPageToken"
+              size="sm"
+              variant="secondary"
+              :loading="loadingAll"
+              title="Fetch all remaining videos from this channel"
+              @click="loadAllVideos"
+            >
+              Load all ({{ filteredVideos.length }}+)
+            </AppButton>
+            <AppButton
+              size="sm"
+              variant="secondary"
+              :loading="syncing"
+              title="Sync every video on this channel directly into Content"
+              @click="triggerSyncAll"
+            >
+              Sync all to Content
             </AppButton>
           </div>
         </div>
@@ -216,10 +235,13 @@
           </div>
         </div>
 
-        <!-- Load more -->
-        <div v-if="nextPageToken && !searchQuery" class="flex justify-center pt-2">
+        <!-- Load more & Load all -->
+        <div v-if="nextPageToken && !searchQuery" class="flex flex-wrap items-center justify-center gap-3 pt-2">
           <AppButton variant="secondary" size="sm" :loading="loadingMore" @click="loadMoreVideos">
-            Load more
+            Load more ({{ PAGE_SIZE }})
+          </AppButton>
+          <AppButton variant="secondary" size="sm" :loading="loadingAll" @click="loadAllVideos">
+            Load all channel videos
           </AppButton>
         </div>
       </div>
@@ -422,11 +444,12 @@ const sendModalSaving = ref(false);
 const isLoading     = ref(false);
 const loadingVideos = ref(false);
 const loadingMore   = ref(false);
+const loadingAll    = ref(false);
 const syncing       = ref(false);
 const importing     = ref(false);
 const deletingId    = ref<string | null>(null);
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 
 const filteredVideos = computed(() =>
   searchQuery.value.trim()
@@ -521,6 +544,36 @@ async function loadMoreVideos(): Promise<void> {
     ui.addToast({ tone: 'danger', title: 'Failed to load more videos', message: e instanceof Error ? e.message : undefined });
   } finally {
     loadingMore.value = false;
+  }
+}
+
+async function loadAllVideos(): Promise<void> {
+  loadingAll.value = true;
+  try {
+    if (videos.value.length === 0) {
+      const result = await fetchChannelVideos({ maxResults: PAGE_SIZE });
+      videos.value = result.items ?? [];
+      nextPageToken.value = result.nextPageToken;
+    }
+    let pages = 0;
+    while (nextPageToken.value && pages < 100) {
+      pages++;
+      const result = await fetchChannelVideos({ maxResults: PAGE_SIZE, pageToken: nextPageToken.value });
+      videos.value = [...videos.value, ...(result.items ?? [])];
+      nextPageToken.value = result.nextPageToken;
+    }
+    ui.addToast({
+      tone: 'success',
+      title: `Loaded ${videos.value.length} total videos from channel`,
+    });
+  } catch (e) {
+    ui.addToast({
+      tone: 'danger',
+      title: 'Failed to load all videos',
+      message: e instanceof Error ? e.message : undefined,
+    });
+  } finally {
+    loadingAll.value = false;
   }
 }
 
