@@ -1,6 +1,6 @@
 // components/CustomText.tsx
 import React, { useContext, useMemo } from 'react';
-import { Platform, Text, TextProps, useWindowDimensions } from 'react-native';
+import { Platform, Text, TextProps, TextStyle, useWindowDimensions } from 'react-native';
 import { getResponsiveFontStyle, type FontVariantKey } from '../util/fonts';
 import { FontContext } from '../context/FontContext';
 import { useAppTheme } from '../util/colorScheme';
@@ -35,12 +35,12 @@ export const CustomText: React.FC<CustomTextProps> = ({
         { color: theme.colors.text },
         finalStyle,
         style,
-        Platform.OS === 'web' && numberOfLinesProp ? {
+        Platform.OS === 'web' && numberOfLinesProp ? ({
           overflow: 'hidden',
           display: '-webkit-box',
           WebkitBoxOrient: 'vertical',
           WebkitLineClamp: numberOfLinesProp,
-        } : {},
+        } as unknown as TextStyle) : undefined,
       ]}
       numberOfLines={numberOfLinesProp}
       ellipsizeMode={ellipsizeModeProp}

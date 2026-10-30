@@ -114,11 +114,6 @@ const useStyles = makeStyles((theme) => ({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Without this, "NEW" would stick to whatever the single most-recent item
-// happens to be forever, even if it was actually published months ago because
-// nothing newer has been added since — a stale "NEW" badge is exactly the
-// kind of thing that undermines an admin-curated, honest content surface.
-const NEW_RELEASE_WINDOW_MS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
 // Base delay before the first data-dependent block animates in, and the step
 // between each subsequent one — tuned so a 5-block screen cascades over
