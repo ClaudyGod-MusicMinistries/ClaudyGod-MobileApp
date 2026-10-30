@@ -13,7 +13,7 @@ import { common } from '../../styles/commonStyles';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import type { FeedCardItem } from '../../services/contentService';
 import { useFeedStyles } from './styles';
-import { isValidDuration } from './utils';
+import { isValidDuration, cleanFeedTitle } from './utils';
 
 type PremiumHeroProps = {
   item?: FeedCardItem | null;
@@ -196,7 +196,7 @@ export function PremiumHero({
               }}
               numberOfLines={2}
             >
-              {item.title || title}
+              {cleanFeedTitle(item.title || title)}
             </CustomText>
 
             <CustomText style={styles.heroMetaText}>

@@ -9,6 +9,20 @@ export function cleanFeedText(value?: string | null): string {
     .trim();
 }
 
+/**
+ * Strips distracting promotional tags, boilerplate artist suffixes,
+ * and YouTube artifact tags ("NEW!", "| Official Video", ". Afro Gospel Music by...")
+ * so display headings look clean, intentional, and modern on cards and hero stages.
+ */
+export function cleanFeedTitle(value?: string | null): string {
+  let text = cleanFeedText(value);
+  if (!text) return '';
+  text = text.replace(/^(NEW\s*!*|-|:|\s)+/i, '').trim();
+  text = text.replace(/\s*(\||\/\/|-)\s*(Official\s+)?(Music\s+Video|Video|Audio).*$/i, '').trim();
+  text = text.replace(/\.\s+(Afro\s+Gospel\s+Music|Gospel\s+Music|Music\s+by).*$/i, '').trim();
+  return text || cleanFeedText(value);
+}
+
 export function isValidDuration(d: string | null | undefined): boolean {
   if (!d) return false;
   const trimmed = d.trim();

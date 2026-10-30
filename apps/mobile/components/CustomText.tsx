@@ -9,14 +9,14 @@ interface CustomTextProps extends TextProps {
   variant?: FontVariantKey;
 }
 
-export const CustomText: React.FC<CustomTextProps> = ({
+export function CustomText({
   variant = 'body',
   children,
   style,
   numberOfLines: numberOfLinesProp,
   ellipsizeMode: ellipsizeModeProp,
   ...props
-}) => {
+}: CustomTextProps) {
   const { fontsLoaded } = useContext(FontContext);
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
@@ -29,18 +29,20 @@ export const CustomText: React.FC<CustomTextProps> = ({
     ? variantStyle
     : { ...variantStyle, fontFamily: undefined };
 
+  const webClampStyle = Platform.OS === 'web' && numberOfLinesProp ? ({
+    overflow: 'hidden',
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical',
+    WebkitLineClamp: numberOfLinesProp,
+  } as unknown as TextStyle) : undefined;
+
   return (
     <Text
       style={[
         { color: theme.colors.text },
         finalStyle,
         style,
-        Platform.OS === 'web' && numberOfLinesProp ? ({
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitBoxOrient: 'vertical',
-          WebkitLineClamp: numberOfLinesProp,
-        } as unknown as TextStyle) : undefined,
+        webClampStyle,
       ]}
       numberOfLines={numberOfLinesProp}
       ellipsizeMode={ellipsizeModeProp}
@@ -51,4 +53,4 @@ export const CustomText: React.FC<CustomTextProps> = ({
       {children}
     </Text>
   );
-};
+}

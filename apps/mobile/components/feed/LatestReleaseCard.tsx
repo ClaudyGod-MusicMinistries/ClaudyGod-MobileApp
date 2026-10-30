@@ -15,7 +15,7 @@ import { buildPlayerRoute } from '../../util/playerRoute';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { openExternalUrl } from '../../util/externalLinks';
 import { useDeviceClass } from '../../util/deviceClassConfig';
-import { isValidDuration } from './utils';
+import { isValidDuration, cleanFeedTitle } from './utils';
 
 interface LatestReleaseCardProps {
   item: FeedCardItem;
@@ -194,7 +194,7 @@ export function LatestReleaseCard({ item, onPlay, onOpenTrailer }: LatestRelease
             ]}
             numberOfLines={2}
           >
-            {item.title}
+            {cleanFeedTitle(item.title)}
           </CustomText>
 
           <View style={styles.artistRow}>
