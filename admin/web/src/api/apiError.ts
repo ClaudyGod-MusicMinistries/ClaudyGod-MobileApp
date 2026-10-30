@@ -12,6 +12,8 @@ export interface ApiProblem {
   requestId?: string;
   correlationId?: string;
   details?: { retryAfterSeconds?: number };
+  issues?: Array<{ path?: string; message?: string }>;
+  fieldErrors?: Record<string, string[]>;
 }
 
 export class ApiError extends Error {
@@ -60,7 +62,12 @@ export function normalizeApiError(error: unknown): ApiError {
     const gatewayMessage = isServiceUnavailable
       ? 'We could not complete verification because the sign-in service is unavailable. Please try again shortly.'
       : undefined;
+    const validationDetails = Array.isArray(problem?.issues) && problem.issues.length > 0
+      ? problem.issues.map((i) => (i.path ? `${i.path}: ${i.message}` : i.message)).filter(Boolean).join('; ')
+      : undefined;
+
     const message = gatewayMessage
+      ?? (validationDetails ? `Validation failed: ${validationDetails}` : undefined)
       ?? text(problem?.detail)
       ?? text(problem?.message)
       ?? text(problem?.error)

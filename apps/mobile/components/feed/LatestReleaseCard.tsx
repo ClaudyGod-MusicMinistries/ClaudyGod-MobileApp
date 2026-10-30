@@ -13,6 +13,7 @@ import { useToast } from '../../context/ToastContext';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { openExternalUrl } from '../../util/externalLinks';
+import { cleanExcerpt } from '../../util/textUtils';
 
 interface LatestReleaseCardProps {
   item: FeedCardItem;
@@ -161,9 +162,9 @@ export function LatestReleaseCard({ item, onPlay, onOpenTrailer }: LatestRelease
             {item.subtitle || 'ClaudyGod Music & Ministries'}
           </CustomText>
 
-          {item.description ? (
+          {cleanExcerpt(item.description) ? (
             <CustomText variant="caption" style={[styles.description, { color: theme.colors.textMuted }]} numberOfLines={2}>
-              {item.description}
+              {cleanExcerpt(item.description)}
             </CustomText>
           ) : null}
 

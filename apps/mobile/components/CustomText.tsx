@@ -31,7 +31,17 @@ export const CustomText: React.FC<CustomTextProps> = ({
 
   return (
     <Text
-      style={[{ color: theme.colors.text }, finalStyle, style]}
+      style={[
+        { color: theme.colors.text },
+        finalStyle,
+        style,
+        Platform.OS === 'web' && numberOfLinesProp ? {
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitBoxOrient: 'vertical',
+          WebkitLineClamp: numberOfLinesProp,
+        } : {},
+      ]}
       numberOfLines={numberOfLinesProp}
       ellipsizeMode={ellipsizeModeProp}
       allowFontScaling={props.allowFontScaling ?? true}

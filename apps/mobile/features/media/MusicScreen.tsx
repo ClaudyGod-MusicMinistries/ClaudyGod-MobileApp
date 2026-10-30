@@ -216,10 +216,12 @@ export default function PlaySection() {
   );
 
   const latestMusicRelease = useMemo(() => {
+    // Only spotlight content explicitly tagged as 'latest-releases' or marked as an upcoming premiere.
+    // Never fall back to generic music items so the admin has full control.
     const pool = [...feed.recent, ...feed.music, ...feed.videos];
     return pool.find(
-      (item) => item.isUpcoming || item.appSections?.includes('latest-releases') || Boolean(item.trailerUrl),
-    ) ?? feed.music[0] ?? feed.recent[0] ?? null;
+      (item) => item.appSections?.includes('latest-releases') || item.isUpcoming,
+    ) ?? null;
   }, [feed.recent, feed.music, feed.videos]);
 
   const filteredQueue = useMemo(() => {

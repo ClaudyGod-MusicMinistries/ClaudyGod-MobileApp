@@ -14,6 +14,7 @@ import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import type { FeedCardItem } from '../../services/contentService';
 import { useFeedStyles } from './styles';
 import { isValidDuration } from './utils';
+import { cleanExcerpt } from '../../util/textUtils';
 
 type PremiumHeroProps = {
   item?: FeedCardItem | null;
@@ -203,9 +204,15 @@ export function PremiumHero({
               {[item.subtitle, isValidDuration(item.duration) ? item.duration : null].filter(Boolean).join(' · ')}
             </CustomText>
 
-            <CustomText variant="body" style={styles.heroSubtitle} numberOfLines={2}>
-              {item.description || subtitle}
-            </CustomText>
+            {cleanExcerpt(item.description) ? (
+              <CustomText variant="body" style={styles.heroSubtitle} numberOfLines={2}>
+                {cleanExcerpt(item.description)}
+              </CustomText>
+            ) : subtitle ? (
+              <CustomText variant="body" style={styles.heroSubtitle} numberOfLines={2}>
+                {subtitle}
+              </CustomText>
+            ) : null}
 
             <View style={styles.heroButtons}>
               {primaryAction ? (

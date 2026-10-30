@@ -150,10 +150,14 @@ function normalizeSettingsHub(
   return configured;
 }
 
-function mergeWithDefaults(value: unknown): MobileAppConfig {
+export function mergeWithDefaults(value: unknown): MobileAppConfig {
   const input = value && typeof value === 'object' ? (value as Partial<MobileAppConfig>) : {};
   const nonEmptyArray = <T>(items: T[] | undefined, fallback: T[]): T[] =>
     Array.isArray(items) && items.length > 0 ? items : fallback;
+  const cleanStrings = (items: string[] | undefined, fallback: string[]): string[] => {
+    const list = Array.isArray(items) ? items.map((s) => String(s || '').trim()).filter(Boolean) : [];
+    return list.length > 0 ? list : fallback;
+  };
   const normalizeLayoutSections = (sections: MobileAppConfig['layout']['homeSections']) =>
     sections.map((section) => {
       const contentTypes = section.id === 'music-featured' && !section.contentTypes.includes('video')
@@ -162,8 +166,26 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
       return {
         ...section,
         contentTypes,
-        maxItems: Math.max(MOBILE_SECTION_RAIL_MIN_ITEMS, Number(section.maxItems) || MOBILE_SECTION_RAIL_MIN_ITEMS),
+        maxItems: Math.min(24, Math.max(MOBILE_SECTION_RAIL_MIN_ITEMS, Number(section.maxItems) || MOBILE_SECTION_RAIL_MIN_ITEMS)),
       };
+    });
+
+  const rawHome = normalizeLayoutSections(nonEmptyArray(input.layout?.homeSections, DEFAULT_MOBILE_APP_CONFIG.layout.homeSections));
+  const rawVideo = normalizeLayoutSections(nonEmptyArray(input.layout?.videoSections, DEFAULT_MOBILE_APP_CONFIG.layout.videoSections));
+  const rawPlayer = normalizeLayoutSections(nonEmptyArray(input.layout?.playerSections, DEFAULT_MOBILE_APP_CONFIG.layout.playerSections));
+  const rawLibrary = normalizeLayoutSections(nonEmptyArray(input.layout?.librarySections, DEFAULT_MOBILE_APP_CONFIG.layout.librarySections));
+
+  // Harmonize sections that appear across multiple screens so title and contentTypes stay synchronized
+  const canonMap = new Map<string, { title: string; contentTypes: MobileAppConfig['layout']['homeSections'][number]['contentTypes'] }>();
+  for (const s of [...rawHome, ...rawVideo, ...rawPlayer, ...rawLibrary]) {
+    if (!canonMap.has(s.id)) {
+      canonMap.set(s.id, { title: s.title, contentTypes: s.contentTypes });
+    }
+  }
+  const harmonize = (list: MobileAppConfig['layout']['homeSections']) =>
+    list.map((s) => {
+      const canon = canonMap.get(s.id);
+      return canon ? { ...s, title: canon.title, contentTypes: canon.contentTypes } : s;
     });
 
   return mobileAppConfigSchema.parse({
@@ -172,6 +194,7 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
     privacy: {
       ...DEFAULT_MOBILE_APP_CONFIG.privacy,
       ...(input.privacy ?? {}),
+      principles: cleanStrings(input.privacy?.principles, DEFAULT_MOBILE_APP_CONFIG.privacy.principles),
     },
     help: {
       ...DEFAULT_MOBILE_APP_CONFIG.help,
@@ -184,6 +207,8 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
     donate: {
       ...DEFAULT_MOBILE_APP_CONFIG.donate,
       ...(input.donate ?? {}),
+      scriptures: cleanStrings(input.donate?.scriptures, DEFAULT_MOBILE_APP_CONFIG.donate.scriptures),
+      quickAmounts: cleanStrings(input.donate?.quickAmounts, DEFAULT_MOBILE_APP_CONFIG.donate.quickAmounts),
     },
     rate: {
       ...DEFAULT_MOBILE_APP_CONFIG.rate,
@@ -196,10 +221,10 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
     layout: {
       ...DEFAULT_MOBILE_APP_CONFIG.layout,
       ...(input.layout ?? {}),
-      homeSections: normalizeLayoutSections(nonEmptyArray(input.layout?.homeSections, DEFAULT_MOBILE_APP_CONFIG.layout.homeSections)),
-      videoSections: normalizeLayoutSections(nonEmptyArray(input.layout?.videoSections, DEFAULT_MOBILE_APP_CONFIG.layout.videoSections)),
-      playerSections: normalizeLayoutSections(nonEmptyArray(input.layout?.playerSections, DEFAULT_MOBILE_APP_CONFIG.layout.playerSections)),
-      librarySections: normalizeLayoutSections(nonEmptyArray(input.layout?.librarySections, DEFAULT_MOBILE_APP_CONFIG.layout.librarySections)),
+      homeSections: harmonize(rawHome),
+      videoSections: harmonize(rawVideo),
+      playerSections: harmonize(rawPlayer),
+      librarySections: harmonize(rawLibrary),
     },
     navigation: {
       ...DEFAULT_MOBILE_APP_CONFIG.navigation,

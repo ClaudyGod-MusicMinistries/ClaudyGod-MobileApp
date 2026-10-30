@@ -43,7 +43,10 @@ export const supabase = createClient(
       flowType: 'pkce',
       // Web email confirmation and recovery links arrive with auth state in the URL.
       detectSessionInUrl: isSupabaseConfigured && Platform.OS === 'web',
-      lock: isSupabaseConfigured && Platform.OS !== 'web' ? processLock : undefined,
+      // Use processLock across all platforms (including web) to avoid the
+      // "Acquiring an exclusive Navigator LockManager lock immediately failed" bug
+      // in web browsers.
+      lock: isSupabaseConfigured ? processLock : undefined,
     },
   },
 );

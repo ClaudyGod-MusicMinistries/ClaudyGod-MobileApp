@@ -12,6 +12,7 @@ import {
   getMobileScreensManifest,
   type MobileScreenKey,
   updateMobileAppConfig,
+  mergeWithDefaults,
 } from './appConfig.service';
 
 export const mobileAppConfigRouter = Router();
@@ -64,7 +65,11 @@ adminAppConfigRouter.put(
   requirePrivilegedMfa,
   requireCapability('mobile_config.manage'),
   asyncHandler(async (req, res) => {
-    const payload = validateSchema(updateMobileAppConfigSchema, req.body);
+    const rawConfig = req.body && typeof req.body === 'object' && 'config' in req.body
+      ? (req.body as { config: unknown }).config
+      : req.body;
+    const normalizedConfig = mergeWithDefaults(rawConfig);
+    const payload = validateSchema(updateMobileAppConfigSchema, { config: normalizedConfig });
     const result = await updateMobileAppConfig({
       config: payload.config,
       updatedByUserId: req.user!.sub,
