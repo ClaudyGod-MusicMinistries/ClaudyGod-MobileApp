@@ -1,12 +1,19 @@
 // components/CustomText.tsx
 import React, { useContext, useMemo } from 'react';
-import { Platform, Text, TextProps, TextStyle, useWindowDimensions } from 'react-native';
+import { Platform, StyleProp, Text, TextProps, TextStyle, useWindowDimensions } from 'react-native';
 import { getResponsiveFontStyle, type FontVariantKey } from '../util/fonts';
 import { FontContext } from '../context/FontContext';
 import { useAppTheme } from '../util/colorScheme';
 
-interface CustomTextProps extends TextProps {
+export interface CustomTextProps extends Partial<TextProps> {
   variant?: FontVariantKey;
+  children?: React.ReactNode;
+  style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
+  allowFontScaling?: boolean;
+  maxFontSizeMultiplier?: number;
+  [key: string]: any;
 }
 
 export function CustomText({
