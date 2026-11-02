@@ -43,9 +43,25 @@ jobs:
 
       - name: Install locked dependencies
         run: |
-          yarn --cwd ./services/api install --frozen-lockfile --network-timeout 300000 --network-retries 5
-          yarn --cwd ./admin/web install --frozen-lockfile --network-timeout 300000 --network-retries 5
-          yarn --cwd ./apps/mobile install --frozen-lockfile --network-timeout 300000 --network-retries 5
+          set -euo pipefail
+          yarn_install_with_retry() {
+            local dir="$1"
+            local max_attempts=4
+            local attempt=1
+            until yarn --cwd "$dir" install --frozen-lockfile --network-timeout 300000 --network-retries 5; do
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                echo "::error::Failed to install dependencies in $dir after $max_attempts attempts."
+                return 1
+              fi
+              echo "Network failure (e.g. 502 Bad Gateway) during yarn install in $dir. Retrying in 10s ($attempt/$max_attempts)..."
+              sleep 10
+              attempt=$((attempt + 1))
+            done
+          }
+
+          yarn_install_with_retry ./services/api
+          yarn_install_with_retry ./admin/web
+          yarn_install_with_retry ./apps/mobile
 
       - name: Run repository quality, security, and deployment contracts
         run: bash ./scripts/prepush-all-checks.sh
