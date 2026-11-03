@@ -933,12 +933,20 @@ const categoriesText = computed({
   },
 });
 
-onMounted(async () => {
+const isLoading = computed(() => store.isLoading);
+const isSaving = computed(() => store.isSaving);
+const configError = computed(() => store.error);
+
+async function onRetry(): Promise<void> {
   await store.fetchAppConfig();
   if (store.appConfig) {
     config.value = cloneMobileConfig(store.appConfig);
     isLoaded.value = true;
   }
+}
+
+onMounted(async () => {
+  await onRetry();
 });
 
 async function onSave(): Promise<void> {
