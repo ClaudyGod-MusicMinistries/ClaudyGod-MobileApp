@@ -185,6 +185,7 @@ export const buildLayoutSectionResult = (
   section: MobileLayoutSection,
 ): MobileLayoutSectionResult => {
   const sectionPool = resolveConfiguredSectionPool(ranked, section);
+  const effectiveLimit = section.maxItems && section.maxItems > 6 ? section.maxItems : Math.max(50, sectionPool.length);
 
   return {
     id: section.id,
@@ -193,7 +194,7 @@ export const buildLayoutSectionResult = (
     actionLabel: section.actionLabel,
     destinationTab: section.destinationTab,
     maxItems: section.maxItems,
-    items: sectionPool.slice(0, section.maxItems),
+    items: sectionPool.slice(0, effectiveLimit),
     overflowCount: Math.max(0, sectionPool.length - section.maxItems),
   };
 };

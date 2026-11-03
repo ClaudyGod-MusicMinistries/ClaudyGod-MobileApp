@@ -8,7 +8,6 @@ import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { SkeletonLoader } from '../ui/SkeletonLoader';
 import { useDeviceClass } from '../../util/deviceClassConfig';
-import { getSidebarWidth } from '../../util/sidebarConfig';
 import { useAppTheme } from '../../util/colorScheme';
 import { common } from '../../styles/commonStyles';
 import type { FeedCardItem } from '../../services/contentService';
@@ -79,7 +78,6 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
   const device = useDeviceClass();
   const styles = useFeedStyles();
   const theme = useAppTheme();
-  const sidebarWidth = getSidebarWidth(device.width);
   const mobileCardWidth = getContentCardWidth(device, isCompact);
   const listRef = useRef<FlashListRef<FeedCardItem>>(null);
   const [firstVisibleIndex, setFirstVisibleIndex] = useState(0);
@@ -113,21 +111,6 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
     ),
     [isCompact, mobileCardWidth, cardVariant, onPressItem],
   );
-
-  if (device.isDesktop || device.isTV) {
-    const numCols      = device.isTV ? 6 : device.isLargeDesktop ? 5 : 4;
-    const availableWidth = Math.min(device.maxContentWidth, device.width - device.contentGutter * 2 - sidebarWidth);
-    const gap            = 14;
-    const cardWidth      = Math.floor((availableWidth - (numCols - 1) * gap) / numCols);
-
-    return (
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
-        {items.map((item) => (
-          <ContentCard key={`${title}-${item.id}`} item={item} compact={false} fixedWidth={cardWidth} variant={cardVariant} onPress={() => onPressItem(item)} />
-        ))}
-      </View>
-    );
-  }
 
   return (
     <View style={{ marginHorizontal: -device.contentGutter }}>

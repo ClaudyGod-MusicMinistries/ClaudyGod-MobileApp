@@ -159,10 +159,14 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
       const contentTypes = section.id === 'music-featured' && !section.contentTypes.includes('video')
         ? [...section.contentTypes, 'video' as const]
         : section.contentTypes;
+      const rawMax = Number(section.maxItems);
+      const maxItems = !rawMax || rawMax === 6
+        ? 50
+        : Math.max(MOBILE_SECTION_RAIL_MIN_ITEMS, rawMax);
       return {
         ...section,
         contentTypes,
-        maxItems: Math.max(MOBILE_SECTION_RAIL_MIN_ITEMS, Number(section.maxItems) || MOBILE_SECTION_RAIL_MIN_ITEMS),
+        maxItems,
       };
     });
 

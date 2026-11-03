@@ -308,9 +308,9 @@
                     v-model.number="section.maxItems"
                     type="number"
                     label="Items shown in section rail"
-                    hint="Additional eligible items remain available through See all."
+                    hint="Configure item limit for rail (up to 100). Additional items accessible via See all."
                     :min="MOBILE_SECTION_RAIL_MIN_ITEMS"
-                    max="24"
+                    max="100"
                   />
                 </div>
 
