@@ -278,11 +278,11 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     sections: [
       {
         id: 'privacy-legal',
-        title: 'Privacy & Legal',
+        title: 'Legal & Terms of Usage',
         items: [
-          { id: 'privacy-controls', icon: 'security', label: 'Data & Privacy Controls', hint: 'Manage data, exports, recommendations & deletion', destination: 'settings.privacy' },
-          { id: 'privacy-policy', icon: 'policy', label: 'Privacy Policy', hint: 'How ClaudyGod handles and protects data', destination: 'settings.privacyPolicy' },
-          { id: 'terms', icon: 'gavel', label: 'Terms of Service', hint: 'Rules and terms for using ClaudyGod', destination: 'settings.terms' },
+          { id: 'terms', icon: 'gavel', label: 'Terms of Service & Usage', hint: 'Content usage guidelines, streaming rights & ministry agreement', destination: 'settings.terms' },
+          { id: 'privacy-policy', icon: 'policy', label: 'Privacy Policy', hint: 'Official policy on personal data protection and handling', destination: 'settings.privacyPolicy' },
+          { id: 'privacy-controls', icon: 'security', label: 'Your Data & Account Rights', hint: 'Export personal data, manage preferences, or request erasure', destination: 'settings.privacy' },
         ],
       },
       {

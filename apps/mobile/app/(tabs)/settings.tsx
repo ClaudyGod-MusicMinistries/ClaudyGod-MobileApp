@@ -34,36 +34,36 @@ const DEVICE_DEFAULTS: Record<TogglePreferenceKey, boolean> = {
 };
 
 // Fallback-only — used before admin config has loaded, or if it's ever empty.
-// Grouped into clean, professional categories (Data & Privacy, Ministry, About & Legal).
+// Grouped into clean, professional categories (Legal & Terms of Usage, Ministry & Giving, Help & Community).
 const DEFAULT_QUICK_ACCESS_SECTIONS: {
   id: string;
   title: string;
   items: { id: string; icon: string; label: string; hint: string; destination: AppRouteId }[];
 }[] = [
   {
-    id: 'privacy-data',
-    title: 'Data & Privacy',
+    id: 'legal-terms',
+    title: 'Legal & Terms of Usage',
     items: [
-      { id: 'privacy-controls', icon: 'security', label: 'Data & Privacy Controls', hint: 'Manage data, exports, recommendations & deletion', destination: 'settings.privacy' },
+      { id: 'terms', icon: 'gavel', label: 'Terms of Service & Usage', hint: 'Content usage guidelines, streaming rights & ministry agreement', destination: 'settings.terms' },
+      { id: 'privacy-policy', icon: 'policy', label: 'Privacy Policy', hint: 'Official policy on personal data protection and handling', destination: 'settings.privacyPolicy' },
+      { id: 'privacy-controls', icon: 'security', label: 'Your Data & Account Rights', hint: 'Export personal data, manage preferences, or request erasure', destination: 'settings.privacy' },
     ],
   },
   {
     id: 'support',
-    title: 'Ministry & Support',
+    title: 'Ministry & Giving',
     items: [
-      { id: 'donate', icon: 'volunteer-activism', label: 'Support & Giving', hint: 'Partner with ClaudyGod Ministries', destination: 'settings.donate' },
-      { id: 'help', icon: 'help-outline', label: 'Help & Support', hint: 'FAQs, contact, and prayer support', destination: 'settings.help' },
+      { id: 'donate', icon: 'volunteer-activism', label: 'Support & Giving', hint: 'Partner with ClaudyGod Ministries with secure contributions', destination: 'settings.donate' },
       { id: 'referral', icon: 'card-giftcard', label: 'Invite friends', hint: 'Share worship with friends & family', destination: 'settings.referral' },
     ],
   },
   {
-    id: 'product-legal',
-    title: 'About & Legal',
+    id: 'help-community',
+    title: 'Help & Community',
     items: [
-      { id: 'privacy-policy', icon: 'policy', label: 'Privacy Policy', hint: 'How ClaudyGod handles data', destination: 'settings.privacyPolicy' },
-      { id: 'terms', icon: 'gavel', label: 'Terms of Service', hint: 'Rules for using ClaudyGod', destination: 'settings.terms' },
-      { id: 'about', icon: 'info-outline', label: 'About', hint: 'Product and ministry information', destination: 'settings.about' },
-      { id: 'rate', icon: 'star-outline', label: 'Rate the app', hint: 'Share product feedback', destination: 'settings.rate' },
+      { id: 'help', icon: 'help-outline', label: 'Help & Support', hint: 'FAQs, contact support, and prayer request desk', destination: 'settings.help' },
+      { id: 'about', icon: 'info-outline', label: 'About', hint: 'Product, mission, and ministry information', destination: 'settings.about' },
+      { id: 'rate', icon: 'star-outline', label: 'Rate the app', hint: 'Share product feedback and store review', destination: 'settings.rate' },
     ],
   },
 ];
@@ -335,6 +335,16 @@ const useStyles = makeStyles((theme) => ({
     lineHeight: 14,
     marginTop: 2,
   },
+  accountArrowPill: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFill,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', borderTopWidth: 1, borderTopColor: theme.colors.border },
   quickCell: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   rowDivider: {
@@ -532,17 +542,53 @@ export default function SettingsScreen() {
       }
     }
 
-    // High-end Spotify & Apple Music grouping:
-    // 1. Privacy & Legal (Privacy controls, Privacy policy, Terms of service)
-    const privacyItems = allItems.filter(
+    // Modern structured grouping:
+    // 1. Legal & Terms of Usage (Terms of Service & Usage, Privacy Policy, Your Data & Account Rights)
+    const legalItemsRaw = allItems.filter(
       (item) =>
-        item.destination.toLowerCase().includes('privacy') ||
         item.destination.toLowerCase().includes('term') ||
-        item.id.toLowerCase().includes('privacy') ||
-        item.id.toLowerCase().includes('term'),
+        item.destination.toLowerCase().includes('privacy') ||
+        item.id.toLowerCase().includes('term') ||
+        item.id.toLowerCase().includes('privacy'),
     );
 
-    // 2. Ministry & Giving (Donate, referral/share)
+    // Enforce clear hierarchy: Terms of Usage first, then Official Privacy Policy, then Data Rights
+    const legalOrder = ['settings.terms', 'settings.privacyPolicy', 'settings.privacy'];
+    const legalItems = legalItemsRaw
+      .map((item) => {
+        if (item.destination === 'settings.terms') {
+          return {
+            ...item,
+            icon: 'gavel',
+            label: 'Terms of Service & Usage',
+            hint: 'Content usage guidelines, streaming rights & ministry agreement',
+          };
+        }
+        if (item.destination === 'settings.privacyPolicy') {
+          return {
+            ...item,
+            icon: 'policy',
+            label: 'Privacy Policy',
+            hint: 'Official policy on personal data protection and handling',
+          };
+        }
+        if (item.destination === 'settings.privacy') {
+          return {
+            ...item,
+            icon: 'security',
+            label: 'Your Data & Account Rights',
+            hint: 'Export personal data, manage preferences, or request erasure',
+          };
+        }
+        return item;
+      })
+      .sort((a, b) => {
+        const idxA = legalOrder.indexOf(a.destination);
+        const idxB = legalOrder.indexOf(b.destination);
+        return (idxA >= 0 ? idxA : 99) - (idxB >= 0 ? idxB : 99);
+      });
+
+    // 2. Ministry & Giving (Donate, referral)
     const ministryItems = allItems.filter(
       (item) =>
         item.destination.toLowerCase().includes('donate') ||
@@ -552,10 +598,10 @@ export default function SettingsScreen() {
         item.id.toLowerCase().includes('give'),
     );
 
-    // 3. Help & About (Help center, About, Rate)
+    // 3. Help & Community (Help center, About, Rate)
     const helpAboutItems = allItems.filter(
       (item) =>
-        !privacyItems.includes(item) &&
+        !legalItemsRaw.some((l) => l.id === item.id) &&
         !ministryItems.includes(item),
     );
 
@@ -567,21 +613,21 @@ export default function SettingsScreen() {
       items: typeof allItems;
     }[] = [];
 
-    if (privacyItems.length > 0) {
+    if (legalItems.length > 0) {
       canonicalSections.push({
-        id: 'privacy-legal',
-        title: 'Privacy & Legal',
-        subtitle: 'Data controls, permissions, and official policies',
-        icon: 'security',
-        items: privacyItems,
+        id: 'legal-terms-data',
+        title: 'Legal & Terms of Usage',
+        subtitle: 'Terms of usage, official privacy policy, and personal data rights',
+        icon: 'gavel',
+        items: legalItems,
       });
     }
 
     if (ministryItems.length > 0) {
       canonicalSections.push({
         id: 'ministry-support',
-        title: 'Ministry & Support',
-        subtitle: 'Partner with us, give, and share worship with friends',
+        title: 'Ministry & Giving',
+        subtitle: 'Partner with ClaudyGod Ministries with contributions & invitations',
         icon: 'volunteer-activism',
         items: ministryItems,
       });
@@ -590,9 +636,9 @@ export default function SettingsScreen() {
     if (helpAboutItems.length > 0) {
       canonicalSections.push({
         id: 'help-about',
-        title: 'Help & About',
-        subtitle: 'FAQs, contact support, feedback, and ministry info',
-        icon: 'info-outline',
+        title: 'Help & Community',
+        subtitle: 'Frequently asked questions, support contacts, and app info',
+        icon: 'help-outline',
         items: helpAboutItems,
       });
     }
@@ -829,7 +875,7 @@ export default function SettingsScreen() {
           <View style={styles.accountRow}>
             <View style={styles.accountAvatar}>
               <AppIcon
-                name={accountConnected ? 'person' : 'person-outline'}
+                name={accountConnected ? 'verified-user' : 'person-outline'}
                 size={22}
                 color={theme.colors.primary}
               />
@@ -844,10 +890,12 @@ export default function SettingsScreen() {
                 {accountConnected ? (userEmail ?? 'ClaudyGod Member') : 'Listening Locally'}
               </CustomText>
               <CustomText variant="caption" style={styles.accountSubtitle} numberOfLines={1}>
-                {accountConnected ? 'Manage profile, security & sessions' : 'Sign in to sync favorites across devices'}
+                {accountConnected ? 'Manage profile, security credentials & devices' : 'Sign in to sync favorites & library across devices'}
               </CustomText>
             </View>
-            <AppIcon name="chevron-right" size={20} color={theme.colors.textMuted} />
+            <View style={styles.accountArrowPill}>
+              <AppIcon name="chevron-right" size={18} color={theme.colors.textSecondary} />
+            </View>
           </View>
         </TVTouchable>
       </View>
@@ -874,10 +922,10 @@ export default function SettingsScreen() {
 
         <View style={[styles.sectionShell, styles.settingsGroupCard]}>
           <View style={[styles.sectionHeader, styles.sectionHeaderRow]}>
-            <View style={styles.sectionHeaderIcon}><AppIcon name="security" size={17} color={theme.colors.primary} /></View>
+            <View style={styles.sectionHeaderIcon}><AppIcon name="tune" size={17} color={theme.colors.primary} /></View>
             <View style={styles.sectionHeaderCopy}>
-              <CustomText variant="title" style={styles.sectionTitle}>Experience & privacy</CustomText>
-              <CustomText variant="caption" style={styles.sectionSubtitle}>Alerts, personalization, and diagnostics</CustomText>
+              <CustomText variant="title" style={styles.sectionTitle}>App Experience & Alerts</CustomText>
+              <CustomText variant="caption" style={styles.sectionSubtitle}>Push notifications, recommendations & diagnostics</CustomText>
             </View>
           </View>
           <View style={styles.sectionBody}>

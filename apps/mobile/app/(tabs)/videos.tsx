@@ -254,6 +254,7 @@ export default function VideosScreen() {
           title=""
           items={filteredItems.slice(0, 14)}
           loading={loading}
+          cardVariant="landscape"
           onPressItem={(item) => void openItem(item, 'videos_rail')}
           emptyTitle="No videos match this filter"
           emptyMessage="Try a different filter or pull down to refresh."
@@ -269,6 +270,7 @@ export default function VideosScreen() {
             items={feed.live.slice(0, 10)}
             compact
             loading={loading}
+            cardVariant="landscape"
             onPressItem={(item) => void openItem(item, 'videos_live')}
           />
           {feed.live.length > 10 ? (
@@ -298,6 +300,7 @@ export default function VideosScreen() {
               title=""
               items={items}
               loading={loading}
+              cardVariant="landscape"
               onPressItem={(item) => void openItem(item, `videos_${section.id}`)}
             />
           </View>
