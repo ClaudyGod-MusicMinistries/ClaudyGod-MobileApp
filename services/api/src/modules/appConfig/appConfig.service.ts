@@ -170,7 +170,7 @@ export function mergeWithDefaults(value: unknown): MobileAppConfig {
       return {
         ...section,
         contentTypes,
-        maxItems: Math.min(24, Math.max(MOBILE_SECTION_RAIL_MIN_ITEMS, Number(section.maxItems) || MOBILE_SECTION_RAIL_MIN_ITEMS)),
+        maxItems,
       };
     });
 
