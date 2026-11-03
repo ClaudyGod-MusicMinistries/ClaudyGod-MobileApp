@@ -13,7 +13,7 @@ import { common } from '../../styles/commonStyles';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import type { FeedCardItem } from '../../services/contentService';
 import { useFeedStyles } from './styles';
-import { isValidDuration } from './utils';
+import { isValidDuration, cleanFeedTitle } from './utils';
 
 type PremiumHeroProps = {
   item?: FeedCardItem | null;
@@ -196,25 +196,21 @@ export function PremiumHero({
               }}
               numberOfLines={2}
             >
-              {item.title || title}
+              {cleanFeedTitle(item.title || title)}
             </CustomText>
 
             <CustomText style={styles.heroMetaText}>
               {[item.subtitle, isValidDuration(item.duration) ? item.duration : null].filter(Boolean).join(' · ')}
             </CustomText>
 
-            <CustomText variant="body" style={styles.heroSubtitle} numberOfLines={2}>
-              {item.description || subtitle}
-            </CustomText>
-
-            <View style={styles.heroButtons}>
+            <View style={[styles.heroButtons, { flexWrap: 'wrap', alignItems: 'center' }]}>
               {primaryAction ? (
                 <AppButton
                   title={resolvedPrimaryLabel}
                   onPress={primaryAction}
                   size="md"
                   leftIcon={<AppIcon name={primaryIcon} size={17} color={theme.colors.textInverse} />}
-                  style={{ flex: 1 }}
+                  style={{ minWidth: 150, alignSelf: 'flex-start' }}
                 />
               ) : null}
               {secondaryLabel && secondaryAction ? (

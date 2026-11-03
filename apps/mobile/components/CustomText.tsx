@@ -1,22 +1,29 @@
 // components/CustomText.tsx
 import React, { useContext, useMemo } from 'react';
-import { Platform, Text, TextProps, useWindowDimensions } from 'react-native';
+import { Platform, StyleProp, Text, TextProps, TextStyle, useWindowDimensions } from 'react-native';
 import { getResponsiveFontStyle, type FontVariantKey } from '../util/fonts';
 import { FontContext } from '../context/FontContext';
 import { useAppTheme } from '../util/colorScheme';
 
-interface CustomTextProps extends TextProps {
+export interface CustomTextProps extends Partial<TextProps> {
   variant?: FontVariantKey;
+  children?: React.ReactNode;
+  style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
+  allowFontScaling?: boolean;
+  maxFontSizeMultiplier?: number;
+  [key: string]: any;
 }
 
-export const CustomText: React.FC<CustomTextProps> = ({
+export function CustomText({
   variant = 'body',
   children,
   style,
   numberOfLines: numberOfLinesProp,
   ellipsizeMode: ellipsizeModeProp,
   ...props
-}) => {
+}: CustomTextProps) {
   const { fontsLoaded } = useContext(FontContext);
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
@@ -29,9 +36,21 @@ export const CustomText: React.FC<CustomTextProps> = ({
     ? variantStyle
     : { ...variantStyle, fontFamily: undefined };
 
+  const webClampStyle = Platform.OS === 'web' && numberOfLinesProp ? ({
+    overflow: 'hidden',
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical',
+    WebkitLineClamp: numberOfLinesProp,
+  } as unknown as TextStyle) : undefined;
+
   return (
     <Text
-      style={[{ color: theme.colors.text }, finalStyle, style]}
+      style={[
+        { color: theme.colors.text },
+        finalStyle,
+        style,
+        webClampStyle,
+      ]}
       numberOfLines={numberOfLinesProp}
       ellipsizeMode={ellipsizeModeProp}
       allowFontScaling={props.allowFontScaling ?? true}
@@ -41,4 +60,4 @@ export const CustomText: React.FC<CustomTextProps> = ({
       {children}
     </Text>
   );
-};
+}
