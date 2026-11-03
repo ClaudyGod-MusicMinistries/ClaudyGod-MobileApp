@@ -129,10 +129,39 @@ function entranceDelay(index: number): number {
 // read better wide (landscape), music/audio art reads better tall (portrait)
 // — rather than alternating by the section's position in an admin-ordered
 // list, which changes the card shape if someone just reorders sections.
-function inferRailVariant(items: FeedCardItem[]): CardVariant {
-  if (!items.length) return 'portrait';
+function inferRailVariant(section: { id: string; title: string }, items: FeedCardItem[]): CardVariant {
+  const sId = (section.id || '').toLowerCase();
+  const sTitle = (section.title || '').toLowerCase();
+
+  // Music, Audio, Praise, Hymns, Songs, Albums render as sleek square album cards
+  if (
+    sTitle.includes('music') ||
+    sId.includes('music') ||
+    sTitle.includes('audio') ||
+    sId.includes('audio') ||
+    sTitle.includes('song') ||
+    sTitle.includes('praise') ||
+    sTitle.includes('track') ||
+    sTitle.includes('album')
+  ) {
+    return 'square';
+  }
+
+  // Videos, Teaching, Sermons, Spotlight render as cinematic 16:9 widescreen cards
+  if (
+    sTitle.includes('video') ||
+    sId.includes('video') ||
+    sTitle.includes('watch') ||
+    sTitle.includes('teaching') ||
+    sTitle.includes('replays') ||
+    sTitle.includes('spotlight')
+  ) {
+    return 'landscape';
+  }
+
+  if (!items.length) return 'square';
   const videoShare = items.filter((item) => item.type === 'video').length / items.length;
-  return videoShare >= 0.5 ? 'landscape' : 'portrait';
+  return videoShare >= 0.7 ? 'landscape' : 'square';
 }
 
 // ─── HomeSearchBar ────────────────────────────────────────────────────────────
@@ -237,12 +266,15 @@ export default function HomeScreen() {
   );
 
   const newRelease = useMemo(() => {
-    // Only spotlight content explicitly tagged as 'latest-releases' or marked as an upcoming premiere.
-    // Never randomly pick from general uploads/history so the admin has full control.
     const pool = [...feed.recent, ...feed.music, ...feed.videos];
-    return pool.find(
+    // 1. First priority: explicitly tagged as latest-releases or upcoming
+    const tagged = pool.find(
       (item) => item.id !== featured?.id && (item.appSections?.includes('latest-releases') || item.isUpcoming),
-    ) ?? null;
+    );
+    if (tagged) return tagged;
+
+    // 2. High-quality fallback: freshest distinct track with valid artwork
+    return pool.find((item) => item.id !== featured?.id && item.imageUrl) ?? null;
   }, [feed.recent, feed.videos, feed.music, featured]);
 
   // Fire-and-forget: this is analytics, not a precondition for navigation.
@@ -335,7 +367,7 @@ export default function HomeScreen() {
                     items={items}
                     onPressItem={(item) => openItem(item, `home_${section.id}`)}
                     loading={loading}
-                    cardVariant={inferRailVariant(items)}
+                    cardVariant={inferRailVariant(section, items)}
                     hideWhenEmpty
                   />
                 </View>

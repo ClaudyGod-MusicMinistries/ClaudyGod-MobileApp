@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { FlashList, type FlashListRef, type ListRenderItemInfo } from '@shopify/flash-list';
@@ -112,8 +112,13 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
     [isCompact, mobileCardWidth, cardVariant, onPressItem],
   );
 
+  const cardHeight = getContentCardHeight(mobileCardWidth, cardVariant);
+  const isLargeScreen = device.isDesktop || device.isTablet || device.isTV || Platform.OS === 'web';
+  const showNavArrows = isLargeScreen && items.length > visibleCount;
+  const arrowTop = Math.max(12, Math.round(cardHeight / 2) - 20);
+
   return (
-    <View style={{ marginHorizontal: -device.contentGutter }}>
+    <View style={{ marginHorizontal: -device.contentGutter, position: 'relative' }}>
       <View style={{ height: railCardHeight(mobileCardWidth, cardVariant) }}>
         <FlashList
           ref={listRef}
@@ -128,6 +133,38 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
           viewabilityConfig={{ itemVisiblePercentThreshold: 55 }}
         />
       </View>
+
+      {/* Floating navigation controls for Desktop, Tablet, Web, and Large Screens */}
+      {showNavArrows && firstVisibleIndex > 0 ? (
+        <TVTouchable
+          onPress={() => movePage(-1)}
+          showFocusBorder={false}
+          style={[
+            styles.railFloatingNavBtn,
+            { left: device.contentGutter + 6, top: arrowTop },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={`Previous ${title || 'content'} items`}
+        >
+          <MaterialIcons name="chevron-left" size={24} color={theme.colors.text} />
+        </TVTouchable>
+      ) : null}
+
+      {showNavArrows && firstVisibleIndex < lastPageStart ? (
+        <TVTouchable
+          onPress={() => movePage(1)}
+          showFocusBorder={false}
+          style={[
+            styles.railFloatingNavBtn,
+            { right: device.contentGutter + 6, top: arrowTop },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={`Next ${title || 'content'} items`}
+        >
+          <MaterialIcons name="chevron-right" size={24} color={theme.colors.text} />
+        </TVTouchable>
+      ) : null}
+
       {device.isTV && items.length > visibleCount ? (
         <View style={styles.railPaginationOverlay}>
           <CustomText variant="caption" style={styles.railPaginationText} accessibilityLiveRegion="polite">

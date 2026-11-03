@@ -156,6 +156,23 @@ export const useFeedStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.subtleFill,
   },
   railPaginationButtonDisabled: { opacity: 0.35 },
+  railFloatingNavBtn: {
+    position: 'absolute',
+    zIndex: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
 
   // InlineEmpty
   inlineEmpty: {

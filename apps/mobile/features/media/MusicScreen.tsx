@@ -461,8 +461,8 @@ export default function PlaySection() {
           <SectionLabel
             title="Worship & Praise"
             accent="Featured"
-            actionLabel={(feed.music.length || feed.videos.length) > 6 ? 'See all' : undefined}
-            onAction={(feed.music.length || feed.videos.length) > 6 ? () => router.push(APP_ROUTES.tabs.search) : undefined}
+            actionLabel={(feed.music.length || feed.videos.length) > 0 ? 'See all' : undefined}
+            onAction={(feed.music.length || feed.videos.length) > 0 ? () => router.push(APP_ROUTES.tabs.search) : undefined}
           />
           <ContentRail
             title=""

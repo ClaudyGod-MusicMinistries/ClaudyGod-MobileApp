@@ -15,7 +15,7 @@ import type { FeedCardItem } from '../../services/contentService';
 import { useDownloads } from '../../context/DownloadsContext';
 import { useToast } from '../../context/ToastContext';
 import { useFeedStyles } from './styles';
-import { cleanFeedText, isRedundantSubtitle, isValidDuration, getContentCardWidth, getContentCardHeight, type CardVariant } from './utils';
+import { cleanFeedText, cleanFeedTitle, isRedundantSubtitle, isValidDuration, getContentCardWidth, getContentCardHeight, type CardVariant } from './utils';
 
 export type { CardVariant };
 
@@ -56,7 +56,7 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
   const cardWidth = getContentCardWidth(device, compact, fixedWidth);
   const cardHeight = getContentCardHeight(cardWidth, variant);
   const scrimHeight = variant === 'portrait' ? Math.round(cardHeight * 0.55) : variant === 'landscape' ? Math.round(cardHeight * 0.60) : Math.round(cardHeight * 0.50);
-  const title = cleanFeedText(item.title);
+  const title = cleanFeedTitle(item.title) || cleanFeedText(item.title);
 
   return (
     <TVTouchable
@@ -104,7 +104,11 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
           </View>
           {item.subtitle && !isRedundantSubtitle(item.title, item.subtitle) ? (
             <CustomText variant="caption" style={styles.cardSubtitle} numberOfLines={1}>{cleanFeedText(item.subtitle)}</CustomText>
-          ) : null}
+          ) : (
+            <CustomText variant="caption" style={styles.cardSubtitle} numberOfLines={1}>
+              {item.type === 'video' ? 'Worship Video' : 'Worship Music'}
+            </CustomText>
+          )}
         </View>
       </View>
 

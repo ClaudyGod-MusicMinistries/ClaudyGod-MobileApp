@@ -199,9 +199,23 @@ export function PremiumHero({
               {cleanFeedTitle(item.title || title)}
             </CustomText>
 
-            <CustomText style={styles.heroMetaText}>
-              {[item.subtitle, isValidDuration(item.duration) ? item.duration : null].filter(Boolean).join(' · ')}
-            </CustomText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 6, flexWrap: 'wrap' }}>
+              <View style={{
+                paddingHorizontal: 6,
+                paddingVertical: 1.5,
+                borderRadius: 4,
+                backgroundColor: 'rgba(255, 255, 255, 0.16)',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.28)',
+              }}>
+                <CustomText style={{ color: theme.colors.mediaText, fontSize: 9.5, fontWeight: '800', letterSpacing: 0.6 }}>
+                  HD
+                </CustomText>
+              </View>
+              <CustomText style={styles.heroMetaText}>
+                {[item.subtitle, isValidDuration(item.duration) ? item.duration : null].filter(Boolean).join(' · ')}
+              </CustomText>
+            </View>
 
             <View style={[styles.heroButtons, { flexWrap: 'wrap', alignItems: 'center' }]}>
               {primaryAction ? (

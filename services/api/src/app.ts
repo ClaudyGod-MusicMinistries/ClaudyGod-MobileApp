@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import compression from 'compression';
 import cors from 'cors';
 import type { CorsOptions } from 'cors';
@@ -344,11 +345,16 @@ export const createApp = () => {
   app.get('/metrics', asyncHandler(async (req: Request, res: Response) => {
     const token = env.METRICS_TOKEN;
     if (token) {
-      const auth = req.header('authorization');
-      if (auth !== `Bearer ${token}`) {
+      const auth = req.header('authorization') || '';
+      const expected = Buffer.from(`Bearer ${token}`);
+      const provided = Buffer.from(auth);
+      if (expected.length !== provided.length || !crypto.timingSafeEqual(expected, provided)) {
         res.status(403).json({ error: 'Forbidden' });
         return;
       }
+    } else if (env.NODE_ENV === 'production') {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
     }
     await collectOperationalMetrics();
     const output = await getMetricsOutput();
