@@ -114,11 +114,6 @@ const useStyles = makeStyles((theme) => ({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Without this, "NEW" would stick to whatever the single most-recent item
-// happens to be forever, even if it was actually published months ago because
-// nothing newer has been added since — a stale "NEW" badge is exactly the
-// kind of thing that undermines an admin-curated, honest content surface.
-const NEW_RELEASE_WINDOW_MS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
 // Base delay before the first data-dependent block animates in, and the step
 // between each subsequent one — tuned so a 5-block screen cascades over
@@ -242,24 +237,12 @@ export default function HomeScreen() {
   );
 
   const newRelease = useMemo(() => {
-    // 1. Look for explicit upcoming premieres or tagged latest-releases first
-    const explicit = [...feed.recent, ...feed.music, ...feed.videos].find(
-      (item) => item.id !== featured?.id && (item.isUpcoming || item.appSections?.includes('latest-releases') || Boolean(item.trailerUrl)),
-    );
-    if (explicit) return explicit;
-
-    const candidates = [...feed.recent, ...feed.videos, ...feed.music]
-      .filter((item) => item.id !== featured?.id)
-      .sort((a, b) => {
-        const aTime = a.releaseDate ? Date.parse(a.releaseDate) : (a.createdAt ? Date.parse(a.createdAt) : 0);
-        const bTime = b.releaseDate ? Date.parse(b.releaseDate) : (b.createdAt ? Date.parse(b.createdAt) : 0);
-        return bTime - aTime;
-      });
-    const candidate = candidates[0] ?? null;
-    if (!candidate) return null;
-    const releaseTime = candidate.releaseDate ? Date.parse(candidate.releaseDate) : (candidate.createdAt ? Date.parse(candidate.createdAt) : 0);
-    const isActuallyRecent = releaseTime > 0 && Math.abs(Date.now() - releaseTime) <= NEW_RELEASE_WINDOW_MS;
-    return isActuallyRecent ? candidate : null;
+    // Only spotlight content explicitly tagged as 'latest-releases' or marked as an upcoming premiere.
+    // Never randomly pick from general uploads/history so the admin has full control.
+    const pool = [...feed.recent, ...feed.music, ...feed.videos];
+    return pool.find(
+      (item) => item.id !== featured?.id && (item.appSections?.includes('latest-releases') || item.isUpcoming),
+    ) ?? null;
   }, [feed.recent, feed.videos, feed.music, featured]);
 
   // Fire-and-forget: this is analytics, not a precondition for navigation.

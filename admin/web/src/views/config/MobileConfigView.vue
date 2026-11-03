@@ -941,12 +941,50 @@ onMounted(async () => {
   }
 });
 
+function sanitizeConfigBeforeSave(): void {
+  if (!config.value) return;
+
+  // 1. Harmonize layout sections sharing an ID across screens to prevent superRefine failures
+  const groups = [
+    config.value.layout.homeSections,
+    config.value.layout.videoSections,
+    config.value.layout.playerSections,
+    config.value.layout.librarySections,
+  ];
+  const canon = new Map<string, { title: string; subtitle: string; contentTypes: MobileContentType[] }>();
+  for (const s of groups.flat()) {
+    s.maxItems = Math.min(24, Math.max(MOBILE_SECTION_RAIL_MIN_ITEMS, Number(s.maxItems) || MOBILE_SECTION_RAIL_MIN_ITEMS));
+    if (!canon.has(s.id)) {
+      canon.set(s.id, { title: s.title, subtitle: s.subtitle, contentTypes: [...s.contentTypes] });
+    } else {
+      const match = canon.get(s.id)!;
+      s.title = match.title;
+      s.contentTypes = [...match.contentTypes];
+    }
+  }
+
+  // 2. Filter empty strings in array fields to comply with z.string().min(1)
+  if (config.value.donate?.scriptures) {
+    config.value.donate.scriptures = config.value.donate.scriptures.map((s) => String(s || '').trim()).filter(Boolean);
+    if (!config.value.donate.scriptures.length) config.value.donate.scriptures = ['God loves a cheerful giver.'];
+  }
+  if (config.value.privacy?.principles) {
+    config.value.privacy.principles = config.value.privacy.principles.map((s) => String(s || '').trim()).filter(Boolean);
+    if (!config.value.privacy.principles.length) config.value.privacy.principles = ['We do not sell personal data.'];
+  }
+  if (config.value.donate?.quickAmounts) {
+    config.value.donate.quickAmounts = config.value.donate.quickAmounts.map((s) => String(s || '').trim()).filter(Boolean);
+    if (!config.value.donate.quickAmounts.length) config.value.donate.quickAmounts = ['$10', '$25', '$50', '$100'];
+  }
+}
+
 async function onSave(): Promise<void> {
   if (!isLoaded.value) return;
   try {
+    sanitizeConfigBeforeSave();
     await store.saveAppConfig(config.value);
     sectionDiagnostics.value = {};
-    ui.addToast({ tone: 'success', title: 'Mobile config saved' });
+    ui.addToast({ tone: 'success', title: 'Mobile config saved successfully' });
   } catch (e) {
     ui.addToast({ tone: 'danger', title: e instanceof Error ? e.message : 'Save failed' });
   }

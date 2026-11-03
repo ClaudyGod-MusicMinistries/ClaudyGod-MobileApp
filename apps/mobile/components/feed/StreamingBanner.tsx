@@ -8,6 +8,7 @@ import { TVTouchable } from '../ui/TVTouchable';
 import { FadeIn } from '../ui/FadeIn';
 import { useAppTheme } from '../../util/colorScheme';
 import { BRAND_MUSIC_ASSET } from '../../util/brandAssets';
+import { cleanExcerpt } from '../../util/textUtils';
 import type { FeedCardItem } from '../../services/contentService';
 import { useFeedStyles } from './styles';
 import { cleanFeedText } from './utils';
@@ -28,7 +29,7 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
   const compact = width < 430;
   const artSize = compact ? 96 : 110;
   const displayTitle    = title ?? cleanFeedText(item?.title) ?? 'Now Streaming';
-  const displaySubtitle = subtitle ?? item?.description ?? 'Worship music, messages & live ministry';
+  const displaySubtitle = subtitle ?? cleanExcerpt(item?.description, 90) ?? 'Worship music, messages & live ministry';
 
   return (
     <FadeIn delay={60}>
