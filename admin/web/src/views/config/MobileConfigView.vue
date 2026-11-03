@@ -2,12 +2,12 @@
   <div class="space-y-5">
     <PageHeader icon="config" title="Mobile app config">
       <AppButton variant="secondary" size="sm" @click="previewOpen = true">Preview</AppButton>
-      <AppButton :loading="store.isSaving" @click="onSave">Save changes</AppButton>
+      <AppButton :loading="isSaving" @click="onSave">Save changes</AppButton>
     </PageHeader>
 
     <MobilePreviewPanel v-model="previewOpen" />
 
-    <div v-if="store.isLoading" class="flex items-center justify-center py-20">
+    <div v-if="isLoading" class="flex items-center justify-center py-20">
       <AppSpinner size="lg" />
     </div>
 
@@ -308,9 +308,9 @@
                     v-model.number="section.maxItems"
                     type="number"
                     label="Items shown in section rail"
-                    hint="Additional eligible items remain available through See all."
+                    hint="Configure item limit for rail (up to 100). Additional items accessible via See all."
                     :min="MOBILE_SECTION_RAIL_MIN_ITEMS"
-                    max="24"
+                    max="100"
                   />
                 </div>
 
@@ -827,8 +827,8 @@
       </div>
     </template>
 
-    <AppEmptyState v-else-if="store.error" :title="store.error" message="Check your connection and try again.">
-      <template #action><AppButton size="sm" @click="store.fetchAppConfig()">Retry</AppButton></template>
+    <AppEmptyState v-else-if="configError" :title="configError" message="Check your connection and try again.">
+      <template #action><AppButton size="sm" @click="onRetry">Retry</AppButton></template>
     </AppEmptyState>
   </div>
 </template>

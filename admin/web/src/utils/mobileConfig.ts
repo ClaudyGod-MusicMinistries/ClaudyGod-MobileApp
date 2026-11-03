@@ -1,7 +1,7 @@
 import type { AppConfig, SocialLink } from '@/api/types';
 
 export const MOBILE_CONTENT_TYPE_OPTIONS = ['audio', 'video', 'playlist', 'announcement', 'live'] as const;
-export const MOBILE_SECTION_RAIL_MIN_ITEMS = 6;
+export const MOBILE_SECTION_RAIL_MIN_ITEMS = 1;
 
 export const MOBILE_TAB_DESTINATION_OPTIONS = [
   { value: 'home', label: 'Home' },
@@ -78,7 +78,7 @@ export function createLayoutSection(group: LayoutGroupKey): Record<string, unkno
     contentTypes: ['video'],
     actionLabel: meta?.defaultActionLabel ?? 'Open',
     destinationTab: meta?.defaultDestinationTab ?? 'home',
-    maxItems: 8,
+    maxItems: 50,
   };
 }
 
