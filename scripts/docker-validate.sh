@@ -5,10 +5,15 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PRODUCTION_CHECK_ENV="$(mktemp "${TMPDIR:-/tmp}/claudygod-production-compose.XXXXXX.env")"
 trap 'rm -f "$PRODUCTION_CHECK_ENV"' EXIT
 
-# Docker isn't installed on every dev machine — CI has it and will still catch
+# Docker compose isn't installed on every dev machine — CI has it and will still catch
 # genuine compose breakage, so skip (not block) rather than fail local pushes.
-if ! command -v docker >/dev/null 2>&1; then
-  echo "Docker not found in PATH — skipping local compose validation (CI will still run it)."
+COMPOSE_CMD=""
+if docker compose version >/dev/null 2>&1; then
+  COMPOSE_CMD="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+  COMPOSE_CMD="docker-compose"
+else
+  echo "Docker compose not found in PATH — skipping local compose validation (CI will still run it)."
   exit 0
 fi
 
@@ -23,7 +28,7 @@ validate_compose() {
   fi
 
   echo "Validating $(realpath --relative-to="$ROOT_DIR" "$file" 2>/dev/null || echo "$file")"
-  docker compose --env-file "$env_file" -f "$file" "$@" config >/dev/null
+  $COMPOSE_CMD --env-file "$env_file" -f "$file" "$@" config >/dev/null
   return 0
 }
 
@@ -70,6 +75,7 @@ ADMIN_DOMAIN=admin.validation.example
 APP_DOMAIN=app.validation.example
 TRAEFIK_PUBLIC_NETWORK=traefik-public
 TRAEFIK_CERT_RESOLVER=letsencrypt
+GRAFANA_DOMAIN=grafana.validation.example
 GRAFANA_ADMIN_PASSWORD=validation-grafana-password
 EOF
 

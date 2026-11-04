@@ -1,0 +1,33 @@
+FROM node:22-alpine AS builder
+WORKDIR /app
+
+COPY package.json yarn.lock ./
+COPY scripts ./scripts
+RUN CI=true yarn install --frozen-lockfile
+
+COPY . .
+
+ARG CLAUDYGOD_ENV=production
+ARG EXPO_PUBLIC_API_URL
+ARG EXPO_PUBLIC_SUPABASE_URL
+ARG EXPO_PUBLIC_SUPABASE_KEY
+ARG EAS_PROJECT_ID=
+ARG EXPO_PUBLIC_SENTRY_DSN=
+
+ENV NODE_ENV=production
+ENV CLAUDYGOD_ENV=${CLAUDYGOD_ENV}
+ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL}
+ENV EXPO_PUBLIC_SUPABASE_URL=${EXPO_PUBLIC_SUPABASE_URL}
+ENV EXPO_PUBLIC_SUPABASE_KEY=${EXPO_PUBLIC_SUPABASE_KEY}
+ENV EAS_PROJECT_ID=${EAS_PROJECT_ID}
+ENV EXPO_PUBLIC_SENTRY_DSN=${EXPO_PUBLIC_SENTRY_DSN}
+
+RUN npx expo export --platform web --output-dir dist
+
+FROM nginx:1.27-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist /usr/share/nginx/html
+EXPOSE 80
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget -qO- http://127.0.0.1/health >/dev/null || exit 1
+
