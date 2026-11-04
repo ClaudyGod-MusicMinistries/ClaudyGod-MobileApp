@@ -392,11 +392,24 @@ const replaceContentSectionAssignments = async (params: {
   sectionIds: string[];
 }): Promise<void> => {
   await params.client.query(`DELETE FROM content_section_assignments WHERE content_id = $1`, [params.contentId]);
-  if (!params.sectionIds.length) return;
+  const uniqueSectionIds = Array.from(new Set(params.sectionIds.map((s) => s.trim()).filter(Boolean)));
+  if (!uniqueSectionIds.length) return;
+
+  // Auto-register any new or dynamically configured section IDs so dynamic tags never violate foreign key constraints
+  for (const secId of uniqueSectionIds) {
+    await params.client.query(
+      `INSERT INTO mobile_sections (section_id, title, content_types, screens, active)
+       VALUES ($1, $1, ARRAY['audio', 'video'], ARRAY['home'], TRUE)
+       ON CONFLICT (section_id) DO NOTHING`,
+      [secId],
+    );
+  }
+
   await params.client.query(
     `INSERT INTO content_section_assignments (content_id, section_id)
-     SELECT $1, unnest($2::text[])`,
-    [params.contentId, params.sectionIds],
+     SELECT $1, unnest($2::text[])
+     ON CONFLICT (content_id, section_id) DO NOTHING`,
+    [params.contentId, uniqueSectionIds],
   );
 };
 

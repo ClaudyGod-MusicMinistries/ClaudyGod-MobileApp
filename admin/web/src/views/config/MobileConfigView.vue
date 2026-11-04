@@ -308,7 +308,8 @@
                     v-model.number="section.maxItems"
                     type="number"
                     label="Items shown in section rail"
-                    hint="Configure item limit for rail (up to 100). Additional items accessible via See all."
+                    placeholder="50"
+                    hint="Item limit for rail (e.g. 50, up to 100). Additional items accessible via See all."
                     :min="MOBILE_SECTION_RAIL_MIN_ITEMS"
                     max="100"
                   />
@@ -940,7 +941,19 @@ const configError = computed(() => store.error);
 async function onRetry(): Promise<void> {
   await store.fetchAppConfig();
   if (store.appConfig) {
-    config.value = cloneMobileConfig(store.appConfig);
+    const cloned = cloneMobileConfig(store.appConfig);
+    const allSections = [
+      ...(cloned.layout?.homeSections ?? []),
+      ...(cloned.layout?.videoSections ?? []),
+      ...(cloned.layout?.playerSections ?? []),
+      ...(cloned.layout?.librarySections ?? []),
+    ];
+    for (const s of allSections) {
+      if (!s.maxItems || s.maxItems === 6) {
+        s.maxItems = 50;
+      }
+    }
+    config.value = cloned;
     isLoaded.value = true;
   }
 }
@@ -961,7 +974,7 @@ function sanitizeConfigBeforeSave(): void {
   ];
   const canon = new Map<string, { title: string; subtitle: string; contentTypes: MobileContentType[] }>();
   for (const s of groups.flat()) {
-    s.maxItems = Math.min(24, Math.max(MOBILE_SECTION_RAIL_MIN_ITEMS, Number(s.maxItems) || MOBILE_SECTION_RAIL_MIN_ITEMS));
+    s.maxItems = Math.min(100, Math.max(MOBILE_SECTION_RAIL_MIN_ITEMS, Number(s.maxItems) || 50));
     if (!canon.has(s.id)) {
       canon.set(s.id, { title: s.title, subtitle: s.subtitle, contentTypes: [...s.contentTypes] });
     } else {
@@ -1051,7 +1064,7 @@ function addLatestReleaseSectionToHome(): void {
       contentTypes: ['audio', 'video', 'playlist'],
       actionLabel: 'Explore',
       destinationTab: 'home',
-      maxItems: 12,
+      maxItems: 50,
     });
     ui.addToast({ tone: 'success', title: 'Added Latest Releases to Home sections' });
   }

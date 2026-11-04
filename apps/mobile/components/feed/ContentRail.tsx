@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { type NativeScrollEvent, type NativeSyntheticEvent, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { FlashList, type FlashListRef, type ListRenderItemInfo } from '@shopify/flash-list';
@@ -80,6 +80,7 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
   const theme = useAppTheme();
   const mobileCardWidth = getContentCardWidth(device, isCompact);
   const listRef = useRef<FlashListRef<FeedCardItem>>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const [firstVisibleIndex, setFirstVisibleIndex] = useState(0);
   const visibleCount = Math.max(
     1,
@@ -101,9 +102,22 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
 
   const movePage = useCallback((direction: -1 | 1) => {
     const target = Math.max(0, Math.min(lastPageStart, firstVisibleIndex + direction * visibleCount));
-    void listRef.current?.scrollToIndex({ index: target, animated: true }).catch(() => undefined);
     setFirstVisibleIndex(target);
-  }, [firstVisibleIndex, lastPageStart, visibleCount]);
+    if (Platform.OS === 'web' && scrollRef.current) {
+      scrollRef.current.scrollTo({
+        x: target * (mobileCardWidth + 16),
+        animated: true,
+      });
+    } else if (listRef.current) {
+      void listRef.current.scrollToIndex({ index: target, animated: true }).catch(() => undefined);
+    }
+  }, [firstVisibleIndex, lastPageStart, mobileCardWidth, visibleCount]);
+
+  const onWebScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = event.nativeEvent.contentOffset.x;
+    const index = Math.round(x / (mobileCardWidth + 16));
+    setFirstVisibleIndex(Math.max(0, Math.min(lastPageStart, index)));
+  }, [lastPageStart, mobileCardWidth]);
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FeedCardItem>) => (
@@ -120,18 +134,47 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
   return (
     <View style={{ marginHorizontal: -device.contentGutter, position: 'relative' }}>
       <View style={{ height: railCardHeight(mobileCardWidth, cardVariant) }}>
-        <FlashList
-          ref={listRef}
-          data={items}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={keyExtractor}
-          renderItem={renderItem}
-          ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
-          contentContainerStyle={{ paddingLeft: device.contentGutter, paddingRight: device.contentGutter + 8 }}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={{ itemVisiblePercentThreshold: 55 }}
-        />
+        {Platform.OS === 'web' ? (
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            onScroll={onWebScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={{
+              paddingLeft: device.contentGutter,
+              paddingRight: device.contentGutter + 8,
+              flexDirection: 'row',
+              flexWrap: 'nowrap',
+              alignItems: 'flex-start',
+              gap: 16,
+            }}
+          >
+            {items.map((item) => (
+              <ContentCard
+                key={item.id}
+                item={item}
+                compact={isCompact}
+                fixedWidth={mobileCardWidth}
+                variant={cardVariant}
+                onPress={() => onPressItem(item)}
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <FlashList
+            ref={listRef}
+            data={items}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
+            contentContainerStyle={{ paddingLeft: device.contentGutter, paddingRight: device.contentGutter + 8 }}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={{ itemVisiblePercentThreshold: 55 }}
+          />
+        )}
       </View>
 
       {/* Floating navigation controls for Desktop, Tablet, Web, and Large Screens */}

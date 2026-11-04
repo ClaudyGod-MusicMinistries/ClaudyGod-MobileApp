@@ -63,7 +63,7 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
       onPress={onPress}
       pressScale={0.96}
       showFocusBorder={false}
-      style={{ width: cardWidth }}
+      style={{ width: cardWidth, flexShrink: 0 }}
       accessibilityRole="button"
       accessibilityLabel={`${item.type === 'video' ? 'Watch' : 'Play'} ${title}`}
     >

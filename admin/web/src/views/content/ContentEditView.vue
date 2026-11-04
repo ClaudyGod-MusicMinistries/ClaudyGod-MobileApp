@@ -202,10 +202,13 @@
               </button>
             </div>
 
-            <!-- Incompatible / Invalid assignments (always visible with one-click removal) -->
-            <div v-if="invalidSections.length" class="p-3 rounded-xl border border-danger/30 bg-danger/10 space-y-2 mt-2">
+            <!-- Incompatible / Invalid assignments (always visible with one-click resolution) -->
+            <div v-if="invalidSectionDetails.length" class="p-3.5 rounded-xl border border-danger/30 bg-danger/10 space-y-3 mt-3">
               <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-semibold text-danger">Incompatible section assignments:</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-danger"></span>
+                  <span class="text-xs font-semibold text-danger">Incompatible section assignments:</span>
+                </div>
                 <button
                   type="button"
                   class="text-[11px] font-medium text-danger hover:underline cursor-pointer"
@@ -214,21 +217,65 @@
                   Remove all invalid
                 </button>
               </div>
+
               <p class="text-[11px] text-danger/80 leading-snug">
-                These sections are not in your mobile layout or do not accept {{ form.type }} content. Click to remove them:
+                These sections are not in your mobile layout or do not accept {{ form.type }} content. You can remove them or enable {{ form.type }} for that section below:
               </p>
-              <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <button
-                  v-for="invalidId in invalidSections"
-                  :key="invalidId"
-                  type="button"
-                  class="px-2.5 py-1 rounded-full text-xs font-medium border bg-danger/20 border-danger/40 text-danger hover:bg-danger/30 transition-colors inline-flex items-center gap-1 cursor-pointer"
-                  title="Click to remove this section"
-                  @click="removeSection(invalidId)"
+
+              <div class="space-y-2">
+                <div
+                  v-for="item in invalidSectionDetails"
+                  :key="item.id"
+                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-surface/80 border border-danger/20 text-xs"
                 >
-                  {{ invalidId }}
-                  <span class="font-bold text-sm leading-none">&times;</span>
-                </button>
+                  <div class="space-y-0.5 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="font-semibold text-ink">{{ item.label }}</span>
+                      <span class="font-mono text-[10px] text-ink-muted bg-surface-hover px-1.5 py-0.5 rounded border border-border">{{ item.id }}</span>
+                      <span
+                        v-if="item.reason === 'type-mismatch'"
+                        class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                      >
+                        Accepts {{ item.allowedTypes.join(', ') }} only
+                      </span>
+                      <span
+                        v-else
+                        class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-danger/15 text-danger border border-danger/30"
+                      >
+                        Not in active mobile layout
+                      </span>
+                    </div>
+                    <p class="text-[11px] text-ink-muted">
+                      <template v-if="item.reason === 'type-mismatch'">
+                        This section exists on <strong>{{ item.screens.join(', ') }}</strong>, but is configured for <em>{{ item.allowedTypes.join(', ') }}</em> instead of <em>{{ form.type }}</em>.
+                      </template>
+                      <template v-else>
+                        This section ID was deleted from Mobile Config or was never configured.
+                      </template>
+                    </p>
+                  </div>
+
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button
+                      v-if="item.reason === 'type-mismatch'"
+                      type="button"
+                      class="px-2.5 py-1 rounded-md text-[11px] font-medium bg-primary/20 hover:bg-primary/30 text-primary-soft border border-primary/40 transition-colors cursor-pointer"
+                      title="Enable this content type for this section in Mobile Layout"
+                      @click="enableContentTypeForSection(item.id, form.type)"
+                    >
+                      Enable {{ form.type }}
+                    </button>
+                    <button
+                      type="button"
+                      class="px-2.5 py-1 rounded-md text-[11px] font-medium bg-danger/20 hover:bg-danger/30 text-danger border border-danger/40 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                      title="Remove this assignment from item"
+                      @click="removeSection(item.id)"
+                    >
+                      Remove
+                      <span class="font-bold">&times;</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -413,6 +460,74 @@ const assignmentError = computed(() => {
     ? `Remove invalid or incompatible section assignments: ${invalidSections.value.join(', ')}`
     : '';
 });
+
+interface InvalidSectionDetail {
+  id: string;
+  label: string;
+  reason: 'type-mismatch' | 'not-in-layout';
+  screens: string[];
+  allowedTypes: string[];
+}
+
+const invalidSectionDetails = computed<InvalidSectionDetail[]>(() => {
+  const allConfigured = new Map<string, { label: string; screens: string[]; contentTypes: string[] }>();
+  for (const s of configuredSectionOptions.value) {
+    allConfigured.set(s.value, { label: s.label, screens: s.screens, contentTypes: s.contentTypes });
+  }
+
+  return invalidSections.value.map((id) => {
+    const canonical = LEGACY_SECTION_ALIASES[id] ?? id;
+    const existing = allConfigured.get(canonical);
+    if (existing) {
+      return {
+        id,
+        label: existing.label,
+        reason: 'type-mismatch',
+        screens: existing.screens,
+        allowedTypes: existing.contentTypes,
+      };
+    }
+    return {
+      id,
+      label: id,
+      reason: 'not-in-layout',
+      screens: [],
+      allowedTypes: [],
+    };
+  });
+});
+
+async function enableContentTypeForSection(sectionId: string, contentType: string): Promise<void> {
+  if (!configStore.appConfig) return;
+  const layout = configStore.appConfig.layout;
+  let found = false;
+  for (const group of LAYOUT_GROUPS) {
+    const list = layout[group.key] ?? [];
+    const section = list.find((s) => s.id === sectionId);
+    if (section) {
+      if (!section.contentTypes.includes(contentType as never)) {
+        section.contentTypes.push(contentType as never);
+        found = true;
+      }
+    }
+  }
+  if (found) {
+    try {
+      await configStore.saveAppConfig(configStore.appConfig);
+      ui.addToast({
+        tone: 'success',
+        title: 'Section updated',
+        message: `Enabled ${contentType} for section in mobile layout.`,
+      });
+    } catch {
+      ui.addToast({
+        tone: 'danger',
+        title: 'Could not update section',
+        message: 'Please update eligible content types in Mobile Config.',
+      });
+    }
+  }
+}
 
 function toggleSection(value: string): void {
   const canonical = LEGACY_SECTION_ALIASES[value] ?? value;

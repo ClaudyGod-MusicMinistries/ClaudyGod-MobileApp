@@ -211,7 +211,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         contentTypes: ['audio', 'video', 'live', 'playlist'],
         actionLabel: 'Open',
         destinationTab: 'home',
-        maxItems: 12,
+        maxItems: 50,
       },
       {
         id: 'latest-releases',
@@ -220,7 +220,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         contentTypes: ['audio', 'video', 'playlist'],
         actionLabel: 'Explore',
         destinationTab: 'home',
-        maxItems: 12,
+        maxItems: 50,
       },
     ],
     videoSections: [
@@ -231,7 +231,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         contentTypes: ['video', 'live'],
         actionLabel: 'Watch',
         destinationTab: 'videos',
-        maxItems: 12,
+        maxItems: 50,
       },
     ],
     playerSections: [
@@ -242,7 +242,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         contentTypes: ['audio', 'video', 'playlist'],
         actionLabel: 'Listen',
         destinationTab: 'player',
-        maxItems: 12,
+        maxItems: 50,
       },
     ],
     librarySections: [
@@ -253,7 +253,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         contentTypes: ['audio', 'video', 'playlist', 'live'],
         actionLabel: 'Open',
         destinationTab: 'library',
-        maxItems: 12,
+        maxItems: 50,
       },
     ],
   },
