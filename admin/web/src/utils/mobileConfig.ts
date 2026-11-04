@@ -71,11 +71,18 @@ export function cloneMobileConfig<T>(value: T): T {
 export function createLayoutSection(group: LayoutGroupKey): Record<string, unknown> {
   const meta = MOBILE_LAYOUT_GROUPS.find((e) => e.key === group);
   const baseName = meta ? meta.title.toLowerCase() : 'section';
+  const defaultContentTypes =
+    group === 'homeSections' || group === 'playerSections'
+      ? ['audio', 'video']
+      : group === 'librarySections'
+      ? ['audio', 'video', 'playlist']
+      : ['video'];
+
   return {
     id: makeId(baseName),
     title: `${meta ? meta.title : 'New'} Section`,
     subtitle: 'Describe what belongs in this ClaudyGod section.',
-    contentTypes: ['video'],
+    contentTypes: defaultContentTypes,
     actionLabel: meta?.defaultActionLabel ?? 'Open',
     destinationTab: meta?.defaultDestinationTab ?? 'home',
     maxItems: 50,
