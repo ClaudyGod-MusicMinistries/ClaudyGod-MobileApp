@@ -351,9 +351,27 @@ docker-prod-logs:
 	@printf "$(BLUE)Tailing production stack logs...$(NC)\n"
 	yarn docker:prod:logs
 
+docker-build-api:
+	@printf "$(BLUE)Building API production Docker image...$(NC)\n"
+	docker build -t claudygod-api:latest -f $(API_DIR)/Dockerfile.prod $(API_DIR)
+	@printf "$(GREEN)✓ API image built$(NC)\n"
+
+docker-build-admin:
+	@printf "$(BLUE)Building Admin web production Docker image...$(NC)\n"
+	docker build -t claudygod-admin:latest -f $(ADMIN_DIR)/Dockerfile.prod $(ADMIN_DIR)
+	@printf "$(GREEN)✓ Admin image built$(NC)\n"
+
+docker-build-mobile:
+	@printf "$(BLUE)Building Mobile web production Docker image...$(NC)\n"
+	docker build -t claudygod-mobile:latest -f $(MOBILE_DIR)/Dockerfile.prod $(MOBILE_DIR)
+	@printf "$(GREEN)✓ Mobile web image built$(NC)\n"
+
+docker-build: docker-build-api docker-build-admin docker-build-mobile
+	@printf "$(BOLD)$(GREEN)✓ All production Docker images built successfully$(NC)\n"
+
 docker-validate:
 	@printf "$(BLUE)Validating docker-compose configs...$(NC)\n"
-	yarn docker:config
+	bash ./scripts/docker-validate.sh
 	@printf "$(GREEN)✓ Docker configs valid$(NC)\n"
 
 # ─── EAS (Expo Application Services) ─────────────────────────────────────────
