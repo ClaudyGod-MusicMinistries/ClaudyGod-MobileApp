@@ -374,7 +374,7 @@ const DEFAULT_SCREEN_SECTIONS: Record<MobileScreenKey, MobileAppConfig['layout']
       contentTypes: ['audio', 'video', 'live'],
       actionLabel: 'Open',
       destinationTab: 'home',
-      maxItems: 8,
+      maxItems: 50,
     },
   ],
   home: [
@@ -385,7 +385,7 @@ const DEFAULT_SCREEN_SECTIONS: Record<MobileScreenKey, MobileAppConfig['layout']
       contentTypes: ['audio', 'video', 'live', 'playlist'],
       actionLabel: 'Open',
       destinationTab: 'home',
-      maxItems: 12,
+      maxItems: 50,
     },
   ],
   videos: [
@@ -396,7 +396,7 @@ const DEFAULT_SCREEN_SECTIONS: Record<MobileScreenKey, MobileAppConfig['layout']
       contentTypes: ['video', 'live'],
       actionLabel: 'Watch',
       destinationTab: 'videos',
-      maxItems: 12,
+      maxItems: 50,
     },
   ],
   player: [
@@ -407,7 +407,7 @@ const DEFAULT_SCREEN_SECTIONS: Record<MobileScreenKey, MobileAppConfig['layout']
       contentTypes: ['audio', 'video', 'playlist'],
       actionLabel: 'Listen',
       destinationTab: 'player',
-      maxItems: 12,
+      maxItems: 50,
     },
   ],
   live: [
@@ -418,7 +418,7 @@ const DEFAULT_SCREEN_SECTIONS: Record<MobileScreenKey, MobileAppConfig['layout']
       contentTypes: ['live', 'video'],
       actionLabel: 'Watch',
       destinationTab: 'live',
-      maxItems: 10,
+      maxItems: 50,
     },
   ],
   library: [
@@ -429,7 +429,7 @@ const DEFAULT_SCREEN_SECTIONS: Record<MobileScreenKey, MobileAppConfig['layout']
       contentTypes: ['audio', 'video', 'playlist', 'live'],
       actionLabel: 'Save',
       destinationTab: 'library',
-      maxItems: 12,
+      maxItems: 50,
     },
   ],
   search: [
@@ -440,7 +440,7 @@ const DEFAULT_SCREEN_SECTIONS: Record<MobileScreenKey, MobileAppConfig['layout']
       contentTypes: ['audio', 'video', 'playlist', 'live', 'announcement'],
       actionLabel: 'Search',
       destinationTab: 'search',
-      maxItems: 12,
+      maxItems: 50,
     },
   ],
   settings: [],
