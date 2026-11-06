@@ -187,17 +187,7 @@ export const updateContentSchema = z
     isFeatured: z.boolean().optional(),
   })
   .strict()
-  .refine((value) => Object.keys(value).length > 0, { message: 'At least one field is required' })
-  .superRefine((value, ctx) => {
-    const nextType = value.type;
-    if ((nextType === 'audio' || nextType === 'video') && !value.url) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['url'],
-        message: `A media URL is required when changing type to ${nextType}`,
-      });
-    }
-  });
+  .refine((value) => Object.keys(value).length > 0, { message: 'At least one field is required' });
 
 const contentSortFieldSchema = z.enum(['createdAt', 'updatedAt', 'title', 'sortOrder']);
 const sortDirSchema = z.enum(['asc', 'desc']);

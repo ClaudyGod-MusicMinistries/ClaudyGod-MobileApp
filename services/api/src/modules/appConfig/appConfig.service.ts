@@ -47,37 +47,20 @@ const buildSectionCatalog = (config: MobileAppConfig): SectionCatalogEntry[] => 
 
 const syncMobileSectionCatalog = async (client: PoolClient, config: MobileAppConfig): Promise<void> => {
   const catalog = buildSectionCatalog(config);
-  const ids = catalog.map((section) => section.id);
-  const inUseRemoved = await client.query<{ section_id: string }>(
-    `SELECT DISTINCT s.section_id
-       FROM mobile_sections s
-       JOIN content_section_assignments a ON a.section_id = s.section_id
-      WHERE s.active = TRUE AND NOT (s.section_id = ANY($1::text[]))
-      LIMIT 1`,
-    [ids],
-  );
-  if (inUseRemoved.rowCount) {
-    throw new BadRequestError(
-      `Section "${inUseRemoved.rows[0]!.section_id}" still has assigned content and cannot be removed`,
-      'SECTION_IN_USE',
-    );
-  }
-
+  // If sections currently contain assigned content types, auto-expand the section content types
+  // so existing published items never get orphaned or cause saving to fail with 400
   for (const section of catalog) {
-    const incompatible = await client.query<{ content_type: string }>(
-      `SELECT c.content_type
+    const existingTypes = await client.query<{ content_type: string }>(
+      `SELECT DISTINCT c.content_type
          FROM content_section_assignments a
          JOIN content_items c ON c.id = a.content_id
-        WHERE a.section_id = $1
-          AND NOT (c.content_type = ANY($2::text[]))
-        LIMIT 1`,
-      [section.id, section.contentTypes],
+        WHERE a.section_id = $1`,
+      [section.id],
     );
-    if (incompatible.rowCount) {
-      throw new BadRequestError(
-        `Section "${section.title}" still contains ${incompatible.rows[0]!.content_type} content and cannot remove that content type`,
-        'SECTION_CONTENT_TYPE_IN_USE',
-      );
+    for (const row of existingTypes.rows) {
+      if (!section.contentTypes.includes(row.content_type as never)) {
+        section.contentTypes.push(row.content_type as never);
+      }
     }
   }
 
@@ -182,8 +165,12 @@ export function mergeWithDefaults(value: unknown): MobileAppConfig {
   // Harmonize sections that appear across multiple screens so title and contentTypes stay synchronized
   const canonMap = new Map<string, { title: string; contentTypes: MobileAppConfig['layout']['homeSections'][number]['contentTypes'] }>();
   for (const s of [...rawHome, ...rawVideo, ...rawPlayer, ...rawLibrary]) {
-    if (!canonMap.has(s.id)) {
-      canonMap.set(s.id, { title: s.title, contentTypes: s.contentTypes });
+    const existing = canonMap.get(s.id);
+    if (!existing) {
+      canonMap.set(s.id, { title: s.title, contentTypes: [...s.contentTypes] });
+    } else {
+      const mergedTypes = Array.from(new Set([...existing.contentTypes, ...s.contentTypes])) as MobileAppConfig['layout']['homeSections'][number]['contentTypes'];
+      canonMap.set(s.id, { title: existing.title || s.title, contentTypes: mergedTypes });
     }
   }
   const harmonize = (list: MobileAppConfig['layout']['homeSections']) =>

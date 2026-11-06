@@ -105,25 +105,33 @@ export function validateSectionAssignments(params: {
     );
   }
 
+  const validSections: string[] = [];
   for (const sectionId of normalized) {
     const section = sectionsById.get(sectionId);
     if (!section) {
-      throw new BadRequestError(
-        `App section "${sectionId}" does not exist`,
-        'CONTENT_SECTION_NOT_FOUND',
-        'appSections',
-      );
+      if (params.publishing) {
+        throw new BadRequestError(
+          `App section "${sectionId}" does not exist`,
+          'CONTENT_SECTION_NOT_FOUND',
+          'appSections',
+        );
+      }
+      continue;
     }
     if (!section.contentTypes.includes(params.contentType)) {
-      throw new BadRequestError(
-        `App section "${section.title}" does not accept ${params.contentType} content`,
-        'CONTENT_SECTION_TYPE_MISMATCH',
-        'appSections',
-      );
+      if (params.publishing) {
+        throw new BadRequestError(
+          `App section "${section.title}" does not accept ${params.contentType} content`,
+          'CONTENT_SECTION_TYPE_MISMATCH',
+          'appSections',
+        );
+      }
+      continue;
     }
+    validSections.push(sectionId);
   }
 
-  return normalized;
+  return validSections;
 }
 
 export function assertConfirmedUploadSession(status: string, attachedAt?: string | Date | null, trustStatus?: string): void {

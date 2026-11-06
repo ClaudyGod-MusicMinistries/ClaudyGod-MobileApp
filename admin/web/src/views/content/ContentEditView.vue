@@ -705,6 +705,15 @@ async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void>
     form.value.appSections = form.value.appSections.filter((s) => s !== 'latest-releases');
   }
 
+  const compatibleIds = new Set(compatibleSectionOptions.value.map((section) => section.value));
+  const finalAppSections = [
+    ...new Set(
+      form.value.appSections
+        .map((s) => LEGACY_SECTION_ALIASES[s] ?? s)
+        .filter((secId) => compatibleIds.has(secId)),
+    ),
+  ];
+
   const tags = form.value.tags.split(',').map((t) => t.trim()).filter(Boolean);
   const visibility = overrideVisibility ?? form.value.visibility;
   const base = {
@@ -718,7 +727,7 @@ async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void>
     sourceKind: form.value.sourceKind,
     channelName: form.value.channelName.trim() || undefined,
     duration: form.value.duration.trim() || undefined,
-    appSections: form.value.appSections,
+    appSections: finalAppSections,
     tags,
     visibility,
     isFeatured: form.value.isFeatured,
