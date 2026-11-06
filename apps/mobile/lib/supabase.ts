@@ -1,8 +1,29 @@
 import 'react-native-url-polyfill/auto';
-import { createClient, processLock } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import { ENV } from '../services/config';
 import { authSessionStorage } from './authSessionStorage';
+
+// Custom in-process lock that queues auth operations sequentially without arbitrary
+// 0ms/10000ms timeout rejections or stuck navigator lock errors in web and mobile runtimes.
+let authLockQueue: Promise<unknown> = Promise.resolve();
+
+const resilientProcessLock = async <R>(
+  _name: string,
+  _acquireTimeout: number,
+  fn: () => Promise<R>,
+): Promise<R> => {
+  const run = async (): Promise<R> => {
+    try {
+      return await fn();
+    } catch (error) {
+      throw error;
+    }
+  };
+  const next = authLockQueue.then(run, run);
+  authLockQueue = next.catch(() => {});
+  return next;
+};
 
 const supabaseUrl = ENV.supabaseUrl.trim();
 const supabasePublishableKey = ENV.supabasePublishableKey.trim();
@@ -43,10 +64,9 @@ export const supabase = createClient(
       flowType: 'pkce',
       // Web email confirmation and recovery links arrive with auth state in the URL.
       detectSessionInUrl: isSupabaseConfigured && Platform.OS === 'web',
-      // Use processLock across all platforms (including web) to avoid the
-      // "Acquiring an exclusive Navigator LockManager lock immediately failed" bug
-      // in web browsers.
-      lock: isSupabaseConfigured ? processLock : undefined,
+      // Use resilientProcessLock across all platforms (including web) to avoid both
+      // Navigator LockManager browser lock issues and arbitrary acquire-timeout errors.
+      lock: isSupabaseConfigured ? resilientProcessLock : undefined,
     },
   },
 );
