@@ -1,44 +1,199 @@
 <template>
-  <div class="space-y-5">
-    <PageHeader icon="config" title="Mobile app config">
-      <AppButton variant="secondary" size="sm" @click="previewOpen = true">Preview</AppButton>
-      <AppButton :loading="isSaving" @click="onSave">Save changes</AppButton>
+  <div class="space-y-6 pb-16">
+    <!-- Executive Page Header -->
+    <PageHeader icon="config" title="Mobile App Studio & Experience Config">
+      <div class="flex items-center gap-2">
+        <span
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+        >
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          Live & Synced with App
+        </span>
+        <AppButton variant="secondary" size="sm" @click="previewOpen = true">
+          <Eye class="w-4 h-4 mr-1.5" />
+          Preview in App
+        </AppButton>
+        <AppButton :loading="isSaving" @click="onSave">
+          <Save class="w-4 h-4 mr-1.5" />
+          Save changes
+        </AppButton>
+      </div>
     </PageHeader>
 
     <MobilePreviewPanel v-model="previewOpen" />
 
-    <div v-if="isLoading" class="flex items-center justify-center py-20">
+    <!-- Loading State -->
+    <div v-if="isLoading" class="flex flex-col items-center justify-center py-24 space-y-3">
       <AppSpinner size="lg" />
+      <p class="text-sm font-medium text-ink-muted">Loading configuration studio...</p>
     </div>
 
     <template v-else-if="isLoaded">
-      <!-- Tabs -->
-      <div class="flex gap-2 border-b border-border pb-0">
+      <!-- Search & Quick Navigation Bar (Zoho / Stripe style) -->
+      <div class="relative">
+        <div class="relative flex items-center">
+          <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search all settings (e.g. 'home sections', 'privacy', 'giving amounts', 'scripture', 'referral', 'faqs')..."
+            class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-border bg-surface text-ink text-sm placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+          />
+          <button
+            v-if="searchQuery"
+            type="button"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold px-1.5 py-0.5 rounded bg-surface-hover text-ink-muted hover:text-ink"
+            @click="searchQuery = ''"
+          >
+            Clear
+          </button>
+        </div>
+
+        <!-- Search Results Dropdown -->
+        <div
+          v-if="searchQuery.trim() && searchResults.length > 0"
+          class="absolute z-20 left-0 right-0 mt-2 p-2 rounded-xl border border-border bg-surface-elevated shadow-xl space-y-1 max-h-72 overflow-y-auto"
+        >
+          <button
+            v-for="res in searchResults"
+            :key="res.id"
+            type="button"
+            class="w-full flex items-center justify-between p-2.5 rounded-lg hover:bg-surface-hover text-left transition-colors"
+            @click="selectSearchResult(res)"
+          >
+            <div class="flex items-center gap-3">
+              <component :is="res.icon" class="w-4 h-4 text-primary shrink-0" />
+              <div>
+                <p class="text-xs font-bold text-ink">{{ res.title }}</p>
+                <p class="text-[11px] text-ink-muted">{{ res.description }}</p>
+              </div>
+            </div>
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-surface text-ink-muted border border-border">
+              {{ res.categoryLabel }}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 High-Level Pillar Cards (Executive Information Architecture) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <button
-          v-for="tab in tabs"
-          :key="tab.id"
+          v-for="cat in CONFIG_CATEGORIES"
+          :key="cat.id"
           type="button"
           :class="[
-            'px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors',
-            activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-ink-muted hover:text-ink',
+            'text-left p-4 rounded-2xl border transition-all relative overflow-hidden group',
+            activeCategory === cat.id
+              ? 'border-primary/60 bg-primary/10 shadow-lg shadow-primary/5 ring-1 ring-primary/40'
+              : 'border-border bg-surface hover:bg-surface-hover/80 hover:border-border-strong',
           ]"
-          @click="activeTab = tab.id"
+          @click="selectCategory(cat.id)"
         >
-          {{ tab.label }}
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div
+              :class="[
+                'w-10 h-10 rounded-xl flex items-center justify-center transition-colors',
+                activeCategory === cat.id
+                  ? 'bg-primary text-white shadow-md shadow-primary/30'
+                  : 'bg-surface-hover text-ink-muted group-hover:text-ink border border-border',
+              ]"
+            >
+              <component :is="cat.icon" class="w-5 h-5" />
+            </div>
+            <span
+              v-if="cat.badge(config)"
+              class="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+              :class="activeCategory === cat.id ? 'bg-primary/20 text-primary border-primary/30' : 'bg-surface-hover text-ink-muted border-border'"
+            >
+              {{ cat.badge(config) }}
+            </span>
+          </div>
+          <h3 class="text-sm font-bold text-ink tracking-tight">{{ cat.title }}</h3>
+          <p class="text-xs text-ink-muted mt-1 leading-snug line-clamp-2">{{ cat.description }}</p>
+          <div
+            v-if="activeCategory === cat.id"
+            class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+          />
         </button>
       </div>
 
-      <!-- Layout Sections -->
+      <!-- Sub-Navigation Pills for the Active Pillar -->
+      <div class="flex items-center gap-2 border-b border-border/80 pb-3 overflow-x-auto no-scrollbar">
+        <button
+          v-for="subTab in currentCategory.subTabs"
+          :key="subTab.id"
+          type="button"
+          :class="[
+            'flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0',
+            activeTab === subTab.id
+              ? 'bg-primary text-white shadow-md shadow-primary/20'
+              : 'bg-surface text-ink-muted hover:text-ink hover:bg-surface-hover border border-border',
+          ]"
+          @click="setTab(subTab.id)"
+        >
+          <component :is="subTab.icon" class="w-3.5 h-3.5" />
+          <span>{{ subTab.label }}</span>
+          <span
+            v-if="subTab.count && subTab.count(config) !== undefined"
+            :class="[
+              'px-1.5 py-0.2 rounded-full text-[10px] font-bold',
+              activeTab === subTab.id ? 'bg-white/25 text-white' : 'bg-surface-hover text-ink-muted',
+            ]"
+          >
+            {{ subTab.count(config) }}
+          </span>
+        </button>
+      </div>
+
+      <!-- TAB CONTENT AREA -->
+
+      <!-- ============================================================== -->
+      <!-- PILLAR 1: APP LAYOUT & FEEDS                                  -->
+      <!-- ============================================================== -->
+
+      <!-- Layout Sections (Home, Videos, Player, Library) -->
       <div v-if="activeTab === 'layout'" class="space-y-6">
-        <!-- Landing Header -->
-        <AppCard class="p-4 space-y-3">
-          <div>
-            <h3 class="text-sm font-bold text-ink">Landing header</h3>
-            <p class="text-xs text-ink-muted">Shown on the Home tab when there's no featured or live item to highlight.</p>
+        <!-- Human-centric Guide Banner -->
+        <AppCard class="p-4 bg-gradient-to-r from-primary/10 via-surface to-surface border-primary/20">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+                <Layers class="w-5 h-5" />
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-ink">App Shelves & Catalog Layout</h3>
+                <p class="text-xs text-ink-muted">
+                  Control which horizontal shelves show up on the Mobile, Tablet, Web, and Smart TV Home feeds.
+                  Drag and drop to rearrange order.
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <AppButton variant="secondary" size="xs" @click="expandAllSections('homeSections')">
+                <ChevronsDown class="w-3.5 h-3.5 mr-1" /> Expand all
+              </AppButton>
+              <AppButton variant="secondary" size="xs" @click="collapseAllSections('homeSections')">
+                <ChevronsUp class="w-3.5 h-3.5 mr-1" /> Collapse all
+              </AppButton>
+              <AppButton variant="primary" size="xs" @click="addSection('homeSections')">
+                + Add Home Section
+              </AppButton>
+            </div>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <AppInput v-model="config.hero.fallbackTitle" label="Title" placeholder="Start your worship stream" />
-            <AppInput v-model="config.hero.fallbackSubtitle" label="Subtitle" placeholder="Music, videos, and live moments." />
+        </AppCard>
+
+        <!-- Landing Header -->
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Landing Header & Welcome Copy</h3>
+              <p class="text-xs text-ink-muted">Shown in the hero area when there's no active live stream or featured spotlight item.</p>
+            </div>
+            <span class="text-[11px] font-semibold text-ink-muted px-2 py-0.5 rounded bg-surface border border-border">Home Tab Fallback</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <AppInput v-model="config.hero.fallbackTitle" label="Hero Title" placeholder="Start your worship stream" />
+            <AppInput v-model="config.hero.fallbackSubtitle" label="Hero Subtitle" placeholder="Music, videos, and live moments." />
           </div>
         </AppCard>
 
@@ -99,18 +254,14 @@
           </div>
         </AppCard>
 
-        <p class="text-xs text-ink-muted">
-          Sections control what shows up on each mobile tab. Content appears in a section once it's tagged
-          with that section's name under Content → App sections.
-        </p>
-
-        <div v-for="group in MOBILE_LAYOUT_GROUPS" :key="group.key" class="space-y-3">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-border/40">
+        <!-- Configured Sections Groups -->
+        <div v-for="group in MOBILE_LAYOUT_GROUPS" :key="group.key" class="space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border">
             <div>
               <div class="flex items-center gap-2">
-                <h3 class="text-sm font-bold text-ink">{{ group.title }} sections</h3>
-                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-surface-hover text-ink-muted border border-border">
-                  {{ config.layout[group.key]?.length ?? 0 }}
+                <h3 class="text-base font-bold text-ink">{{ group.title }} Screen Shelves</h3>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {{ config.layout[group.key]?.length ?? 0 }} shelves
                 </span>
               </div>
               <p class="text-xs text-ink-muted mt-0.5">{{ group.description }}</p>
@@ -118,23 +269,24 @@
             <div class="flex items-center gap-2 shrink-0">
               <button
                 type="button"
-                class="text-xs text-ink-muted hover:text-ink font-medium px-2 py-1 rounded hover:bg-surface-hover transition-colors"
+                class="text-xs text-ink-muted hover:text-ink font-semibold px-2 py-1 rounded hover:bg-surface-hover transition-colors"
                 @click="expandAllSections(group.key)"
               >
                 Expand all
               </button>
               <button
                 type="button"
-                class="text-xs text-ink-muted hover:text-ink font-medium px-2 py-1 rounded hover:bg-surface-hover transition-colors"
+                class="text-xs text-ink-muted hover:text-ink font-semibold px-2 py-1 rounded hover:bg-surface-hover transition-colors"
                 @click="collapseAllSections(group.key)"
               >
                 Collapse all
               </button>
-              <AppButton variant="secondary" size="xs" @click="addSection(group.key)">+ Add section</AppButton>
+              <AppButton variant="secondary" size="xs" @click="addSection(group.key)">+ Add shelf</AppButton>
             </div>
           </div>
 
-          <div class="space-y-2.5">
+          <!-- Section Cards with Drag & Drop -->
+          <div class="space-y-3">
             <div
               v-for="(section, idx) in config.layout[group.key]"
               :key="section.id"
@@ -154,214 +306,207 @@
                   : ''
               ]"
             >
-              <AppCard class="p-0 border border-border hover:border-border-strong overflow-hidden">
-              <!-- Card Header Row (Always visible & interactive) -->
-              <div
-                class="flex items-center justify-between gap-3 p-3.5 select-none transition-colors rounded-t-[var(--radius-card)]"
-                :class="isSectionExpanded(section.id) ? 'bg-surface-hover/30 border-b border-border/50' : 'bg-surface'"
-              >
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                  <!-- Drag Handle -->
-                  <div
-                    class="p-1 -ml-1 text-ink-muted hover:text-ink cursor-grab active:cursor-grabbing rounded hover:bg-surface-hover transition-colors shrink-0"
-                    title="Drag to reorder"
-                  >
-                    <GripVertical class="w-4 h-4" />
-                  </div>
-
-                  <!-- Position Badge -->
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary-soft border border-primary/20 shrink-0 tabular-nums">
-                    #{{ idx + 1 }}
-                  </span>
-
-                  <!-- Title & ID pill -->
-                  <div class="min-w-0 flex items-center gap-2 flex-wrap cursor-pointer flex-1" @click="toggleSectionExpanded(section.id)">
-                    <span class="text-sm font-semibold text-ink truncate">
-                      {{ section.title || 'Untitled section' }}
+              <AppCard class="p-0 border border-border hover:border-border-strong overflow-hidden shadow-sm">
+                <!-- Card Header Row (Interactive & clear) -->
+                <div
+                  class="flex items-center justify-between gap-3 p-3.5 select-none transition-colors rounded-t-[var(--radius-card)]"
+                  :class="isSectionExpanded(section.id) ? 'bg-surface-hover/70 border-b border-border/60' : 'hover:bg-surface-hover/50'"
+                >
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <button
+                      type="button"
+                      class="cursor-grab active:cursor-grabbing p-1 rounded text-ink-muted hover:text-ink hover:bg-surface transition-colors"
+                      title="Drag to reorder section"
+                      aria-label="Drag to reorder section"
+                    >
+                      <GripVertical class="w-4 h-4" />
+                    </button>
+                    <span class="text-xs font-mono font-bold text-ink-muted bg-surface px-1.5 py-0.5 rounded border border-border/60">
+                      #{{ idx + 1 }}
                     </span>
-                    <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-surface-hover text-ink-muted border border-border/60 shrink-0">
-                      Tag: {{ section.title || section.id }}
-                    </span>
-                    <!-- Content Types summary badges -->
-                    <div class="hidden md:flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      class="flex items-center gap-2 text-left min-w-0"
+                      @click="toggleSectionExpanded(section.id)"
+                    >
+                      <span class="text-sm font-bold text-ink truncate">{{ section.title || 'Untitled Section' }}</span>
+                      <span class="hidden sm:inline-flex text-[11px] font-mono text-ink-muted px-2 py-0.5 rounded bg-surface border border-border/40">
+                        Tag: {{ section.title || section.id }}
+                      </span>
+                    </button>
+                    <!-- Content Type Pills -->
+                    <div class="hidden md:flex items-center gap-1">
                       <span
                         v-for="ct in section.contentTypes"
                         :key="ct"
-                        class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface border border-border/80 text-ink-muted"
+                        class="text-[10px] font-semibold px-2 py-0.2 rounded-full capitalize"
+                        :class="getContentTypeChipClass(ct)"
                       >
                         {{ ct }}
                       </span>
                     </div>
                   </div>
-                </div>
 
-                <!-- Reorder arrows & actions -->
-                <div class="flex items-center gap-1 shrink-0">
-                  <!-- Move to Top -->
-                  <button
-                    type="button"
-                    class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-20 disabled:pointer-events-none transition-colors hidden sm:inline-flex"
-                    :disabled="idx === 0"
-                    title="Move to top"
-                    aria-label="Move to top"
-                    @click.stop="moveSectionToTop(group.key, idx)"
-                  >
-                    <ChevronsUp class="w-4 h-4" />
-                  </button>
-
-                  <!-- Move Up -->
-                  <button
-                    type="button"
-                    class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-20 disabled:pointer-events-none transition-colors"
-                    :disabled="idx === 0"
-                    title="Move section up"
-                    aria-label="Move section up"
-                    @click.stop="moveSectionUp(group.key, idx)"
-                  >
-                    <ArrowUp class="w-4 h-4" />
-                  </button>
-
-                  <!-- Move Down -->
-                  <button
-                    type="button"
-                    class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-20 disabled:pointer-events-none transition-colors"
-                    :disabled="idx === config.layout[group.key].length - 1"
-                    title="Move section down"
-                    aria-label="Move section down"
-                    @click.stop="moveSectionDown(group.key, idx)"
-                  >
-                    <ArrowDown class="w-4 h-4" />
-                  </button>
-
-                  <!-- Move to Bottom -->
-                  <button
-                    type="button"
-                    class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-20 disabled:pointer-events-none transition-colors hidden sm:inline-flex"
-                    :disabled="idx === config.layout[group.key].length - 1"
-                    title="Move to bottom"
-                    aria-label="Move to bottom"
-                    @click.stop="moveSectionToBottom(group.key, idx)"
-                  >
-                    <ChevronsDown class="w-4 h-4" />
-                  </button>
-
-                  <span class="w-px h-3.5 bg-border mx-1"></span>
-
-                  <!-- Expand / Collapse Toggle -->
-                  <button
-                    type="button"
-                    class="p-1.5 rounded text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors"
-                    :title="isSectionExpanded(section.id) ? 'Collapse section' : 'Expand section'"
-                    :aria-label="isSectionExpanded(section.id) ? 'Collapse section' : 'Expand section'"
-                    @click.stop="toggleSectionExpanded(section.id)"
-                  >
-                    <ChevronUp v-if="isSectionExpanded(section.id)" class="w-4 h-4" />
-                    <ChevronDown v-else class="w-4 h-4" />
-                  </button>
-
-                  <span class="w-px h-3.5 bg-border mx-1"></span>
-
-                  <!-- Remove Button -->
-                  <AppButton
-                    variant="ghost"
-                    size="xs"
-                    class="text-danger hover:bg-danger/10"
-                    title="Remove section"
-                    @click.stop="removeSection(group.key, idx)"
-                  >
-                    Remove
-                  </AppButton>
-                </div>
-              </div>
-
-              <!-- Card Body (Expandable) -->
-              <div v-show="isSectionExpanded(section.id)" class="p-4 space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <AppInput v-model="section.title" label="Title" placeholder="e.g. Nuggets of Truth" />
-                  <AppInput v-model="section.subtitle" label="Subtitle" placeholder="Short description shown under the title" />
-                </div>
-
-                <div class="space-y-1.5">
-                  <label class="text-xs font-medium text-ink-soft">Eligible content types</label>
-                  <div class="flex flex-wrap gap-2">
+                  <div class="flex items-center gap-1.5 shrink-0">
                     <button
-                      v-for="ct in MOBILE_CONTENT_TYPE_OPTIONS"
-                      :key="ct"
                       type="button"
-                      :class="[
-                        'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
-                        section.contentTypes.includes(ct)
-                          ? 'bg-primary/20 border-primary/40 text-primary-soft shadow-xs'
-                          : 'bg-surface-hover border-border text-ink-muted hover:border-primary/30 hover:text-ink',
-                      ]"
-                      @click="toggleContentType(section, ct)"
+                      class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                      :disabled="idx === 0"
+                      title="Move to top"
+                      @click="moveSectionToTop(group.key, idx)"
                     >
-                      {{ ct }}
+                      <ChevronsUp class="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                      :disabled="idx === 0"
+                      title="Move up"
+                      @click="moveSectionUp(group.key, idx)"
+                    >
+                      <ArrowUp class="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                      :disabled="idx === (config.layout[group.key]?.length ?? 0) - 1"
+                      title="Move down"
+                      @click="moveSectionDown(group.key, idx)"
+                    >
+                      <ArrowDown class="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                      :disabled="idx === (config.layout[group.key]?.length ?? 0) - 1"
+                      title="Move to bottom"
+                      @click="moveSectionToBottom(group.key, idx)"
+                    >
+                      <ChevronsDown class="w-3.5 h-3.5" />
+                    </button>
+                    <span class="w-px h-3.5 bg-border mx-0.5" />
+                    <button
+                      type="button"
+                      class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface transition-colors"
+                      :title="isSectionExpanded(section.id) ? 'Collapse' : 'Expand'"
+                      @click="toggleSectionExpanded(section.id)"
+                    >
+                      <ChevronUp v-if="isSectionExpanded(section.id)" class="w-4 h-4" />
+                      <ChevronDown v-else class="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      class="text-xs text-danger hover:text-danger-strong font-medium px-2 py-1 rounded hover:bg-danger/10 transition-colors ml-1"
+                      @click="removeSection(group.key, idx)"
+                    >
+                      Remove
                     </button>
                   </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <AppInput v-model="section.actionLabel" label="Action label" placeholder="Open" />
-                  <AppSelect v-model="section.destinationTab" label="Destination tab" :options="MOBILE_TAB_DESTINATION_OPTIONS_ARR" />
-                  <AppInput
-                    v-model.number="section.maxItems"
-                    type="number"
-                    label="Items shown in section rail"
-                    placeholder="50"
-                    hint="Item limit for rail (e.g. 50, up to 100). Additional items accessible via See all."
-                    :min="MOBILE_SECTION_RAIL_MIN_ITEMS"
-                    max="100"
-                  />
-                </div>
+                <!-- Collapsible Form Body -->
+                <div v-show="isSectionExpanded(section.id)" class="p-4 space-y-4">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <AppInput v-model="section.title" label="Section Title" placeholder="e.g. ClaudyGod Music" />
+                    <AppInput v-model="section.subtitle" label="Subtitle" placeholder="e.g. Latest afro-gospel releases" />
+                  </div>
 
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-2 border-t border-border/40">
-                  <p class="text-[11px] text-ink-muted">
-                    Tag content into this section with: <span class="font-mono text-ink font-semibold">{{ section.title || section.id }}</span>
-                  </p>
-                  <div class="flex items-center gap-2">
-                    <span
-                      v-if="sectionDiagnostics[diagnosticKey(group.key, section.id)]"
-                      class="text-xs font-semibold text-ink"
-                    >
-                      {{ sectionDeliverySummary(group.key, section) }}
-                    </span>
-                    <AppButton
-                      variant="secondary"
-                      size="xs"
-                      :loading="diagnosticLoadingKey === diagnosticKey(group.key, section.id)"
-                      @click="verifySection(group.key, section.id)"
-                    >
-                      Verify published content
-                    </AppButton>
+                  <!-- Accepted Content Types -->
+                  <div>
+                    <label class="block text-xs font-bold text-ink mb-1.5">
+                      Accepted Content Types (at least one required)
+                    </label>
+                    <div class="flex flex-wrap gap-2">
+                      <button
+                        v-for="ct in MOBILE_CONTENT_TYPE_OPTIONS"
+                        :key="ct"
+                        type="button"
+                        :class="[
+                          'px-3 py-1 rounded-lg text-xs font-semibold capitalize border transition-all',
+                          section.contentTypes.includes(ct)
+                            ? 'bg-primary text-white border-primary shadow-sm'
+                            : 'bg-surface-hover text-ink-muted border-border hover:text-ink',
+                        ]"
+                        @click="toggleContentType(section, ct)"
+                      >
+                        {{ ct }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <AppInput v-model="section.actionLabel" label="Button Label" placeholder="Open" />
+                    <AppSelect v-model="section.destinationTab" label="Destination Tab" :options="MOBILE_TAB_DESTINATION_OPTIONS_ARR" />
+                    <AppInput
+                      v-model.number="section.maxItems"
+                      type="number"
+                      label="Items shown in section rail"
+                      placeholder="50"
+                      hint="Item limit for rail (e.g. 50, up to 100). Additional items accessible via See all."
+                      :min="MOBILE_SECTION_RAIL_MIN_ITEMS"
+                      max="100"
+                    />
+                  </div>
+
+                  <!-- Tagging Advice & Diagnostic Test -->
+                  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-3 border-t border-border/60">
+                    <p class="text-xs text-ink-muted leading-relaxed">
+                      Tag items with: <code class="px-2 py-0.5 rounded bg-surface font-mono text-primary font-bold border border-border">{{ section.title || section.id }}</code> under Content Library.
+                    </p>
+                    <div class="flex items-center gap-2">
+                      <span
+                        v-if="sectionDiagnostics[diagnosticKey(group.key, section.id)]"
+                        class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20"
+                      >
+                        {{ sectionDeliverySummary(group.key, section) }}
+                      </span>
+                      <AppButton
+                        variant="secondary"
+                        size="xs"
+                        :loading="diagnosticLoadingKey === diagnosticKey(group.key, section.id)"
+                        @click="verifySection(group.key, section.id)"
+                      >
+                        Verify published content
+                      </AppButton>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </AppCard>
-          </div>
+              </AppCard>
+            </div>
 
-            <AppButton variant="secondary" size="sm" @click="addSection(group.key)">+ Add section</AppButton>
+            <AppButton variant="secondary" size="sm" @click="addSection(group.key)">+ Add new shelf to {{ group.title }}</AppButton>
           </div>
         </div>
       </div>
 
-      <!-- Discovery Config -->
-      <div v-if="activeTab === 'discovery'" class="space-y-4">
-        <AppCard class="p-5 space-y-3">
-          <h3 class="text-sm font-bold text-ink">Categories</h3>
-          <p class="text-xs text-ink-muted">Comma-separated list of content types shown in search filters.</p>
+      <!-- Discovery & Search Filters -->
+      <div v-if="activeTab === 'discovery'" class="space-y-6">
+        <AppCard class="p-5 space-y-4">
+          <div>
+            <h3 class="text-sm font-bold text-ink">Search Filter Categories</h3>
+            <p class="text-xs text-ink-muted">Comma-separated list of media categories presented in the search drawer.</p>
+          </div>
           <AppInput v-model="categoriesText" label="Categories" placeholder="audio, video, live, playlist" />
         </AppCard>
-        <AppCard class="p-5 space-y-3">
+
+        <AppCard class="p-5 space-y-4">
           <div class="flex items-center justify-between">
-            <h3 class="text-sm font-bold text-ink">Quick shortcuts</h3>
-            <AppButton variant="secondary" size="xs" @click="addShortcut">+ Add</AppButton>
+            <div>
+              <h3 class="text-sm font-bold text-ink">Discovery Quick Search Shortcuts</h3>
+              <p class="text-xs text-ink-muted">Tappable shortcut pills on the search screen that pre-fill search queries.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addShortcut">+ Add Shortcut</AppButton>
           </div>
+
           <div class="space-y-3">
-            <div v-for="(sc, i) in config.discovery.shortcuts" :key="sc.id" class="grid grid-cols-1 sm:grid-cols-5 gap-2 sm:items-end">
+            <div
+              v-for="(sc, i) in config.discovery.shortcuts"
+              :key="sc.id"
+              class="grid grid-cols-1 sm:grid-cols-5 gap-3 p-3 rounded-xl border border-border bg-surface sm:items-end"
+            >
               <AppInput v-model="sc.icon" label="Icon" placeholder="travel-explore" />
-              <AppInput v-model="sc.label" label="Label" placeholder="Worship" />
-              <AppInput v-model="sc.query" label="Query" placeholder="worship" />
+              <AppInput v-model="sc.label" label="Shortcut Label" placeholder="Worship" />
+              <AppInput v-model="sc.query" label="Search Query" placeholder="worship" />
               <AppSelect v-model="sc.category" label="Category" :options="DISCOVERY_CATEGORY_OPTIONS_ARR" />
               <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeShortcut(i)">Remove</AppButton>
             </div>
@@ -369,59 +514,569 @@
         </AppCard>
       </div>
 
-      <!-- Settings Hub -->
-      <div v-if="activeTab === 'settings'" class="space-y-4">
-        <p class="text-xs text-ink-muted">
-          Controls the "Quick access" link groups shown on the mobile Settings tab.
-        </p>
+      <!-- Bottom App Navigation -->
+      <div v-if="activeTab === 'navigation'" class="space-y-4">
+        <AppCard class="p-5 space-y-3">
+          <h3 class="text-sm font-bold text-ink">Bottom Tab Bar Navigation</h3>
+          <p class="text-xs text-ink-muted">
+            The core app navigation tabs. Tab destinations are native-enforced for stability; you can customize the public labels and icons below.
+          </p>
+        </AppCard>
 
-        <div v-for="(section, sIdx) in config.settingsHub.sections" :key="section.id" class="space-y-3">
-          <AppCard class="p-4 space-y-3">
-            <div class="flex items-start justify-between gap-3">
-              <AppInput v-model="section.title" label="Section title" class="flex-1" placeholder="e.g. Quick access" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <AppCard v-for="tab in config.navigation.tabs" :key="tab.id" class="p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-primary uppercase px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
+                Tab: {{ tab.id }}
+              </span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <AppInput v-model="tab.label" label="Display Label" placeholder="Home" />
+              <AppInput v-model="tab.icon" label="Icon Name" placeholder="home-filled" />
+            </div>
+          </AppCard>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- PILLAR 2: GIVING & STEWARDSHIP                                -->
+      <!-- ============================================================== -->
+
+      <!-- Donate: Plans, Currencies & Methods -->
+      <div v-if="activeTab === 'donate'" class="space-y-6">
+        <!-- Currency & Options -->
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Currency Settings</h3>
+              <p class="text-xs text-ink-muted">Set default operating currency and international options for the giving flow.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addCurrencyOption">+ Add Currency Option</AppButton>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <AppInput v-model="config.donate.currency" label="Default Global Currency" placeholder="USD" />
+          </div>
+
+          <div class="space-y-2 pt-2 border-t border-border">
+            <p class="text-xs font-bold text-ink">Supported Currency Tiers</p>
+            <div
+              v-for="(opt, i) in config.donate.currencyOptions ?? []"
+              :key="i"
+              class="grid grid-cols-1 sm:grid-cols-4 gap-3 p-3 rounded-xl border border-border bg-surface sm:items-end"
+            >
+              <AppInput v-model="opt.code" label="Code (e.g. USD)" placeholder="USD" />
+              <AppInput v-model="opt.label" label="Label" placeholder="US Dollar" />
+              <AppInput v-model="opt.symbol" label="Symbol" placeholder="$" />
+              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeCurrencyOption(i)">Remove</AppButton>
+            </div>
+          </div>
+        </AppCard>
+
+        <!-- Quick Amounts -->
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Quick Giving Amounts</h3>
+              <p class="text-xs text-ink-muted">Presets presented to givers for instant 1-tap giving.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addQuickAmount">+ Add Amount Preset</AppButton>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <div v-for="(_, i) in config.donate.quickAmounts" :key="i" class="flex gap-1.5 items-center bg-surface p-1.5 rounded-xl border border-border">
+              <AppInput v-model="config.donate.quickAmounts[i]" placeholder="$25" class="w-24" />
+              <AppButton variant="ghost" size="sm" class="text-danger" @click="removeQuickAmount(i)">✕</AppButton>
+            </div>
+          </div>
+
+          <div v-if="(config.donate.currencyOptions ?? []).length" class="space-y-3 pt-3 border-t border-border">
+            <h4 class="text-xs font-bold text-ink">Quick amounts by currency</h4>
+            <div v-for="opt in config.donate.currencyOptions ?? []" :key="opt.code" class="space-y-2 p-3 rounded-xl border border-border bg-surface">
+              <div class="flex items-center justify-between">
+                <p class="text-xs font-bold text-primary uppercase tracking-wide">{{ opt.code }} ({{ opt.symbol }})</p>
+                <AppButton variant="secondary" size="xs" @click="addQuickAmountForCurrency(opt.code)">+ Add {{ opt.code }} Amount</AppButton>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <div v-for="(_, i) in (config.donate.quickAmountsByCurrency ?? {})[opt.code] ?? []" :key="i" class="flex gap-1.5 items-center bg-surface-hover p-1 rounded-lg border border-border">
+                  <AppInput v-model="(config.donate.quickAmountsByCurrency ?? {})[opt.code]![i]" class="w-24" />
+                  <AppButton variant="ghost" size="sm" class="text-danger" @click="removeQuickAmountForCurrency(opt.code, i)">✕</AppButton>
+                </div>
+              </div>
+            </div>
+          </div>
+        </AppCard>
+
+        <!-- Payment Methods -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-bold text-ink">Giving Payment Methods</h3>
+              <p class="text-xs text-ink-muted">Card, Apple Pay, Google Pay, Bank Transfer, and direct payment provider rails.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addDonateMethod">+ Add Payment Method</AppButton>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AppCard v-for="(method, i) in config.donate.methods" :key="method.id" class="p-4 space-y-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <AppInput v-model="method.icon" label="Icon" placeholder="credit-card" />
+                  <AppInput v-model="method.label" label="Display Name" class="sm:col-span-2" placeholder="Debit / Credit Card" />
+                </div>
+                <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeDonateMethod(i)">Remove</AppButton>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <AppInput v-model="method.subtitle" label="Subtitle" placeholder="Fast checkout with secure payment providers" />
+                <AppInput v-model="method.badge" label="Badge (optional)" placeholder="Recommended" />
+              </div>
+              <div class="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface-hover/50 p-3">
+                <div>
+                  <p class="text-xs font-bold text-ink">Active in Mobile Giving</p>
+                  <p class="text-[11px] text-ink-muted">Toggle visibility in the mobile app.</p>
+                </div>
+                <AppToggle :model-value="method.enabled" @update:model-value="(value) => (method.enabled = value)" />
+              </div>
+            </AppCard>
+          </div>
+        </div>
+
+        <!-- Giving Plans -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-bold text-ink">Recurring Giving Plans & Ministry Partners</h3>
+              <p class="text-xs text-ink-muted">Partnership tiers (Monthly, One-off, Supporter, Sponsor).</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addDonatePlan">+ Add Giving Plan</AppButton>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AppCard v-for="(plan, i) in config.donate.plans" :key="plan.id" class="p-4 space-y-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <AppInput v-model="plan.name" label="Plan Name" placeholder="Ministry Partner" />
+                  <AppInput v-model="plan.amount" label="Suggested Amount" placeholder="$50" />
+                  <AppSelect v-model="plan.period" label="Frequency" :options="DONATE_PLAN_PERIOD_OPTIONS_ARR" />
+                  <AppInput v-model="plan.icon" label="Icon" placeholder="favorite-border" />
+                </div>
+                <div class="flex flex-col items-end gap-2">
+                  <span class="text-[10px] font-bold text-ink-muted">Featured</span>
+                  <AppToggle :model-value="Boolean(plan.featured)" @update:model-value="(v) => (plan.featured = v)" />
+                  <AppButton variant="ghost" size="xs" class="text-danger mt-1" @click="removeDonatePlan(i)">Remove</AppButton>
+                </div>
+              </div>
+              <AppTextarea v-model="plan.note" label="Plan Impact Description" :rows="2" placeholder="Supports ClaudyGod studio production and youth outreaches." />
+            </AppCard>
+          </div>
+        </div>
+
+        <!-- Impact Breakdown -->
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Financial Impact Transparency</h3>
+              <p class="text-xs text-ink-muted">Shows donors exactly how their contributions are stewarded (must total 100%).</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addImpactItem">+ Add Category</AppButton>
+          </div>
+
+          <div class="space-y-2">
+            <div
+              v-for="(item, i) in config.donate.impactBreakdown"
+              :key="i"
+              class="grid grid-cols-1 sm:grid-cols-5 gap-3 p-2.5 rounded-xl border border-border bg-surface sm:items-end"
+            >
+              <AppInput v-model="item.icon" label="Icon" placeholder="wifi-tethering" />
+              <AppInput v-model="item.label" label="Category" class="sm:col-span-2" placeholder="Streaming & CDN" />
+              <AppInput v-model.number="item.value" type="number" label="Percentage (%)" min="0" max="100" />
+              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeImpactItem(i)">Remove</AppButton>
+            </div>
+          </div>
+        </AppCard>
+      </div>
+
+      <!-- Giving Quotes (Scripture Verses) -->
+      <div v-if="activeTab === 'giving'" class="space-y-4">
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Giving Scripture Verses</h3>
+              <p class="text-xs text-ink-muted">Rotating inspirational verses shown at the top of the mobile Donate screen.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addScripture">+ Add Verse</AppButton>
+          </div>
+
+          <div class="space-y-3">
+            <div v-for="(_, i) in config.donate.scriptures" :key="i" class="flex gap-2 items-start p-3 rounded-xl border border-border bg-surface">
+              <AppTextarea
+                v-model="config.donate.scriptures[i]"
+                :rows="2"
+                class="flex-1"
+                placeholder='"Give, and it will be given to you." — Luke 6:38'
+              />
+              <AppButton variant="ghost" size="sm" class="text-danger mt-1" @click="removeScripture(i)">Remove</AppButton>
+            </div>
+          </div>
+        </AppCard>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- PILLAR 3: COMMUNITY & GROWTH                                  -->
+      <!-- ============================================================== -->
+
+      <!-- Referral Program -->
+      <div v-if="activeTab === 'referral'" class="space-y-6">
+        <!-- How it works -->
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">How Invitation Works (Step-by-step Guide)</h3>
+              <p class="text-xs text-ink-muted">Guidance steps shown on the user's "Invite Friends" mobile screen.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addReferralStep">+ Add Step</AppButton>
+          </div>
+
+          <div class="space-y-3">
+            <AppCard v-for="(step, idx) in config.referral.howItWorks" :key="idx" class="p-4 space-y-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <AppInput v-model="step.icon" label="Step Icon" placeholder="share" />
+                  <AppInput v-model="step.title" label="Step Title" class="sm:col-span-2" placeholder="Share your link" />
+                </div>
+                <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeReferralStep(idx)">Remove</AppButton>
+              </div>
+              <AppTextarea v-model="step.body" label="Description" :rows="2" placeholder="Send your unique referral link to friends and family." />
+            </AppCard>
+          </div>
+        </AppCard>
+
+        <!-- Reward Tiers -->
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Referral Milestone Rewards</h3>
+              <p class="text-xs text-ink-muted">Badges and privileges unlocked as friends join the platform.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addReferralTier">+ Add Reward Tier</AppButton>
+          </div>
+
+          <div class="space-y-3">
+            <AppCard v-for="(tier, idx) in config.referral.rewardTiers" :key="idx" class="p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <AppInput v-model="tier.icon" label="Badge Icon" placeholder="workspace-premium" />
+                  <AppInput v-model.number="tier.threshold" type="number" label="Invites Needed" min="1" />
+                  <AppInput v-model="tier.reward" label="Unlocked Perk / Reward" placeholder="Premium Partner Badge" />
+                </div>
+                <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeReferralTier(idx)">Remove</AppButton>
+              </div>
+            </AppCard>
+          </div>
+        </AppCard>
+      </div>
+
+      <!-- App Store Rating -->
+      <div v-if="activeTab === 'rate'" class="space-y-4">
+        <AppCard class="p-5 space-y-4">
+          <div>
+            <h3 class="text-sm font-bold text-ink">App Store & Play Store URLs</h3>
+            <p class="text-xs text-ink-muted">Destination links for the "Rate ClaudyGod" prompt in the mobile app.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <AppInput v-model="config.rate.iosStoreUrl" label="Apple App Store URL" placeholder="https://apps.apple.com/app/id..." />
+            <AppInput v-model="config.rate.androidStoreUrl" label="Google Play Store URL" placeholder="https://play.google.com/store/apps/details?id=..." />
+          </div>
+          <AppInput v-model="config.rate.feedbackRoute" label="In-App Feedback Fallback Route" placeholder="/settingsPage/help" />
+        </AppCard>
+      </div>
+
+      <!-- AI Assistant & Intelligence -->
+      <div v-if="activeTab === 'intelligence'" class="space-y-4">
+        <AppCard class="p-5 space-y-4">
+          <div>
+            <h3 class="text-sm font-bold text-ink">AI Assistant & Personalization Engine</h3>
+            <p class="text-xs text-ink-muted">Controls smart recommendation algorithms and AI assistants across the mobile app.</p>
+          </div>
+
+          <div class="space-y-3 border-t border-border pt-3">
+            <div class="flex items-center justify-between p-3 rounded-xl border border-border bg-surface">
+              <div>
+                <p class="text-sm font-bold text-ink">Smart AI Assistant Active</p>
+                <p class="text-xs text-ink-muted">Enable personalized recommendations for listeners.</p>
+              </div>
+              <AppToggle v-model="config.intelligence.assistantEnabled" />
+            </div>
+
+            <div class="flex items-center justify-between p-3 rounded-xl border border-border bg-surface">
+              <div>
+                <p class="text-sm font-bold text-ink">Smart Suggestion Prompts</p>
+                <p class="text-xs text-ink-muted">Allows the assistant to suggest contextual lyrics and study notes.</p>
+              </div>
+              <AppToggle v-model="config.intelligence.adCopySuggestionsEnabled" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <AppInput v-model="config.intelligence.providerLabel" label="AI Provider Name" placeholder="ClaudyGod Intelligence" />
+            <AppInput v-model="config.intelligence.defaultTone" label="Assistant Tone" placeholder="Confident, concise, ministry-safe" />
+          </div>
+        </AppCard>
+      </div>
+
+      <!-- Ad Placements -->
+      <div v-if="activeTab === 'ads'" class="space-y-4">
+        <AppCard class="p-5 space-y-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Sponsored Content & Ad Slots</h3>
+              <p class="text-xs text-ink-muted">Configure monetization banners and partner ministry spotlights.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addPlacement">+ Add Slot</AppButton>
+          </div>
+        </AppCard>
+
+        <div class="space-y-3">
+          <AppCard v-for="(placement, i) in config.monetization.placements" :key="placement.id" class="p-4 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <AppInput v-model="placement.title" label="Placement Title" placeholder="Sponsored partner banner" />
+                <AppSelect v-model="placement.screen" label="Target Screen" :options="AD_PLACEMENT_SCREEN_OPTIONS_ARR" />
+              </div>
+              <div class="flex items-center justify-between sm:justify-start gap-3 shrink-0">
+                <AppToggle v-model="config.monetization.placements[i].enabled" />
+                <AppButton variant="ghost" size="xs" class="text-danger" @click="removePlacement(i)">Remove</AppButton>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <AppInput v-model="placement.subtitle" label="Subtitle" placeholder="Promoted slot inside the mobile app experience." />
+              <AppInput v-model.number="placement.maxItems" type="number" label="Max Items" min="1" max="8" />
+            </div>
+          </AppCard>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- PILLAR 4: BRAND, LEGAL & SUPPORT                              -->
+      <!-- ============================================================== -->
+
+      <!-- About ClaudyGod -->
+      <div v-if="activeTab === 'about'" class="space-y-6">
+        <AppCard class="p-5 space-y-4">
+          <h3 class="text-sm font-bold text-ink">Ministry Version</h3>
+          <AppInput v-model="config.about.versionLabel" label="Version Label" placeholder="Version 1.0.0 (Build 2026)" />
+        </AppCard>
+
+        <!-- Hero Stats -->
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Ministry Key Metrics</h3>
+              <p class="text-xs text-ink-muted">Shown in the About section (e.g. 100K+ Streams, 50+ Countries).</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addHeroStat">+ Add Metric</AppButton>
+          </div>
+
+          <div class="space-y-2">
+            <div
+              v-for="(stat, i) in config.about.heroStats"
+              :key="i"
+              class="grid grid-cols-1 sm:grid-cols-5 gap-3 p-2.5 rounded-xl border border-border bg-surface sm:items-end"
+            >
+              <AppInput v-model="stat.label" label="Label" class="sm:col-span-2" placeholder="Platforms" />
+              <AppInput v-model="stat.value" label="Value" class="sm:col-span-2" placeholder="Mobile + Web + TV" />
+              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeHeroStat(i)">Remove</AppButton>
+            </div>
+          </div>
+        </AppCard>
+
+        <!-- Feature Chips -->
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-ink">App Feature Highlights</h3>
+            <AppButton variant="secondary" size="xs" @click="addFeatureChip">+ Add Highlight</AppButton>
+          </div>
+          <div class="space-y-2">
+            <div
+              v-for="(chip, i) in config.about.featureChips"
+              :key="i"
+              class="grid grid-cols-1 sm:grid-cols-5 gap-3 p-2.5 rounded-xl border border-border bg-surface sm:items-end"
+            >
+              <AppInput v-model="chip.icon" label="Icon" class="sm:col-span-2" placeholder="library-music" />
+              <AppInput v-model="chip.label" label="Feature Label" class="sm:col-span-2" placeholder="Worship Releases" />
+              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeFeatureChip(i)">Remove</AppButton>
+            </div>
+          </div>
+        </AppCard>
+
+        <!-- Team -->
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Leadership & Ministry Team</h3>
+              <p class="text-xs text-ink-muted">Founder, lead ministers, and production team.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addTeamMember">+ Add Team Member</AppButton>
+          </div>
+
+          <div class="space-y-3">
+            <AppCard v-for="(member, i) in config.about.team" :key="i" class="p-4 space-y-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <AppInput v-model="member.name" label="Full Name" placeholder="Claudy God" />
+                  <AppInput v-model="member.role" label="Role / Title" placeholder="Founder & Lead Artist" />
+                </div>
+                <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeTeamMember(i)">Remove</AppButton>
+              </div>
+              <AppTextarea v-model="member.desc" label="Bio / Vision" :rows="2" placeholder="Vision, music direction, and ministry drops." />
+            </AppCard>
+          </div>
+        </AppCard>
+
+        <SocialLinksEditor :links="config.about.social" />
+      </div>
+
+      <!-- Help & Member Support -->
+      <div v-if="activeTab === 'help'" class="space-y-6">
+        <AppCard class="p-5 space-y-4">
+          <h3 class="text-sm font-bold text-ink">Online Support Center Portal</h3>
+          <AppInput v-model="config.help.supportCenterUrl" label="Support Center URL" placeholder="https://claudygod.org/support" />
+        </AppCard>
+
+        <!-- Contact Channels -->
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Direct Support Channels</h3>
+              <p class="text-xs text-ink-muted">Tappable support methods (Email, WhatsApp, Phone) shown in the app.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addHelpContact">+ Add Support Channel</AppButton>
+          </div>
+
+          <div class="space-y-3">
+            <AppCard v-for="(contact, i) in config.help.contact" :key="contact.id" class="p-4 space-y-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <AppInput v-model="contact.icon" label="Icon" placeholder="email" />
+                  <AppInput v-model="contact.title" label="Channel Title" class="sm:col-span-2" placeholder="Email Support" />
+                </div>
+                <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeHelpContact(i)">Remove</AppButton>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <AppInput v-model="contact.desc" label="User-facing detail" placeholder="support@claudygod.org" />
+                <AppInput v-model="contact.actionUrl" label="Action URL" placeholder="mailto:support@claudygod.org" />
+              </div>
+            </AppCard>
+          </div>
+        </AppCard>
+
+        <!-- FAQs -->
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Frequently Asked Questions (FAQs)</h3>
+              <p class="text-xs text-ink-muted">Answers to common member questions displayed inside the Help tab.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addFaq">+ Add FAQ</AppButton>
+          </div>
+
+          <div class="space-y-3">
+            <AppCard v-for="(faq, i) in config.help.faqs" :key="faq.id" class="p-4 space-y-3">
+              <div class="flex items-start justify-between gap-3">
+                <AppInput v-model="faq.q" label="Question" class="flex-1" placeholder="Playback buffering on Smart TV?" />
+                <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeFaq(i)">Remove</AppButton>
+              </div>
+              <AppTextarea v-model="faq.a" label="Answer" :rows="2" placeholder="Ensure TV is connected via 5GHz Wi-Fi or Ethernet..." />
+            </AppCard>
+          </div>
+        </AppCard>
+      </div>
+
+      <!-- Privacy & Data Security -->
+      <div v-if="activeTab === 'privacy'" class="space-y-6">
+        <AppCard class="p-5 space-y-4">
+          <h3 class="text-sm font-bold text-ink">Data Protection & Privacy Contact</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <AppInput v-model="config.privacy.contactEmail" label="Official Privacy Contact Email" placeholder="privacy@claudygod.org" />
+            <AppInput v-model="config.privacy.deleteConfirmPhrase" label="Account Deletion Confirmation Phrase" placeholder="I CONFIRM" />
+          </div>
+        </AppCard>
+
+        <AppCard class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Core Privacy Principles</h3>
+              <p class="text-xs text-ink-muted">Key guarantees displayed to users in the app privacy policy.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addPrivacyPrinciple">+ Add Principle</AppButton>
+          </div>
+
+          <div class="space-y-3">
+            <div v-for="(_, i) in config.privacy.principles" :key="i" class="flex gap-2 items-start p-3 rounded-xl border border-border bg-surface">
+              <AppTextarea v-model="config.privacy.principles[i]" :rows="2" class="flex-1" placeholder="We never sell your personal data." />
+              <AppButton variant="ghost" size="sm" class="text-danger mt-1" @click="removePrivacyPrinciple(i)">Remove</AppButton>
+            </div>
+          </div>
+        </AppCard>
+      </div>
+
+      <!-- Settings Hub (Mobile Settings Screen Quick-Access Groups) -->
+      <div v-if="activeTab === 'settings'" class="space-y-6">
+        <AppCard class="p-5 space-y-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Mobile Settings Quick-Access Groups</h3>
+              <p class="text-xs text-ink-muted">Configure the sections and menu links displayed on the user's mobile Settings screen.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addSettingsHubSection">+ Add Settings Group</AppButton>
+          </div>
+        </AppCard>
+
+        <div class="space-y-4">
+          <AppCard v-for="(section, sIdx) in config.settingsHub.sections" :key="section.id" class="p-5 space-y-4">
+            <div class="flex items-start justify-between gap-3 pb-3 border-b border-border">
+              <AppInput v-model="section.title" label="Group Title" class="flex-1" placeholder="e.g. Quick Access" />
               <div class="flex items-center gap-1 mt-5">
                 <button
                   type="button"
-                  class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                  class="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors border border-border"
                   :disabled="sIdx === 0"
                   title="Move section up"
-                  aria-label="Move section up"
                   @click="moveSettingsHubSection(sIdx, sIdx - 1)"
                 >
                   <ArrowUp class="w-4 h-4" />
                 </button>
                 <button
                   type="button"
-                  class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                  class="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors border border-border"
                   :disabled="sIdx === config.settingsHub.sections.length - 1"
                   title="Move section down"
-                  aria-label="Move section down"
                   @click="moveSettingsHubSection(sIdx, sIdx + 1)"
                 >
                   <ArrowDown class="w-4 h-4" />
                 </button>
-                <span class="w-px h-3.5 bg-border mx-1"></span>
-                <AppButton variant="ghost" size="xs" class="text-danger" @click="removeSettingsHubSection(sIdx)">Remove section</AppButton>
+                <span class="w-px h-4 bg-border mx-1" />
+                <AppButton variant="ghost" size="xs" class="text-danger" @click="removeSettingsHubSection(sIdx)">Remove Group</AppButton>
               </div>
             </div>
 
+            <!-- Items inside the group -->
             <div class="space-y-3">
               <div
                 v-for="(item, iIdx) in section.items"
                 :key="item.id"
-                class="grid grid-cols-1 sm:grid-cols-6 gap-2 sm:items-end border-t border-border/60 pt-3 first:border-t-0 first:pt-0"
+                class="grid grid-cols-1 sm:grid-cols-6 gap-3 p-3 rounded-xl border border-border bg-surface sm:items-end"
               >
                 <AppInput v-model="item.icon" label="Icon" placeholder="library-music" />
-                <AppInput v-model="item.label" label="Label" placeholder="Library" />
-                <AppInput v-model="item.hint" label="Hint" placeholder="Saved content" />
-                <AppSelect v-model="item.destination" label="Destination" :options="SETTINGS_DESTINATION_OPTIONS_ARR" />
+                <AppInput v-model="item.label" label="Title" placeholder="Library" />
+                <AppInput v-model="item.hint" label="Subtitle" placeholder="Saved songs & playlists" />
+                <AppSelect v-model="item.destination" label="Destination Route" :options="SETTINGS_DESTINATION_OPTIONS_ARR" />
                 <div class="flex items-center gap-1 mb-1">
                   <button
                     type="button"
                     class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
                     :disabled="iIdx === 0"
                     title="Move item up"
-                    aria-label="Move item up"
                     @click="moveSettingsHubItem(sIdx, iIdx, iIdx - 1)"
                   >
                     <ArrowUp class="w-3.5 h-3.5" />
@@ -431,7 +1086,6 @@
                     class="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface-hover disabled:opacity-30 disabled:pointer-events-none transition-colors"
                     :disabled="iIdx === section.items.length - 1"
                     title="Move item down"
-                    aria-label="Move item down"
                     @click="moveSettingsHubItem(sIdx, iIdx, iIdx + 1)"
                   >
                     <ArrowDown class="w-3.5 h-3.5" />
@@ -440,391 +1094,10 @@
                 <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeSettingsHubItem(sIdx, iIdx)">Remove</AppButton>
               </div>
             </div>
-            <AppButton variant="secondary" size="xs" @click="addSettingsHubItem(sIdx)">+ Add link</AppButton>
+
+            <AppButton variant="secondary" size="xs" @click="addSettingsHubItem(sIdx)">+ Add link to {{ section.title || 'group' }}</AppButton>
           </AppCard>
         </div>
-        <AppButton variant="secondary" size="sm" @click="addSettingsHubSection">+ Add section</AppButton>
-      </div>
-
-      <!-- Referral program -->
-      <div v-if="activeTab === 'referral'" class="space-y-6">
-        <div class="space-y-3">
-          <div>
-            <h3 class="text-sm font-bold text-ink">How it works</h3>
-            <p class="text-xs text-ink-muted">Steps shown on the mobile Invite Friends screen.</p>
-          </div>
-          <div class="space-y-3">
-            <AppCard v-for="(step, idx) in config.referral.howItWorks" :key="idx" class="p-4 space-y-3">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <AppInput v-model="step.icon" label="Icon" placeholder="share" />
-                  <AppInput v-model="step.title" label="Title" class="sm:col-span-2" placeholder="Share your link" />
-                </div>
-                <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeReferralStep(idx)">Remove</AppButton>
-              </div>
-              <AppTextarea v-model="step.body" label="Description" :rows="2" placeholder="Send your unique referral link to friends and family." />
-            </AppCard>
-            <AppButton variant="secondary" size="sm" @click="addReferralStep">+ Add step</AppButton>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <div>
-            <h3 class="text-sm font-bold text-ink">Reward tiers</h3>
-            <p class="text-xs text-ink-muted">Milestones shown as a user's referral count grows.</p>
-          </div>
-          <div class="space-y-3">
-            <AppCard v-for="(tier, idx) in config.referral.rewardTiers" :key="idx" class="p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <AppInput v-model="tier.icon" label="Icon" placeholder="workspace-premium" />
-                  <AppInput v-model.number="tier.threshold" type="number" label="Referrals needed" min="1" />
-                  <AppInput v-model="tier.reward" label="Reward" placeholder="Premium member badge" />
-                </div>
-                <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeReferralTier(idx)">Remove</AppButton>
-              </div>
-            </AppCard>
-            <AppButton variant="secondary" size="sm" @click="addReferralTier">+ Add tier</AppButton>
-          </div>
-        </div>
-      </div>
-
-      <!-- Giving quotes -->
-      <div v-if="activeTab === 'giving'" class="space-y-4">
-        <AppCard class="p-5 space-y-3">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-sm font-bold text-ink">Giving page quotes</h3>
-              <p class="text-xs text-ink-muted">Scripture quotes shown (one per day, rotating) on the mobile Donate screen.</p>
-            </div>
-            <AppButton variant="secondary" size="xs" @click="addScripture">+ Add</AppButton>
-          </div>
-          <div class="space-y-2">
-            <div v-for="(_, i) in config.donate.scriptures" :key="i" class="flex gap-2 items-start">
-              <AppTextarea v-model="config.donate.scriptures[i]" :rows="2" class="flex-1" placeholder='"Give, and it will be given to you." — Luke 6:38' />
-              <AppButton variant="ghost" size="sm" class="text-danger" @click="removeScripture(i)">Remove</AppButton>
-            </div>
-          </div>
-          <p class="text-[11px] text-ink-muted">Other giving settings (methods, plans, currencies) live under the "Donate" tab.</p>
-        </AppCard>
-      </div>
-
-      <!-- Privacy -->
-      <div v-if="activeTab === 'privacy'" class="space-y-4">
-        <AppCard class="p-5 space-y-3">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <AppInput v-model="config.privacy.contactEmail" label="Contact email" placeholder="privacy@claudygod.org" />
-            <AppInput v-model="config.privacy.deleteConfirmPhrase" label="Delete confirmation phrase" placeholder="I CONFIRM" />
-          </div>
-        </AppCard>
-        <AppCard class="p-5 space-y-3">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-sm font-bold text-ink">Principles</h3>
-              <p class="text-xs text-ink-muted">Shown as bullet points on the mobile Privacy screen.</p>
-            </div>
-            <AppButton variant="secondary" size="xs" @click="addPrivacyPrinciple">+ Add</AppButton>
-          </div>
-          <div class="space-y-2">
-            <div v-for="(_, i) in config.privacy.principles" :key="i" class="flex gap-2 items-start">
-              <AppTextarea v-model="config.privacy.principles[i]" :rows="2" class="flex-1" placeholder="We do not sell personal data." />
-              <AppButton variant="ghost" size="sm" class="text-danger" @click="removePrivacyPrinciple(i)">Remove</AppButton>
-            </div>
-          </div>
-        </AppCard>
-      </div>
-
-      <!-- Help -->
-      <div v-if="activeTab === 'help'" class="space-y-4">
-        <AppCard class="p-5 space-y-3">
-          <AppInput v-model="config.help.supportCenterUrl" label="Support center URL" placeholder="https://claudygod.org" />
-        </AppCard>
-
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-sm font-bold text-ink">Contact options</h3>
-              <p class="text-xs text-ink-muted">Shown as tappable contact channels on the mobile Help screen.</p>
-            </div>
-            <AppButton variant="secondary" size="xs" @click="addHelpContact">+ Add</AppButton>
-          </div>
-          <AppCard v-for="(contact, i) in config.help.contact" :key="contact.id" class="p-4 space-y-3">
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <AppInput v-model="contact.icon" label="Icon" placeholder="email" />
-                <AppInput v-model="contact.title" label="Title" class="sm:col-span-2" placeholder="Email support" />
-              </div>
-              <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeHelpContact(i)">Remove</AppButton>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <AppInput v-model="contact.desc" label="Description" placeholder="support@claudygod.org" />
-              <AppInput v-model="contact.actionUrl" label="Action URL" placeholder="mailto:support@claudygod.org" />
-            </div>
-          </AppCard>
-          <AppButton variant="secondary" size="sm" @click="addHelpContact">+ Add contact option</AppButton>
-        </div>
-
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-sm font-bold text-ink">FAQs</h3>
-              <p class="text-xs text-ink-muted">Shown on the mobile Help screen.</p>
-            </div>
-            <AppButton variant="secondary" size="xs" @click="addFaq">+ Add</AppButton>
-          </div>
-          <AppCard v-for="(faq, i) in config.help.faqs" :key="faq.id" class="p-4 space-y-3">
-            <div class="flex items-start justify-between gap-3">
-              <AppInput v-model="faq.q" label="Question" class="flex-1" placeholder="Playback buffering on TV?" />
-              <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeFaq(i)">Remove</AppButton>
-            </div>
-            <AppTextarea v-model="faq.a" label="Answer" :rows="2" placeholder="Use Ethernet or 5GHz Wi-Fi..." />
-          </AppCard>
-          <AppButton variant="secondary" size="sm" @click="addFaq">+ Add FAQ</AppButton>
-        </div>
-      </div>
-
-      <!-- About -->
-      <div v-if="activeTab === 'about'" class="space-y-6">
-        <AppCard class="p-5">
-          <AppInput v-model="config.about.versionLabel" label="Version label" placeholder="Version 1.0.0" />
-        </AppCard>
-
-        <div class="space-y-3">
-          <h3 class="text-sm font-bold text-ink">Hero stats</h3>
-          <div class="space-y-2">
-            <div v-for="(stat, i) in config.about.heroStats" :key="i" class="grid grid-cols-1 sm:grid-cols-5 gap-2 sm:items-end">
-              <AppInput v-model="stat.label" label="Label" class="sm:col-span-2" placeholder="Platforms" />
-              <AppInput v-model="stat.value" label="Value" class="sm:col-span-2" placeholder="Mobile + Web" />
-              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeHeroStat(i)">Remove</AppButton>
-            </div>
-          </div>
-          <AppButton variant="secondary" size="xs" @click="addHeroStat">+ Add stat</AppButton>
-        </div>
-
-        <div class="space-y-3">
-          <h3 class="text-sm font-bold text-ink">Feature chips</h3>
-          <div class="space-y-2">
-            <div v-for="(chip, i) in config.about.featureChips" :key="i" class="grid grid-cols-1 sm:grid-cols-5 gap-2 sm:items-end">
-              <AppInput v-model="chip.icon" label="Icon" class="sm:col-span-2" placeholder="library-music" />
-              <AppInput v-model="chip.label" label="Label" class="sm:col-span-2" placeholder="Worship releases" />
-              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeFeatureChip(i)">Remove</AppButton>
-            </div>
-          </div>
-          <AppButton variant="secondary" size="xs" @click="addFeatureChip">+ Add chip</AppButton>
-        </div>
-
-        <div class="space-y-3">
-          <h3 class="text-sm font-bold text-ink">Team</h3>
-          <AppCard v-for="(member, i) in config.about.team" :key="i" class="p-4 space-y-3">
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <AppInput v-model="member.name" label="Name" placeholder="Claudy God" />
-                <AppInput v-model="member.role" label="Role" placeholder="Founder & Lead Artist" />
-              </div>
-              <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeTeamMember(i)">Remove</AppButton>
-            </div>
-            <AppTextarea v-model="member.desc" label="Description" :rows="2" placeholder="Vision, music direction, and weekly drops." />
-          </AppCard>
-          <AppButton variant="secondary" size="sm" @click="addTeamMember">+ Add team member</AppButton>
-        </div>
-
-        <SocialLinksEditor :links="config.about.social" />
-      </div>
-
-      <!-- Donate -->
-      <div v-if="activeTab === 'donate'" class="space-y-6">
-        <AppCard class="p-5 space-y-3">
-          <h3 class="text-sm font-bold text-ink">Currency</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <AppInput v-model="config.donate.currency" label="Default currency code" placeholder="USD" />
-          </div>
-        </AppCard>
-
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <h3 class="text-sm font-bold text-ink">Currency options</h3>
-            <AppButton variant="secondary" size="xs" @click="addCurrencyOption">+ Add</AppButton>
-          </div>
-          <div class="space-y-2">
-            <div v-for="(opt, i) in config.donate.currencyOptions ?? []" :key="i" class="grid grid-cols-1 sm:grid-cols-4 gap-2 sm:items-end">
-              <AppInput v-model="opt.code" label="Code" placeholder="USD" />
-              <AppInput v-model="opt.label" label="Label" placeholder="US Dollar" />
-              <AppInput v-model="opt.symbol" label="Symbol" placeholder="$" />
-              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeCurrencyOption(i)">Remove</AppButton>
-            </div>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-sm font-bold text-ink">Default quick amounts</h3>
-              <p class="text-xs text-ink-muted">Used when no currency-specific list matches the selected currency.</p>
-            </div>
-            <AppButton variant="secondary" size="xs" @click="addQuickAmount">+ Add</AppButton>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <div v-for="(_, i) in config.donate.quickAmounts" :key="i" class="flex gap-1.5 items-center">
-              <AppInput v-model="config.donate.quickAmounts[i]" placeholder="$25" class="w-24" />
-              <AppButton variant="ghost" size="sm" class="text-danger" @click="removeQuickAmount(i)">Remove</AppButton>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="(config.donate.currencyOptions ?? []).length" class="space-y-3">
-          <h3 class="text-sm font-bold text-ink">Quick amounts by currency</h3>
-          <div v-for="opt in config.donate.currencyOptions ?? []" :key="opt.code" class="space-y-2">
-            <div class="flex items-center justify-between">
-              <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">{{ opt.code }}</p>
-              <AppButton variant="secondary" size="xs" @click="addQuickAmountForCurrency(opt.code)">+ Add</AppButton>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <div v-for="(_, i) in (config.donate.quickAmountsByCurrency ?? {})[opt.code] ?? []" :key="i" class="flex gap-1.5 items-center">
-                <AppInput v-model="(config.donate.quickAmountsByCurrency ?? {})[opt.code]![i]" class="w-24" />
-                <AppButton variant="ghost" size="sm" class="text-danger" @click="removeQuickAmountForCurrency(opt.code, i)">Remove</AppButton>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <h3 class="text-sm font-bold text-ink">Payment methods</h3>
-            <AppButton variant="secondary" size="xs" @click="addDonateMethod">+ Add</AppButton>
-          </div>
-          <AppCard v-for="(method, i) in config.donate.methods" :key="method.id" class="p-4 space-y-3">
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <AppInput v-model="method.icon" label="Icon" placeholder="credit-card" />
-                <AppInput v-model="method.label" label="Label" class="sm:col-span-2" placeholder="Card / Apple Pay / Google Pay" />
-              </div>
-              <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeDonateMethod(i)">Remove</AppButton>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <AppInput v-model="method.subtitle" label="Subtitle" placeholder="Fast checkout with secure payment providers" />
-              <AppInput v-model="method.badge" label="Badge (optional)" placeholder="Recommended" />
-            </div>
-            <div class="flex items-center justify-between gap-4 rounded-xl border border-line p-3">
-              <div>
-                <p class="text-sm font-semibold text-ink">Available in the mobile giving flow</p>
-                <p class="text-xs text-ink-muted">Enable only after the completion route and reconciliation process are operational.</p>
-              </div>
-              <AppToggle :model-value="method.enabled" @update:model-value="(value) => (method.enabled = value)" />
-            </div>
-          </AppCard>
-        </div>
-
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <h3 class="text-sm font-bold text-ink">Plans</h3>
-            <AppButton variant="secondary" size="xs" @click="addDonatePlan">+ Add</AppButton>
-          </div>
-          <AppCard v-for="(plan, i) in config.donate.plans" :key="plan.id" class="p-4 space-y-3">
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <AppInput v-model="plan.name" label="Name" placeholder="Supporter" />
-                <AppInput v-model="plan.amount" label="Amount" placeholder="$10" />
-                <AppSelect v-model="plan.period" label="Period" :options="DONATE_PLAN_PERIOD_OPTIONS_ARR" />
-                <AppInput v-model="plan.icon" label="Icon" placeholder="favorite-border" />
-              </div>
-              <div class="flex items-center gap-3 mt-5">
-                <AppToggle :model-value="Boolean(plan.featured)" @update:model-value="(v) => (plan.featured = v)" />
-                <AppButton variant="ghost" size="xs" class="text-danger" @click="removeDonatePlan(i)">Remove</AppButton>
-              </div>
-            </div>
-            <AppTextarea v-model="plan.note" label="Note" :rows="2" placeholder="Helps cover storage, bandwidth and publishing operations." />
-          </AppCard>
-        </div>
-
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <h3 class="text-sm font-bold text-ink">Impact breakdown</h3>
-            <AppButton variant="secondary" size="xs" @click="addImpactItem">+ Add</AppButton>
-          </div>
-          <div class="space-y-2">
-            <div v-for="(item, i) in config.donate.impactBreakdown" :key="i" class="grid grid-cols-1 sm:grid-cols-5 gap-2 sm:items-end">
-              <AppInput v-model="item.icon" label="Icon" placeholder="wifi-tethering" />
-              <AppInput v-model="item.label" label="Label" class="sm:col-span-2" placeholder="Streaming & CDN" />
-              <AppInput v-model.number="item.value" type="number" label="Percent" min="0" max="100" />
-              <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeImpactItem(i)">Remove</AppButton>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Rate -->
-      <div v-if="activeTab === 'rate'" class="space-y-4">
-        <AppCard class="p-5 space-y-3">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <AppInput v-model="config.rate.iosStoreUrl" label="iOS store URL" placeholder="https://apps.apple.com/app/id..." />
-            <AppInput v-model="config.rate.androidStoreUrl" label="Android store URL" placeholder="https://play.google.com/store/apps/details?id=..." />
-          </div>
-          <AppInput v-model="config.rate.feedbackRoute" label="Feedback route" placeholder="/settingsPage/help" />
-        </AppCard>
-      </div>
-
-      <!-- Navigation -->
-      <div v-if="activeTab === 'navigation'" class="space-y-4">
-        <p class="text-xs text-ink-muted">
-          Tabs are fixed by the app's navigation structure — only their label and icon are editable here.
-        </p>
-        <div class="space-y-2">
-          <div v-for="tab in config.navigation.tabs" :key="tab.id" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-            <AppInput :model-value="tab.id" label="Tab" disabled />
-            <AppInput v-model="tab.label" label="Label" placeholder="Home" />
-            <AppInput v-model="tab.icon" label="Icon" placeholder="home-filled" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Intelligence -->
-      <div v-if="activeTab === 'intelligence'" class="space-y-4">
-        <p class="text-xs text-ink-muted">
-          Not yet used by the mobile app — reserved for the upcoming AI assistant feature.
-        </p>
-        <AppCard class="p-5 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-ink">Assistant enabled</p>
-              <p class="text-xs text-ink-muted">Master toggle for the AI assistant feature.</p>
-            </div>
-            <AppToggle v-model="config.intelligence.assistantEnabled" />
-          </div>
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-ink">Ad copy suggestions</p>
-              <p class="text-xs text-ink-muted">Let the assistant suggest ad campaign copy.</p>
-            </div>
-            <AppToggle v-model="config.intelligence.adCopySuggestionsEnabled" />
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <AppInput v-model="config.intelligence.providerLabel" label="Provider label" placeholder="Integrated AI" />
-            <AppInput v-model="config.intelligence.defaultTone" label="Default tone" placeholder="Confident, concise, ministry-safe" />
-          </div>
-        </AppCard>
-      </div>
-
-      <!-- Ad placements -->
-      <div v-if="activeTab === 'ads'" class="space-y-3">
-        <div v-for="(placement, i) in config.monetization.placements" :key="placement.id">
-          <AppCard class="p-4 space-y-3">
-            <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <AppInput v-model="placement.title" label="Title" placeholder="Sponsored placement" />
-                <AppSelect v-model="placement.screen" label="Screen" :options="AD_PLACEMENT_SCREEN_OPTIONS_ARR" />
-              </div>
-              <div class="flex items-center justify-between sm:justify-start gap-3 shrink-0">
-                <AppToggle v-model="config.monetization.placements[i].enabled" />
-                <AppButton variant="ghost" size="xs" class="text-danger" @click="removePlacement(i)">Remove</AppButton>
-              </div>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <AppInput v-model="placement.subtitle" label="Subtitle" placeholder="Promoted slot inside the mobile app experience." />
-              <AppInput v-model.number="placement.maxItems" type="number" label="Max items" min="1" max="8" />
-            </div>
-          </AppCard>
-        </div>
-        <AppButton variant="secondary" size="sm" @click="addPlacement">+ Add placement</AppButton>
       </div>
     </template>
 
@@ -836,9 +1109,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import {
   ArrowDown, ArrowUp, GripVertical, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown, Sparkles,
+  LayoutGrid, Layers, Search, HeartHandshake, DollarSign, BookOpen, Users, Star,
+  Bot, Megaphone, ShieldCheck, HelpCircle, Info, Sliders, Eye, Save,
 } from 'lucide-vue-next';
 import { useConfigStore } from '@/stores/config.store';
 import { useUiStore } from '@/stores/ui.store';
@@ -888,32 +1163,243 @@ import PageHeader from '@/components/shared/PageHeader.vue';
 import SocialLinksEditor from '@/components/shared/SocialLinksEditor.vue';
 
 const route = useRoute();
+const router = useRouter();
 const store = useConfigStore();
 const ui = useUiStore();
-const activeTab = ref(
-  typeof route.query.tab === 'string' && ['layout', 'discovery', 'settings', 'referral', 'giving', 'privacy', 'help', 'about', 'donate', 'rate', 'navigation', 'intelligence', 'ads'].includes(route.query.tab)
-    ? (route.query.tab as string)
-    : 'layout',
-);
+
+// -----------------------------------------------------------------------
+// Executive 4-Pillar Information Architecture (Zoho / Stripe CRM pattern)
+// -----------------------------------------------------------------------
+
+interface ConfigSubTab {
+  id: string;
+  label: string;
+  icon: unknown;
+  count?: (c: AppConfig) => number | string | undefined;
+}
+
+interface ConfigCategory {
+  id: string;
+  title: string;
+  description: string;
+  icon: unknown;
+  badge: (c: AppConfig) => string;
+  subTabs: ConfigSubTab[];
+}
+
+const CONFIG_CATEGORIES: ConfigCategory[] = [
+  {
+    id: 'experience',
+    title: 'App Layout & Feeds',
+    description: 'Home shelves, catalog sections, search filters, and tab navigation.',
+    icon: LayoutGrid,
+    badge: (c) => `${(c.layout?.homeSections?.length ?? 0) + (c.layout?.videoSections?.length ?? 0)} Shelves`,
+    subTabs: [
+      {
+        id: 'layout',
+        label: 'Home & Tab Shelves',
+        icon: Layers,
+        count: (c) => c.layout?.homeSections?.length ?? 0,
+      },
+      {
+        id: 'discovery',
+        label: 'Discovery & Search',
+        icon: Search,
+        count: (c) => c.discovery?.shortcuts?.length ?? 0,
+      },
+      {
+        id: 'navigation',
+        label: 'Bottom Navigation',
+        icon: Sliders,
+        count: (c) => c.navigation?.tabs?.length ?? 0,
+      },
+    ],
+  },
+  {
+    id: 'giving',
+    title: 'Donations & Giving',
+    description: 'Giving plans, currencies, payment methods, and daily scripture quotes.',
+    icon: HeartHandshake,
+    badge: (c) => `${c.donate?.plans?.length ?? 0} Plans`,
+    subTabs: [
+      {
+        id: 'donate',
+        label: 'Plans & Payment Methods',
+        icon: DollarSign,
+        count: (c) => c.donate?.plans?.length ?? 0,
+      },
+      {
+        id: 'giving',
+        label: 'Scripture Quotes',
+        icon: BookOpen,
+        count: (c) => c.donate?.scriptures?.length ?? 0,
+      },
+    ],
+  },
+  {
+    id: 'growth',
+    title: 'Community & Growth',
+    description: 'Referral milestones, app store reviews, AI intelligence, and ad slots.',
+    icon: Users,
+    badge: (c) => `${c.referral?.rewardTiers?.length ?? 0} Rewards`,
+    subTabs: [
+      {
+        id: 'referral',
+        label: 'Referral Program',
+        icon: Users,
+        count: (c) => c.referral?.rewardTiers?.length ?? 0,
+      },
+      {
+        id: 'rate',
+        label: 'App Store Rating',
+        icon: Star,
+      },
+      {
+        id: 'intelligence',
+        label: 'AI Intelligence',
+        icon: Bot,
+      },
+      {
+        id: 'ads',
+        label: 'Ad & Sponsor Slots',
+        icon: Megaphone,
+        count: (c) => c.monetization?.placements?.length ?? 0,
+      },
+    ],
+  },
+  {
+    id: 'brand',
+    title: 'Brand, Legal & Support',
+    description: 'Ministry bio, team leadership, FAQs, support contacts, and privacy.',
+    icon: ShieldCheck,
+    badge: (c) => `${c.help?.faqs?.length ?? 0} FAQs`,
+    subTabs: [
+      {
+        id: 'about',
+        label: 'About ClaudyGod',
+        icon: Info,
+      },
+      {
+        id: 'help',
+        label: 'Help & FAQs',
+        icon: HelpCircle,
+        count: (c) => c.help?.faqs?.length ?? 0,
+      },
+      {
+        id: 'privacy',
+        label: 'Privacy & Security',
+        icon: ShieldCheck,
+      },
+      {
+        id: 'settings',
+        label: 'Settings Hub',
+        icon: Sliders,
+        count: (c) => c.settingsHub?.sections?.length ?? 0,
+      },
+    ],
+  },
+];
+
+// Determine initial activeTab and activeCategory from route query
+const initialTab = typeof route.query.tab === 'string' && [
+  'layout', 'discovery', 'navigation',
+  'donate', 'giving',
+  'referral', 'rate', 'intelligence', 'ads',
+  'about', 'help', 'privacy', 'settings',
+].includes(route.query.tab)
+  ? (route.query.tab as string)
+  : 'layout';
+
+const activeTab = ref<string>(initialTab);
+
+function getCategoryForTab(tab: string): string {
+  if (['layout', 'discovery', 'navigation'].includes(tab)) return 'experience';
+  if (['donate', 'giving'].includes(tab)) return 'giving';
+  if (['referral', 'rate', 'intelligence', 'ads'].includes(tab)) return 'growth';
+  return 'brand';
+}
+
+const activeCategory = ref<string>(getCategoryForTab(activeTab.value));
+
+const currentCategory = computed(() => {
+  return CONFIG_CATEGORIES.find((c) => c.id === activeCategory.value) || CONFIG_CATEGORIES[0];
+});
+
+function selectCategory(catId: string): void {
+  activeCategory.value = catId;
+  const cat = CONFIG_CATEGORIES.find((c) => c.id === catId);
+  if (cat && !cat.subTabs.some((s) => s.id === activeTab.value)) {
+    setTab(cat.subTabs[0].id);
+  }
+}
+
+function setTab(tabId: string): void {
+  activeTab.value = tabId;
+  activeCategory.value = getCategoryForTab(tabId);
+  router.replace({ query: { ...route.query, tab: tabId } });
+}
+
+// Global Settings Search
+const searchQuery = ref('');
+
+interface SearchResultItem {
+  id: string;
+  tabId: string;
+  categoryId: string;
+  categoryLabel: string;
+  title: string;
+  description: string;
+  icon: unknown;
+}
+
+const ALL_SEARCHABLE_ITEMS: SearchResultItem[] = [
+  { id: 'layout', tabId: 'layout', categoryId: 'experience', categoryLabel: 'App Layout', title: 'Home Shelves & Catalog Layout', description: 'Reorder, add, and configure content shelves on the mobile home feed.', icon: Layers },
+  { id: 'hero', tabId: 'layout', categoryId: 'experience', categoryLabel: 'App Layout', title: 'Landing Hero Header', description: 'Default title and subtitle shown on the home screen.', icon: Layers },
+  { id: 'latest', tabId: 'layout', categoryId: 'experience', categoryLabel: 'App Layout', title: 'Latest Releases & Premieres', description: 'Banner spotlight for new songs and videos.', icon: Sparkles },
+  { id: 'discovery', tabId: 'discovery', categoryId: 'experience', categoryLabel: 'App Layout', title: 'Discovery Search & Filters', description: 'Configure content categories and search shortcut pills.', icon: Search },
+  { id: 'navigation', tabId: 'navigation', categoryId: 'experience', categoryLabel: 'App Layout', title: 'Bottom Tab Navigation', description: 'Customize dock tab icons and titles.', icon: Sliders },
+  { id: 'donate', tabId: 'donate', categoryId: 'giving', categoryLabel: 'Donations', title: 'Giving Plans & Currencies', description: 'Recurring giving tiers, currencies, payment methods, and impact breakdown.', icon: DollarSign },
+  { id: 'giving', tabId: 'giving', categoryId: 'giving', categoryLabel: 'Donations', title: 'Giving Scripture Quotes', description: 'Inspirational rotating scripture verses on the donate screen.', icon: BookOpen },
+  { id: 'referral', tabId: 'referral', categoryId: 'growth', categoryLabel: 'Growth', title: 'Referral Program & Rewards', description: 'How it works steps and unlocked membership reward milestones.', icon: Users },
+  { id: 'rate', tabId: 'rate', categoryId: 'growth', categoryLabel: 'Growth', title: 'App Store Rating URLs', description: 'Apple App Store and Google Play Store review links.', icon: Star },
+  { id: 'intelligence', tabId: 'intelligence', categoryId: 'growth', categoryLabel: 'Growth', title: 'AI Assistant & Recommendations', description: 'Configure AI recommendations and assistant parameters.', icon: Bot },
+  { id: 'ads', tabId: 'ads', categoryId: 'growth', categoryLabel: 'Growth', title: 'Ad & Sponsor Slots', description: 'Promoted banner slots and sponsored partner placements.', icon: Megaphone },
+  { id: 'about', tabId: 'about', categoryId: 'brand', categoryLabel: 'Brand & Legal', title: 'About ClaudyGod & Team', description: 'Ministry mission, version label, hero metrics, and team bios.', icon: Info },
+  { id: 'help', tabId: 'help', categoryId: 'brand', categoryLabel: 'Brand & Legal', title: 'Help, Support & FAQs', description: 'Contact options, support center URL, and member FAQs.', icon: HelpCircle },
+  { id: 'privacy', tabId: 'privacy', categoryId: 'brand', categoryLabel: 'Brand & Legal', title: 'Privacy Principles & Account Deletion', description: 'Privacy contact email, principles, and deletion confirmation phrase.', icon: ShieldCheck },
+  { id: 'settings', tabId: 'settings', categoryId: 'brand', categoryLabel: 'Brand & Legal', title: 'Settings Screen Quick-Access', description: 'Menu sections and link shortcuts on the mobile Settings tab.', icon: Sliders },
+];
+
+const searchResults = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return [];
+  return ALL_SEARCHABLE_ITEMS.filter((item) =>
+    item.title.toLowerCase().includes(q) ||
+    item.description.toLowerCase().includes(q) ||
+    item.categoryLabel.toLowerCase().includes(q) ||
+    item.tabId.toLowerCase().includes(q),
+  );
+});
+
+function selectSearchResult(res: SearchResultItem): void {
+  searchQuery.value = '';
+  setTab(res.tabId);
+}
+
+function getContentTypeChipClass(ct: MobileContentType): string {
+  switch (ct) {
+    case 'audio': return 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30';
+    case 'video': return 'bg-rose-500/15 text-rose-400 border border-rose-500/30';
+    case 'playlist': return 'bg-amber-500/15 text-amber-400 border border-amber-500/30';
+    case 'live': return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+    case 'announcement': return 'bg-sky-500/15 text-sky-400 border border-sky-500/30';
+    default: return 'bg-surface-hover text-ink-muted border border-border';
+  }
+}
+
 const previewOpen = ref(false);
 const sectionDiagnostics = ref<Record<string, MobileSectionDiagnostic>>({});
 const diagnosticLoadingKey = ref<string | null>(null);
-
-const tabs = [
-  { id: 'layout', label: 'Layout sections' },
-  { id: 'discovery', label: 'Discovery' },
-  { id: 'settings', label: 'Settings hub' },
-  { id: 'referral', label: 'Referral' },
-  { id: 'giving', label: 'Giving quotes' },
-  { id: 'privacy', label: 'Privacy' },
-  { id: 'help', label: 'Help' },
-  { id: 'about', label: 'About' },
-  { id: 'donate', label: 'Donate' },
-  { id: 'rate', label: 'Rate app' },
-  { id: 'navigation', label: 'Navigation' },
-  { id: 'intelligence', label: 'Intelligence' },
-  { id: 'ads', label: 'Ad placements' },
-];
 
 const MOBILE_TAB_DESTINATION_OPTIONS_ARR = MOBILE_TAB_DESTINATION_OPTIONS.map((o) => ({ ...o }));
 const DISCOVERY_CATEGORY_OPTIONS_ARR = DISCOVERY_CATEGORY_OPTIONS.map((v) => ({ value: v, label: v }));
@@ -921,9 +1407,6 @@ const AD_PLACEMENT_SCREEN_OPTIONS_ARR = AD_PLACEMENT_SCREEN_OPTIONS.map((o) => (
 const SETTINGS_DESTINATION_OPTIONS_ARR = SETTINGS_DESTINATION_OPTIONS.map((o) => ({ ...o }));
 const DONATE_PLAN_PERIOD_OPTIONS_ARR = DONATE_PLAN_PERIOD_OPTIONS.map((o) => ({ ...o }));
 
-// Editable deep clone of the full config — round-tripped in full on save since the
-// backend requires the entire object. Every section is now editable somewhere in
-// this view.
 const isLoaded = ref(false);
 const config = ref<AppConfig>(createDefaultMobileAppConfig());
 
