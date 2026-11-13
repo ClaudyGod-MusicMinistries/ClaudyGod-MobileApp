@@ -12,7 +12,7 @@ export function GreetingBanner({ name, onPreferencesPress }: { name?: string | n
   const styles = useFeedStyles();
   const theme  = useAppTheme();
   const hour   = new Date().getHours();
-  const greeting = hour < 5 ? 'Still up' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const greeting = hour < 5 ? 'Peaceful night' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = name ? name.split(' ')[0] : null;
   const dateStr   = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 

@@ -136,6 +136,12 @@ const classifyRail = (item: MobileFeedItem): 'music' | 'video' | 'playlist' | 'a
 };
 
 const normalizeSectionToken = (value: string): string => value.trim().toLowerCase();
+const normalizeSectionSlug = (value: string): string =>
+  value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const normalizeSectionClean = (value: string): string =>
+  value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const stripSectionScreenPrefix = (value: string): string =>
+  value.replace(/^(home|videos?|player|music|library)-/i, '');
 
 const SECTION_ALIASES: Record<string, string> = {
   music: 'music-featured',
@@ -148,27 +154,51 @@ const SECTION_ALIASES: Record<string, string> = {
 
 const canonicalSection = (raw: string): string => {
   const norm = normalizeSectionToken(raw);
-  return SECTION_ALIASES[norm] || norm;
+  return SECTION_ALIASES[norm] || SECTION_ALIASES[normalizeSectionSlug(raw)] || norm;
 };
 
 // Content is tagged into a section by the admin's own id or title (see
 // admin/web ContentEditView.vue) — match either so a legacy title-based tag
-// still resolves after a section is renamed.
+// still resolves after a section is renamed, across slug, clean, or prefixed forms.
 export const matchesConfiguredSection = (item: MobileFeedItem, section: MobileLayoutSection): boolean => {
   if (item.type === 'ad') {
     return false;
   }
-  const canonicalId = canonicalSection(section.id);
+  const strippedId = stripSectionScreenPrefix(section.id);
   const tokens = new Set([
-    canonicalId,
+    canonicalSection(section.id),
+    canonicalSection(strippedId),
+    canonicalSection(section.title),
     normalizeSectionToken(section.id),
+    normalizeSectionSlug(section.id),
+    normalizeSectionClean(section.id),
+    normalizeSectionToken(strippedId),
+    normalizeSectionSlug(strippedId),
+    normalizeSectionClean(strippedId),
     normalizeSectionToken(section.title),
+    normalizeSectionSlug(section.title),
+    normalizeSectionClean(section.title),
   ]);
   return (
     section.contentTypes.includes(item.type) &&
     item.appSections.some((value) => {
-      const canonicalVal = canonicalSection(value);
-      return tokens.has(canonicalVal) || tokens.has(normalizeSectionToken(value));
+      const strippedVal = stripSectionScreenPrefix(value);
+      const valSlug = normalizeSectionSlug(value);
+      const strippedValSlug = normalizeSectionSlug(strippedVal);
+      return (
+        tokens.has(value) ||
+        tokens.has(canonicalSection(value)) ||
+        tokens.has(canonicalSection(valSlug)) ||
+        tokens.has(normalizeSectionToken(value)) ||
+        tokens.has(valSlug) ||
+        tokens.has(normalizeSectionClean(value)) ||
+        tokens.has(strippedVal) ||
+        tokens.has(canonicalSection(strippedVal)) ||
+        tokens.has(canonicalSection(strippedValSlug)) ||
+        tokens.has(normalizeSectionToken(strippedVal)) ||
+        tokens.has(strippedValSlug) ||
+        tokens.has(normalizeSectionClean(strippedVal))
+      );
     })
   );
 };

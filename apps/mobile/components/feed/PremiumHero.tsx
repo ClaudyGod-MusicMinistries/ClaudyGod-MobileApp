@@ -13,7 +13,7 @@ import { common } from '../../styles/commonStyles';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import type { FeedCardItem } from '../../services/contentService';
 import { useFeedStyles } from './styles';
-import { isValidDuration, cleanFeedTitle } from './utils';
+import { isValidDuration, cleanFeedTitle, cleanFeedText, isRedundantSubtitle } from './utils';
 
 type PremiumHeroProps = {
   item?: FeedCardItem | null;
@@ -162,15 +162,25 @@ export function PremiumHero({
       <View style={[styles.heroContainer, { height: heroHeight }]}>
         <Image source={{ uri: imageUrl }} resizeMode="cover" style={common.fill} accessibilityIgnoresInvertColors />
 
+        {/* Cinematic Dual-Scrim: Left-to-right contrast scrim for wide screens/TVs + bottom grounding scrim */}
+        {isWide ? (
+          <LinearGradient
+            colors={['rgba(8, 4, 18, 0.88)', 'rgba(8, 4, 18, 0.55)', 'rgba(8, 4, 18, 0.1)', 'transparent']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 0.82, y: 0.5 }}
+            style={[common.fill, Platform.OS === 'web' ? { pointerEvents: 'none' } : {}]}
+          />
+        ) : null}
+
         <LinearGradient
           colors={['transparent', theme.colors.mediaScrim, theme.colors.mediaScrimStrong]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: isWide ? 0.7 : 0, y: 1 }}
+          start={{ x: 0, y: isWide ? 0.2 : 0 }}
+          end={{ x: 0, y: 1 }}
           style={[common.fill, Platform.OS === 'web' ? { pointerEvents: 'none' } : {}]}
         />
 
-        <View style={{ flex: 1, justifyContent: 'flex-end', padding: isWide ? 26 : 20 }}>
-          <View style={{ maxWidth: isWide ? 580 : undefined }}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', padding: isWide ? 32 : 20 }}>
+          <View style={{ maxWidth: device.isTV ? 780 : device.isLargeDesktop ? 720 : isWide ? 640 : undefined }}>
             {(isLiveItem || eyebrow) ? (
               <View style={[styles.heroBadge, {
                 borderColor: isLiveItem ? theme.colors.dangerBorder : theme.colors.mediaBorder,
@@ -179,7 +189,7 @@ export function PremiumHero({
                 {isLiveItem ? <View style={[styles.heroBadgeDot, { backgroundColor: theme.colors.danger }]} /> : null}
                 <CustomText style={{
                   color: isLiveItem ? theme.colors.danger : theme.colors.mediaText,
-                  fontSize: 10, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase',
+                  fontSize: 10, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase',
                 }}>
                   {isLiveItem ? 'Live now' : eyebrow ?? (item.type === 'video' ? 'Featured video' : 'Featured')}
                 </CustomText>
@@ -190,52 +200,55 @@ export function PremiumHero({
               variant="display"
               style={{
                 color: theme.colors.mediaText,
-                fontSize: device.isTV ? 42 : device.isLargeDesktop ? 36 : isLarge ? 30 : isWide ? 25 : 21,
-                lineHeight: device.isTV ? 52 : device.isLargeDesktop ? 44 : isLarge ? 38 : isWide ? 32 : 28,
-                fontWeight: '800', letterSpacing: 0,
+                fontSize: device.isTV ? 44 : device.isLargeDesktop ? 38 : isLarge ? 32 : isWide ? 26 : 22,
+                lineHeight: device.isTV ? 54 : device.isLargeDesktop ? 46 : isLarge ? 40 : isWide ? 34 : 29,
+                fontWeight: '800', letterSpacing: -0.3,
               }}
               numberOfLines={2}
             >
               {cleanFeedTitle(item.title || title)}
             </CustomText>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 6, flexWrap: 'wrap' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
               <View style={{
-                paddingHorizontal: 6,
-                paddingVertical: 1.5,
+                paddingHorizontal: 7,
+                paddingVertical: 2,
                 borderRadius: 4,
-                backgroundColor: 'rgba(255, 255, 255, 0.16)',
+                backgroundColor: 'rgba(255, 255, 255, 0.18)',
                 borderWidth: 1,
-                borderColor: 'rgba(255, 255, 255, 0.28)',
+                borderColor: 'rgba(255, 255, 255, 0.3)',
               }}>
-                <CustomText style={{ color: theme.colors.mediaText, fontSize: 9.5, fontWeight: '800', letterSpacing: 0.6 }}>
-                  HD
+                <CustomText style={{ color: theme.colors.mediaText, fontSize: 10, fontWeight: '800', letterSpacing: 0.6 }}>
+                  {item.type === 'video' ? 'HD VIDEO' : 'LOSSLESS'}
                 </CustomText>
               </View>
               <CustomText style={styles.heroMetaText}>
-                {[item.subtitle, isValidDuration(item.duration) ? item.duration : null].filter(Boolean).join(' · ')}
+                {[
+                  !isRedundantSubtitle(item.title, item.subtitle) ? cleanFeedText(item.subtitle) : null,
+                  isValidDuration(item.duration) ? item.duration : null,
+                ].filter(Boolean).join(' · ')}
               </CustomText>
             </View>
 
-            <View style={[styles.heroButtons, { flexWrap: 'wrap', alignItems: 'center' }]}>
+            <View style={[styles.heroButtons, { flexWrap: 'wrap', alignItems: 'center', marginTop: isLarge ? 20 : 14 }]}>
               {primaryAction ? (
                 <AppButton
                   title={resolvedPrimaryLabel}
                   onPress={primaryAction}
-                  size="md"
-                  leftIcon={<AppIcon name={primaryIcon} size={17} color={theme.colors.textInverse} />}
-                  style={{ minWidth: 150, alignSelf: 'flex-start' }}
+                  size={isLarge ? 'lg' : 'md'}
+                  leftIcon={<AppIcon name={primaryIcon} size={isLarge ? 20 : 17} color={theme.colors.textInverse} />}
+                  style={{ minWidth: isLarge ? 170 : 145, alignSelf: 'flex-start' }}
                 />
               ) : null}
               {secondaryLabel && secondaryAction ? (
                 <AppButton
                   title={secondaryLabel}
                   variant="secondary"
-                  size="md"
+                  size={isLarge ? 'lg' : 'md'}
                   onPress={secondaryAction}
                   textColor={theme.colors.mediaText}
-                  leftIcon={<AppIcon name={secondaryIcon} size={16} color={theme.colors.mediaText} />}
-                  style={{ flex: 1, backgroundColor: theme.colors.mediaControl, borderColor: theme.colors.mediaBorder }}
+                  leftIcon={<AppIcon name={secondaryIcon} size={isLarge ? 18 : 16} color={theme.colors.mediaText} />}
+                  style={{ minWidth: isLarge ? 160 : 130, backgroundColor: theme.colors.mediaControl, borderColor: theme.colors.mediaBorder }}
                 />
               ) : null}
             </View>
