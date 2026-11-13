@@ -9,9 +9,9 @@ export const useFeedStyles = makeStyles((theme) => ({
   pageContent:        { paddingTop: theme.layout.headerVerticalPadding, gap: 24 },
   pageSections:       { gap: theme.layout.sectionGap },
   headerLeft:         { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
-  headerEyebrow:      { color: theme.colors.primary, fontSize: 9.5, fontFamily: 'Montserrat_700Bold', fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 1 },
-  headerTitle:        { color: theme.colors.text, fontFamily: 'Poppins_600SemiBold', fontWeight: '600', letterSpacing: -0.2 },
-  headerSubtitle:     { color: theme.colors.textSecondary, marginTop: 1, maxWidth: 720, fontSize: 11, lineHeight: 14 },
+  headerEyebrow:      { color: theme.colors.primary, fontSize: 11, fontFamily: 'Montserrat_700Bold', fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 },
+  headerTitle:        { color: theme.colors.text, fontFamily: 'Poppins_700Bold', fontWeight: '800', letterSpacing: -0.3 },
+  headerSubtitle:     { color: theme.colors.textSecondary, marginTop: 1, maxWidth: 720, fontSize: 12.5, lineHeight: 16 },
   headerRight:        { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
 
   // NavIconButton
@@ -131,11 +131,11 @@ export const useFeedStyles = makeStyles((theme) => ({
   cardSubtitle:    { color: theme.colors.textMuted, fontSize: 12.5 },
 
   // ContentRail
-  railGap:         { gap: 12 },
+  railGap:         { gap: 14 },
   railHeader:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   railTitleWrap:   { flex: 1, minWidth: 0 },
-  railTitle:       { color: theme.colors.text, fontSize: 17, fontWeight: '800', letterSpacing: 0 },
-  railSubtitle:    { color: theme.colors.textMuted, marginTop: 3, fontSize: 12.5 },
+  railTitle:       { color: theme.colors.text, fontSize: 19, fontWeight: '800', fontFamily: 'Poppins_700Bold', letterSpacing: -0.2 },
+  railSubtitle:    { color: theme.colors.textMuted, marginTop: 3, fontSize: 13 },
   railActionBtn:   { flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 6, paddingLeft: 12 },
   railActionText:  { color: theme.colors.primary, fontSize: 12.5, fontWeight: '600' },
   railPaginationOverlay: {
@@ -316,12 +316,12 @@ export const useFeedStyles = makeStyles((theme) => ({
   // GreetingBanner
   greetingRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 2 },
   greetingLeft:      { gap: 4, flex: 1, minWidth: 0 },
-  greetingTitle:     { color: theme.colors.text, fontSize: 23, fontWeight: '800', letterSpacing: 0, lineHeight: 30 },
-  greetingDate:      { color: theme.colors.textMuted, fontSize: 13, fontWeight: '400', lineHeight: 19 },
+  greetingTitle:     { color: theme.colors.text, fontSize: 26, fontWeight: '800', fontFamily: 'Poppins_700Bold', letterSpacing: -0.4, lineHeight: 32 },
+  greetingDate:      { color: theme.colors.textSecondary, fontSize: 13.5, fontWeight: '500', fontFamily: 'Poppins_500Medium', lineHeight: 18 },
   greetingNotifBtn: {
-    width: 40, height: 40, borderRadius: theme.radius.md,
+    width: 42, height: 42, borderRadius: theme.radius.md,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: theme.colors.subtleFill,
+    backgroundColor: theme.colors.subtleFillMed,
     borderWidth: 1, borderColor: theme.colors.border,
     flexShrink: 0, marginLeft: 12,
   },
@@ -367,7 +367,7 @@ export const useFeedStyles = makeStyles((theme) => ({
 
   // SectionLabel
   sectionLabelRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionLabelTitle: { color: theme.colors.text, fontSize: 17, fontWeight: '700', letterSpacing: 0, flex: 1 },
+  sectionLabelTitle: { color: theme.colors.text, fontSize: 20, fontWeight: '800', fontFamily: 'Poppins_700Bold', letterSpacing: -0.3, flex: 1 },
   sectionActionBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     paddingVertical: 6, paddingLeft: 12, paddingRight: 2,
