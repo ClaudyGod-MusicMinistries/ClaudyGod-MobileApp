@@ -20,10 +20,10 @@ export function GreetingBanner({ name, onPreferencesPress }: { name?: string | n
     <FadeIn>
       <View style={styles.greetingRow}>
         <View style={styles.greetingLeft}>
-          <CustomText style={styles.greetingTitle} numberOfLines={1}>
+          <CustomText variant="hero" style={styles.greetingTitle} numberOfLines={1}>
             {greeting}{firstName ? `, ${firstName}` : ''}
           </CustomText>
-          <CustomText style={styles.greetingDate}>{dateStr}</CustomText>
+          <CustomText variant="subheading" style={styles.greetingDate}>{dateStr}</CustomText>
         </View>
         <TVTouchable
           onPress={onPreferencesPress}

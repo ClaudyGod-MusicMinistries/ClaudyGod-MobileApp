@@ -2,13 +2,13 @@
 // prevents media controls from inventing local rgba/hex values while ensuring
 // identical contrast in light and dark application themes.
 export const mediaTokens = {
-  canvas: '#000000',
+  canvas: '#0C0A14',
   // Brand-dark ground for the cinematic entry sequence (native splash → loading
   // screen → landing). Deliberately NOT theme-aware: the sequence is always dark,
   // and the native splash is already this color (BRAND_DARK in app.config.js —
   // keep the two in sync), so a light-mode user never sees a white flash between
   // the splash and the landing. Home and everything after follows the theme.
-  brandCanvas: '#16131C',
+  brandCanvas: '#161226',
   text: '#FFFFFF',
   textMuted: 'rgba(255,255,255,0.85)',
   textSubtle: 'rgba(255,255,255,0.70)',
@@ -137,62 +137,61 @@ export const colors = {
 
   dark: {
     // ── Backgrounds ──────────────────────────────────────────────────────────
-    // Matches brand/logo-master.svg's tile color — keep in sync with
-    // app.config.js's splashBgColor/androidAdaptiveIconBgColor.
-    background:     '#09090B',
-    backgroundRgba: '9,9,11',
-    surface:        '#121216',
-    surfaceAlt:     '#18181D',
-    elevated:       '#1C1C22',
-    card:           '#15151A',
-    cardHover:      '#202027',
-    inputBg:        '#121216',
+    // Luxurious royal obsidian / midnight amethyst with deep atmospheric warmth
+    background:     '#0C0A14',
+    backgroundRgba: '12,10,20',
+    surface:        '#161226',
+    surfaceAlt:     '#1D1733',
+    elevated:       '#231C3D',
+    card:           '#161226',
+    cardHover:      '#221B3D',
+    inputBg:        '#141024',
 
     // ── Scheme-aware fills ───────────────────────────────────────────────────
-    subtleFill:       'rgba(255,255,255,0.05)',
-    subtleFillMed:    'rgba(255,255,255,0.08)',
-    subtleFillStrong: 'rgba(255,255,255,0.12)',
+    subtleFill:       'rgba(167,139,250,0.06)',
+    subtleFillMed:    'rgba(167,139,250,0.10)',
+    subtleFillStrong: 'rgba(167,139,250,0.16)',
 
     // ── Glass / overlay ───────────────────────────────────────────────────────
-    glass:        'rgba(18,18,22,0.78)',
-    glassStrong:  'rgba(18,18,22,0.96)',
+    glass:        'rgba(22,18,38,0.82)',
+    glassStrong:  'rgba(22,18,38,0.96)',
     overlay:      'rgba(0,0,0,0.72)',
     overlayLight: 'rgba(0,0,0,0.48)',
     scrim:        'rgba(0,0,0,0.80)',
-    mediaScrim:       'rgba(5,4,12,0.62)',
-    mediaScrimStrong: 'rgba(5,4,12,0.96)',
-    mediaControl:     'rgba(5,4,12,0.64)',
+    mediaScrim:       'rgba(12,10,20,0.65)',
+    mediaScrimStrong: 'rgba(12,10,20,0.96)',
+    mediaControl:     'rgba(22,18,38,0.72)',
     mediaBorder:      'rgba(255,255,255,0.22)',
     mediaText:        '#FFFFFF',
-    mediaTextMuted:   'rgba(255,255,255,0.78)',
-    mediaTextSubtle:  'rgba(255,255,255,0.62)',
+    mediaTextMuted:   'rgba(255,255,255,0.82)',
+    mediaTextSubtle:  'rgba(255,255,255,0.65)',
     liveSurface:      'rgba(244,63,94,0.94)',
 
     // ── Dividers / borders ────────────────────────────────────────────────────
     divider:      'rgba(255,255,255,0.07)',
-    border:       'rgba(255,255,255,0.09)',
-    borderStrong: 'rgba(255,255,255,0.16)',
-    muted:        '#232329',
+    border:       'rgba(255,255,255,0.08)',
+    borderStrong: 'rgba(167,139,250,0.22)',
+    muted:        '#261F3B',
     shadow:       '#000000',
 
     // ── Text ─────────────────────────────────────────────────────────────────
     text:           '#FFFFFF',
-    textSecondary:  '#D4D4DC',
-    textMuted:      '#A6A6B2',
+    textSecondary:  '#D8D4E8',
+    textMuted:      '#ABA5C4',
     text_primary:   '#FFFFFF',
-    text_secondary: '#D4D4DC',
+    text_secondary: '#D8D4E8',
     text_accent:    '#DDD3FF',
-    textInverse:    '#111114',
+    textInverse:    '#0C0A14',
     onPrimary:      '#FFFFFF',
 
     // ── Interactive controls ────────────────────────────────────────────────
-    controlSurface:            '#121216',
-    controlBorder:             'rgba(255,255,255,0.18)',
+    controlSurface:            '#161226',
+    controlBorder:             'rgba(167,139,250,0.22)',
     controlText:               '#FAFAFA',
-    controlSelectedSurface:    '#6D28D9',
+    controlSelectedSurface:    '#7C3AED',
     controlSelectedBorder:     '#A78BFA',
     controlSelectedText:       '#FFFFFF',
-    controlSelectedIconSurface:'rgba(255,255,255,0.16)',
+    controlSelectedIconSurface:'rgba(255,255,255,0.18)',
 
     // ── Brand / semantic ──────────────────────────────────────────────────────
     primary:      '#8B5CF6',
@@ -208,9 +207,9 @@ export const colors = {
     editorial:      '#F59E0B',
 
     // ── Primary tints ─────────────────────────────────────────────────────────
-    primarySurface:     'rgba(139,92,246,0.07)',
-    primaryBorder:      'rgba(139,92,246,0.18)',
-    primaryFocusBorder: 'rgba(183,148,246,0.38)',
+    primarySurface:     'rgba(139,92,246,0.12)',
+    primaryBorder:      'rgba(167,139,250,0.26)',
+    primaryFocusBorder: 'rgba(183,148,246,0.48)',
 
     // ── Semantic tints ────────────────────────────────────────────────────────
     dangerSurface: 'rgba(244,63,94,0.10)',
@@ -225,18 +224,18 @@ export const colors = {
     infoBorder:  'rgba(96,165,250,0.24)',
 
     // ── Tab bar ───────────────────────────────────────────────────────────────
-    tabBarBg:            '#121216',
-    tabBarBorder:        'rgba(255,255,255,0.10)',
-    tabBarText:          '#A0A0AC',
-    tabBarTextActive:    '#C4B5FD',
-    tabBarActiveSurface: 'rgba(139,92,246,0.14)',
-    tabBarActiveBorder:  'rgba(167,139,250,0.22)',
+    tabBarBg:            '#100D1C',
+    tabBarBorder:        'rgba(167,139,250,0.14)',
+    tabBarText:          '#A8A2C0',
+    tabBarTextActive:    '#DDD3FF',
+    tabBarActiveSurface: 'rgba(139,92,246,0.18)',
+    tabBarActiveBorder:  'rgba(167,139,250,0.30)',
     tabBarActionSurface: '#7C3AED',
     tabBarActionIcon:    '#FFFFFF',
     tabBarActionActiveRing: 'rgba(167,139,250,0.42)',
 
     // ── Player ───────────────────────────────────────────────────────────────
-    playerGlass: 'rgba(18,18,22,0.94)',
+    playerGlass: 'rgba(22,18,38,0.96)',
   },
 };
 

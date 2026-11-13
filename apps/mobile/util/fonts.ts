@@ -22,70 +22,70 @@ import * as Font from 'expo-font';
 export const fontConfig = {
   hero: {
     fontFamily: 'Poppins_700Bold',
-    fontSize: 23,
-    lineHeight: 29,
+    fontSize: 28,
+    lineHeight: 34,
     fontWeight: '700' as const,
     letterSpacing: -0.4,
   },
   display: {
     fontFamily: 'Poppins_700Bold',
-    fontSize: 19,
-    lineHeight: 25,
+    fontSize: 22,
+    lineHeight: 28,
     fontWeight: '700' as const,
     letterSpacing: -0.3,
   },
   heading: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '600' as const,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '700' as const,
     letterSpacing: -0.2,
   },
   title: {
     fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
-    lineHeight: 19,
+    fontSize: 15.5,
+    lineHeight: 21,
     fontWeight: '600' as const,
     letterSpacing: -0.1,
   },
   subheading: {
-    fontFamily: 'Poppins_500Medium',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '500' as const,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13.5,
+    lineHeight: 18,
+    fontWeight: '600' as const,
     letterSpacing: 0,
   },
   subtitle: {
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 11.5,
-    lineHeight: 15,
-    fontWeight: '400' as const,
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 12.5,
+    lineHeight: 17,
+    fontWeight: '500' as const,
     letterSpacing: 0,
   },
   body: {
     fontFamily: 'Poppins_400Regular',
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 20,
     fontWeight: '400' as const,
   },
   label: {
-    fontFamily: 'Montserrat_600SemiBold',
-    fontSize: 11.5,
-    lineHeight: 16,
-    fontWeight: '600' as const,
-    letterSpacing: 0.5,
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '700' as const,
+    letterSpacing: 0.6,
   },
   meta: {
-    fontFamily: 'Montserrat_500Medium',
-    fontSize: 10.5,
-    lineHeight: 14,
-    fontWeight: '500' as const,
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '600' as const,
     letterSpacing: 0.3,
   },
   caption: {
     fontFamily: 'Poppins_400Regular',
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 11.5,
+    lineHeight: 16,
     fontWeight: '400' as const,
     letterSpacing: 0,
   },
@@ -99,19 +99,23 @@ export function getResponsiveFontStyle(variant: FontVariantKey, width: number, i
   const base = fontConfig[variant];
 
   const widthScale = isTV
-    ? 1.12
+    ? 1.15
     : width >= 1180
-      ? 1.04
+      ? 1.06
       : width >= 768
-        ? 1.02
+        ? 1.03
         : width <= 360
-          ? 0.9
+          ? 0.94
           : width <= 390
-            ? 0.94
+            ? 0.98
             : 1;
 
-  const fontSize = clamp(Number((base.fontSize * widthScale).toFixed(1)), 9.5, isTV ? 28 : 20);
-  const lineHeight = clamp(Math.round(base.lineHeight * widthScale), Math.ceil(fontSize + 3), isTV ? 36 : 28);
+  const maxClamp = isTV
+    ? (variant === 'hero' ? 44 : variant === 'display' ? 36 : 28)
+    : (variant === 'hero' ? 36 : variant === 'display' ? 30 : variant === 'heading' ? 24 : variant === 'title' ? 21 : 18);
+
+  const fontSize = clamp(Number((base.fontSize * widthScale).toFixed(1)), 10, maxClamp);
+  const lineHeight = clamp(Math.round(base.lineHeight * widthScale), Math.ceil(fontSize + 4), isTV ? 52 : 44);
 
   return {
     ...base,

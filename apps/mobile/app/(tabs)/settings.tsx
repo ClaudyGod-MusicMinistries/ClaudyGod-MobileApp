@@ -199,49 +199,70 @@ const useStyles = makeStyles((theme) => ({
   appearanceRow: {
     flexDirection: 'row',
     gap: 10,
-    padding: 12,
+    padding: 14,
   },
   appearanceOption: {
     flex: 1,
-    minHeight: 74,
+    minHeight: 88,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
     paddingVertical: 12,
     paddingHorizontal: 8,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.subtleFill,
+    position: 'relative',
   },
   appearanceOptionActive: {
+    backgroundColor: theme.colors.primarySurface,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.sm,
+  },
+  appearanceIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFillMed,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  appearanceIconWrapActive: {
     backgroundColor: theme.colors.primarySurface,
     borderColor: theme.colors.primaryBorder,
   },
   appearanceLabel: {
     color: theme.colors.textSecondary,
     fontFamily: 'Poppins_600SemiBold',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
   },
   appearanceLabelActive: {
     color: theme.colors.text,
   },
   appearanceHint: {
     color: theme.colors.textMuted,
-    fontFamily: 'Montserrat_500Medium',
-    fontSize: 9.5,
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 10.5,
     letterSpacing: 0.2,
     textAlign: 'center',
   },
-  appearanceIndicator: {
+  appearanceHintActive: {
+    color: theme.colors.primary,
+  },
+  appearanceActiveBadge: {
     position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 4,
-    height: 2.5,
-    borderRadius: 2,
+    top: 7,
+    right: 7,
+    width: 17,
+    height: 17,
+    borderRadius: 8.5,
     backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   linkRow: {
@@ -427,20 +448,20 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
   const device = useDeviceClass();
 
   const options: { value: ThemePreference; label: string; icon: AppIconName; hint: string }[] = [
-    { value: 'system', label: 'System', icon: 'devices', hint: 'Automatic' },
-    { value: 'light', label: 'Light', icon: 'sun', hint: 'Light mode' },
-    { value: 'dark', label: 'Dark', icon: 'moon', hint: 'Dark mode' },
+    { value: 'system', label: 'System', icon: 'devices', hint: 'Match Device' },
+    { value: 'light', label: 'Light', icon: 'sun', hint: 'Clean Day' },
+    { value: 'dark', label: 'Dark', icon: 'moon', hint: 'Royal Night' },
   ];
 
   return (
     <View style={styles.sectionShell}>
       <View style={[styles.sectionHeader, styles.sectionHeaderRow]}>
         <View style={styles.sectionHeaderIcon}>
-          <AppIcon name="palette" size={17} color={theme.colors.primary} />
+          <AppIcon name="palette" size={18} color={theme.colors.primary} />
         </View>
         <View style={styles.sectionHeaderCopy}>
-          <CustomText variant="title" style={styles.sectionTitle}>Appearance</CustomText>
-          <CustomText variant="caption" style={styles.sectionSubtitle}>Choose how ClaudyGod looks on this device</CustomText>
+          <CustomText variant="heading" style={[styles.sectionTitle, { fontSize: 16, fontWeight: '700' }]}>Appearance & Theme</CustomText>
+          <CustomText variant="caption" style={styles.sectionSubtitle}>Choose your preferred visual presentation mode</CustomText>
         </View>
       </View>
       <View style={styles.appearanceRow}>
@@ -455,7 +476,9 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
             >
-              <AppIcon name={option.icon} size={device.isTV ? 20 : 18} color={active ? theme.colors.primary : theme.colors.textSecondary} />
+              <View style={[styles.appearanceIconWrap, active ? styles.appearanceIconWrapActive : null]}>
+                <AppIcon name={option.icon} size={device.isTV ? 22 : 20} color={active ? theme.colors.primary : theme.colors.textSecondary} />
+              </View>
               <CustomText
                 style={[
                   styles.appearanceLabel,
@@ -464,10 +487,14 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
               >
                 {option.label}
               </CustomText>
-              <CustomText style={styles.appearanceHint}>
+              <CustomText style={[styles.appearanceHint, active ? styles.appearanceHintActive : null]}>
                 {option.hint}
               </CustomText>
-              {active ? <View style={styles.appearanceIndicator} /> : null}
+              {active ? (
+                <View style={styles.appearanceActiveBadge}>
+                  <AppIcon name="check" size={10} color="#FFFFFF" />
+                </View>
+              ) : null}
             </TVTouchable>
           );
         })}
@@ -762,7 +789,6 @@ export default function SettingsScreen() {
         const { user } = await getStoredMobileSession();
         if (user) await updateMePreferences({ themePreference: value });
         await setPreference('themePreference', value);
-        showModal({ title: 'Appearance updated', message: value === 'system' ? 'Using your device setting.' : `Using ${value} mode.`, tone: 'success' });
       } catch {
         setThemePreference(previous);
         showModal({ title: 'Update failed', message: 'Your appearance preference could not be synchronized. Please try again.', tone: 'error' });

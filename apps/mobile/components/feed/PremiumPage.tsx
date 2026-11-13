@@ -118,7 +118,7 @@ export function PremiumPage({
                 ) : null}
                 <CustomText
                   variant="heading"
-                  style={[styles.headerTitle, { fontSize: compact ? 14.5 : 16 }]}
+                  style={[styles.headerTitle, { fontSize: compact ? 20 : 23, fontWeight: '800' }]}
                   numberOfLines={1}
                 >
                   {title}
