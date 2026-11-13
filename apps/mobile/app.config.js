@@ -105,13 +105,16 @@ const BRAND_LIGHT = '#FFFFFF';
 const splashBgColor = getFileOrEnv('EXPO_SPLASH_BG_COLOR', BRAND_LIGHT);
 const androidAdaptiveIconBgColor = getFileOrEnv('EXPO_ANDROID_ADAPTIVE_ICON_BG_COLOR', BRAND_LIGHT);
 const iosBundleId = getFileOrEnv('EXPO_IOS_BUNDLE_ID', 'com.claudygod.app');
-const iosBuildNumber = getFileOrEnv('EXPO_IOS_BUILD_NUMBER', '1');
+const iosBuildNumber = getFileOrEnv('EXPO_IOS_BUILD_NUMBER', '');
 // iPhone-only for the first release. Declaring iPad support commits to a working
 // iPad layout and a full set of iPad screenshots at review time; that is a
 // separate QA pass. Set EXPO_IOS_SUPPORTS_TABLET=true once iPad is in scope.
 const iosSupportsTablet = getFileOrEnv('EXPO_IOS_SUPPORTS_TABLET', 'false') === 'true';
 const androidPackage = getFileOrEnv('EXPO_ANDROID_PACKAGE', 'com.claudygod.app');
-const androidVersionCode = parseInt(getFileOrEnv('EXPO_ANDROID_VERSION_CODE', '1'), 10);
+// When eas.json sets appVersionSource="remote", EAS manages and auto-increments
+// versionCode and buildNumber on Expo servers. Only inject when explicitly specified.
+const rawAndroidVersionCode = getFileOrEnv('EXPO_ANDROID_VERSION_CODE', '');
+const androidVersionCode = rawAndroidVersionCode ? parseInt(rawAndroidVersionCode, 10) : undefined;
 const androidEdgeToEdge = getFileOrEnv('EXPO_ANDROID_EDGE_TO_EDGE', 'true') !== 'false';
 
 const seedEnv = (key, value) => {
@@ -235,7 +238,7 @@ module.exports = {
     ios: {
       supportsTablet: iosSupportsTablet,
       bundleIdentifier: iosBundleId,
-      buildNumber: iosBuildNumber,
+      ...(iosBuildNumber ? { buildNumber: iosBuildNumber } : {}),
       icon: appIconAssetPath,
       associatedDomains: ['applinks:claudygod.org'],
       infoPlist: {
@@ -259,7 +262,9 @@ module.exports = {
     },
     android: {
       package: androidPackage,
-      versionCode: androidVersionCode,
+      ...(typeof androidVersionCode === 'number' && !Number.isNaN(androidVersionCode)
+        ? { versionCode: androidVersionCode }
+        : {}),
       icon: appIconAssetPath,
       adaptiveIcon: {
         foregroundImage: appAdaptiveIconAssetPath,
