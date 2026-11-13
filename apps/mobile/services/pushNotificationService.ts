@@ -228,7 +228,7 @@ export class PushNotificationService {
   }
 
   async addNotificationResponseListener(
-    listener: (data: Record<string, unknown>) => void,
+    listener: (_data: Record<string, unknown>) => void,
   ): Promise<(() => void) | null> {
     const notifications = await getNotificationsModule();
     if (!notifications) return null;
