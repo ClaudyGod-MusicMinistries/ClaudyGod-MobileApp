@@ -226,6 +226,24 @@ export class PushNotificationService {
       this.isInitialized = false;
     } catch (error) { throw error; }
   }
+
+  async addNotificationResponseListener(
+    listener: (data: Record<string, unknown>) => void,
+  ): Promise<(() => void) | null> {
+    const notifications = await getNotificationsModule();
+    if (!notifications) return null;
+
+    const subscription = notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as Record<string, unknown> | undefined;
+      if (data) {
+        listener(data);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }
 }
 
 export const pushNotificationService = PushNotificationService.getInstance();

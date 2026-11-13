@@ -102,6 +102,7 @@ export interface ContentCreateInput {
   metadata?: Record<string, unknown>;
   visibility?: ContentVisibility;
   isFeatured?: boolean;
+  notifyUsers?: boolean;
 }
 
 export interface ContentUpdateInput extends Partial<ContentCreateInput> {

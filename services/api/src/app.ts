@@ -33,6 +33,7 @@ import { youtubeRouter } from './modules/youtube/youtube.routes';
 import { websiteRouter } from './modules/website/website.routes';
 import { websiteStorageRouter } from './modules/website/website-storage.routes';
 import { adminWordOfDayRouter, mobileWordOfDayRouter } from './modules/wordOfDay/wordOfDay.routes';
+import { adminNotificationsRouter } from './modules/notifications/notifications.routes';
 import engagementRouter from './modules/engagement/engagement.routes';
 import { searchRouter } from './modules/search/search.routes';
 import { devicesRouter } from './modules/devices/devices.routes';
@@ -335,6 +336,7 @@ export const createApp = () => {
   app.use('/v1/admin/app-config', adminAppConfigRouter);
   app.use('/v1/admin/word-of-day', adminWordOfDayRouter);
   app.use('/v1/admin/analytics', adminAnalyticsRouter);
+  app.use('/v1/admin/notifications', adminNotificationsRouter);
   app.use('/v1/youtube', youtubeRouter);
   app.use('/v1/website', websiteRouter);
   app.use('/v1/website/storage', websiteStorageRouter);

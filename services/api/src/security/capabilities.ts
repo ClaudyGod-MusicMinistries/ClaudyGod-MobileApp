@@ -21,6 +21,7 @@ export const CAPABILITIES = [
   'storage.manage',
   'operations.manage',
   'website.manage',
+  'notifications.manage',
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -48,6 +49,7 @@ const ADMIN_CAPABILITIES: Capability[] = [
   'youtube.manage',
   'storage.manage',
   'website.manage',
+  'notifications.manage',
 ];
 
 export const ROLE_CAPABILITIES: Readonly<Record<UserRole, readonly Capability[]>> = Object.freeze({

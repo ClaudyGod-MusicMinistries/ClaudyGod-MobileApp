@@ -129,7 +129,7 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   LayoutDashboard, FileText, Inbox, KeyRound, Radio, Settings, BookOpen,
   Smartphone, Trash2, Megaphone, Users, BarChart3, Youtube, Server,
-  PanelLeftClose, PanelLeft, LogOut, ArrowLeftRight,
+  PanelLeftClose, PanelLeft, LogOut, ArrowLeftRight, Bell,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUiStore } from '@/stores/ui.store';
@@ -177,6 +177,7 @@ const ic = {
   analytics: BarChart3,
   youtube: Youtube,
   system: Server,
+  notifications: Bell,
 };
 
 const NAV_GROUPS = [
@@ -193,6 +194,7 @@ const NAV_GROUPS = [
   {
     label: 'Publishing',
     items: [
+      { to: '/notifications', label: 'Push campaigns', icon: ic.notifications, minRole: Role.ADMIN },
       { to: '/config', label: 'Mobile config', icon: ic.config, minRole: Role.ADMIN },
       { to: '/word-of-day', label: 'Word of day', icon: ic.word, minRole: Role.MODERATOR },
       { to: '/preview', label: 'Mobile preview', icon: ic.preview, minRole: Role.MODERATOR },

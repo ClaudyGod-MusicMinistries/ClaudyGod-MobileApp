@@ -147,3 +147,151 @@ export async function sendLiveStartPushNotifications(input: {
     invalidTokens: invalidTokens.size,
   };
 }
+
+export interface BroadcastNotificationInput {
+  title: string;
+  body: string;
+  category?: 'new_release' | 'ministry_update' | 'live_service' | 'daily_devotional' | 'announcement';
+  contentId?: string | null;
+  contentType?: string | null;
+  targetAudience?: 'all' | 'registered' | 'guests';
+  imageUrl?: string | null;
+  deepLinkUrl?: string | null;
+  createdBy?: string | null;
+}
+
+export interface BroadcastNotificationResult extends PushDeliverySummary {
+  campaignId: string;
+}
+
+export async function sendContentBroadcastNotification(
+  input: BroadcastNotificationInput,
+): Promise<BroadcastNotificationResult> {
+  let tokenQuery = '';
+  const queryParams: unknown[] = [];
+
+  if (input.targetAudience === 'registered') {
+    tokenQuery = `
+      SELECT DISTINCT upt.expo_push_token
+      FROM user_push_tokens upt
+      INNER JOIN app_users u ON u.id = upt.user_id
+      LEFT JOIN user_preferences pref ON pref.user_id = upt.user_id
+      WHERE u.is_active = TRUE
+        AND COALESCE(pref.notifications_enabled, TRUE) = TRUE
+    `;
+  } else if (input.targetAudience === 'guests') {
+    tokenQuery = `
+      SELECT DISTINCT mpt.expo_push_token
+      FROM mobile_installation_push_tokens mpt
+      INNER JOIN mobile_installations mi ON mi.id = mpt.installation_id
+      WHERE mi.status = 'active'
+        AND mi.notifications_enabled = TRUE
+    `;
+  } else {
+    tokenQuery = `
+      SELECT DISTINCT recipients.expo_push_token FROM (
+        SELECT upt.expo_push_token
+        FROM user_push_tokens upt
+        INNER JOIN app_users u ON u.id = upt.user_id
+        LEFT JOIN user_preferences pref ON pref.user_id = upt.user_id
+        WHERE u.is_active = TRUE
+          AND COALESCE(pref.notifications_enabled, TRUE) = TRUE
+        UNION
+        SELECT mpt.expo_push_token
+        FROM mobile_installation_push_tokens mpt
+        INNER JOIN mobile_installations mi ON mi.id = mpt.installation_id
+        WHERE mi.status = 'active'
+          AND mi.notifications_enabled = TRUE
+      ) recipients
+    `;
+  }
+
+  const tokenRes = await pool.query<{ expo_push_token: string }>(tokenQuery, queryParams);
+  const tokens = [...new Set(tokenRes.rows.map((row) => row.expo_push_token).filter((t) => isExpoPushToken(t)))];
+
+  // Resolve deep link route
+  let route = input.deepLinkUrl || '/home';
+  if (!input.deepLinkUrl) {
+    if (input.contentId) {
+      if (input.contentType === 'video') {
+        route = `/videos?itemId=${input.contentId}`;
+      } else {
+        route = `/player?id=${input.contentId}`;
+      }
+    } else if (input.category === 'live_service') {
+      route = '/live';
+    } else if (input.category === 'daily_devotional') {
+      route = '/word';
+    }
+  }
+
+  let accepted = 0;
+  const invalidTokens = new Set<string>();
+
+  if (tokens.length > 0) {
+    for (const group of chunk(tokens, EXPO_BATCH_SIZE)) {
+      const messages: ExpoPushMessage[] = group.map((token) => ({
+        to: token,
+        title: input.title,
+        body: input.body,
+        sound: 'default',
+        priority: 'high',
+        data: {
+          type: 'content_broadcast',
+          category: input.category || 'new_release',
+          contentId: input.contentId || undefined,
+          contentType: input.contentType || undefined,
+          route,
+          imageUrl: input.imageUrl || undefined,
+        },
+      }));
+
+      try {
+        const results = await sendExpoPushBatch(messages);
+        results.forEach((result, index) => {
+          if (result.status === 'ok') {
+            accepted += 1;
+          } else if (result.details?.error === 'DeviceNotRegistered') {
+            invalidTokens.add(group[index]!);
+          }
+        });
+      } catch {
+        // If external Expo push service is temporarily unreachable, record attempted
+      }
+    }
+
+    if (invalidTokens.size > 0) {
+      await deleteInvalidPushTokens([...invalidTokens]).catch(() => undefined);
+    }
+  }
+
+  // Record campaign audit log
+  const campaignRes = await pool.query<{ id: string }>(
+    `INSERT INTO push_notification_campaigns (
+       title, body, category, content_id, target_audience, image_url, deep_link_url,
+       recipients_attempted, recipients_accepted, invalid_tokens_pruned, status, created_by
+     ) VALUES (
+       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'completed', $11
+     ) RETURNING id`,
+    [
+      input.title,
+      input.body,
+      input.category || 'new_release',
+      input.contentId || null,
+      input.targetAudience || 'all',
+      input.imageUrl || null,
+      route,
+      tokens.length,
+      accepted,
+      invalidTokens.size,
+      input.createdBy || null,
+    ],
+  );
+
+  return {
+    campaignId: campaignRes.rows[0]?.id ?? '',
+    attempted: tokens.length,
+    accepted,
+    invalidTokens: invalidTokens.size,
+  };
+}

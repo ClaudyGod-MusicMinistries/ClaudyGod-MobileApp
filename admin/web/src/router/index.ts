@@ -133,6 +133,12 @@ const router = createRouter({
         },
         // Config
         {
+          path: 'notifications',
+          name: 'notifications',
+          component: () => import('@/views/notifications/NotificationsView.vue'),
+          meta: { minRole: Role.ADMIN, capability: 'notifications.manage', title: 'Push campaigns' },
+        },
+        {
           path: 'config',
           name: 'config',
           component: () => import('@/views/config/MobileConfigView.vue'),

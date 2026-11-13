@@ -173,6 +173,16 @@
             <AppToggle v-model="form.isFeatured" class="mt-3" />
           </div>
 
+          <div class="flex items-center justify-between pt-1 border-t border-border/60 mt-1">
+            <div class="pt-3">
+              <p class="text-xs font-medium text-ink">Push notification</p>
+              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">
+                Broadcast instant push notification to user devices when published.
+              </p>
+            </div>
+            <AppToggle v-model="form.notifyUsers" class="mt-3" />
+          </div>
+
           <!-- App sections -->
           <div class="space-y-2 pt-1 border-t border-border/60">
             <p class="text-xs font-medium text-ink-muted pt-3">App sections</p>
@@ -402,6 +412,7 @@ interface FormState {
   appSections: string[];
   visibility: 'draft' | 'published';
   isFeatured: boolean;
+  notifyUsers: boolean;
   metadata: string;
 }
 
@@ -420,6 +431,7 @@ const emptyForm = (): FormState => ({
   appSections: [],
   visibility: 'draft',
   isFeatured: false,
+  notifyUsers: true,
   metadata: '',
 });
 
@@ -598,6 +610,7 @@ onMounted(async () => {
         appSections: [...new Set(migratedSections)],
         visibility: c.visibility,
         isFeatured: c.isFeatured ?? false,
+        notifyUsers: true,
         metadata: c.metadata && Object.keys(c.metadata).length ? JSON.stringify(c.metadata, null, 2) : '',
       };
       if (c.metadata && typeof c.metadata === 'object') {
@@ -731,6 +744,7 @@ async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void>
     tags,
     visibility,
     isFeatured: form.value.isFeatured,
+    notifyUsers: form.value.notifyUsers,
     metadata,
   };
 

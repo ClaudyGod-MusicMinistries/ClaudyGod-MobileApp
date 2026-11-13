@@ -1,6 +1,7 @@
 // hooks/usePushNotifications.ts
 import { useState, useEffect, useCallback } from 'react';
 import { AppState } from 'react-native';
+import { useRouter } from 'expo-router';
 import { pushNotificationService } from '../services/pushNotificationService';
 
 export interface UsePushNotificationsReturn {
@@ -13,6 +14,7 @@ export interface UsePushNotificationsReturn {
 }
 
 export const usePushNotifications = (): UsePushNotificationsReturn => {
+  const router = useRouter();
   const [isEnabled, setIsEnabled] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,6 +66,23 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
   }, [handleAppStateChange]);
+
+  // Listen for user tapping a push notification banner to deep-link to the content
+  useEffect(() => {
+    let cleanup: (() => void) | null = null;
+    void pushNotificationService.addNotificationResponseListener((data) => {
+      const route = typeof data?.route === 'string' ? data.route : null;
+      if (route) {
+        router.push(route as never);
+      }
+    }).then((unsub) => {
+      cleanup = unsub;
+    });
+
+    return () => {
+      cleanup?.();
+    };
+  }, [router]);
 
   const toggleNotifications = async (enabled: boolean): Promise<boolean> => {
     try {
