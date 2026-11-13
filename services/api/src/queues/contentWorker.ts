@@ -1,6 +1,7 @@
 import { Worker } from 'bullmq';
 import { pool } from '../db/pool';
 import { bullmqWorkerConnection } from '../infra/bullmq';
+import { sendContentBroadcastNotification } from '../infra/push';
 import { createLogger } from '../lib/logger';
 import { CacheService } from '../lib/cache';
 import { CONTENT_QUEUE_NAME, type ContentQueuePayload, type ContentEventType } from './contentQueue';
@@ -20,6 +21,49 @@ const markAsFailed = async (jobRecordId: number, reason: string): Promise<void> 
 
 const handleContentEvent = async (eventType: ContentEventType, contentId: string): Promise<void> => {
   await CacheService.invalidateContentCache(contentId);
+
+  if (eventType === 'content.published') {
+    try {
+      const contentRes = await pool.query<{
+        title: string;
+        description: string;
+        content_type: string;
+        thumbnail_url: string | null;
+        author_id: string;
+      }>(
+        `SELECT title, description, content_type, thumbnail_url, author_id
+         FROM content_items
+         WHERE id = $1 AND visibility = 'published' AND deleted_at IS NULL`,
+        [contentId],
+      );
+
+      if (contentRes.rows.length > 0) {
+        const item = contentRes.rows[0]!;
+        const typeLabel =
+          item.content_type === 'video'
+            ? 'New Video'
+            : item.content_type === 'audio'
+              ? 'New Release'
+              : 'New Update';
+
+        await sendContentBroadcastNotification({
+          title: `${typeLabel}: ${item.title}`,
+          body: item.description ? item.description.slice(0, 140) : `Listen to ${item.title} now on ClaudyGod.`,
+          category: 'new_release',
+          contentId,
+          contentType: item.content_type,
+          imageUrl: item.thumbnail_url ?? undefined,
+          createdBy: item.author_id,
+        });
+        log.info('Automatic publish push notification dispatched', { contentId, title: item.title });
+      }
+    } catch (pushErr) {
+      log.warn('Auto publish push notification failed', {
+        contentId,
+        error: pushErr instanceof Error ? pushErr.message : String(pushErr),
+      });
+    }
+  }
 
   if (eventType === 'content.deleted') {
     await Promise.all([

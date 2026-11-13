@@ -17,9 +17,32 @@ export function cleanFeedText(value?: string | null): string {
 export function cleanFeedTitle(value?: string | null): string {
   let text = cleanFeedText(value);
   if (!text) return '';
-  text = text.replace(/^(NEW\s*!*|-|:|\s)+/i, '').trim();
-  text = text.replace(/\s*(\||\/\/|-)\s*(Official\s+)?(Music\s+Video|Video|Audio).*$/i, '').trim();
-  text = text.replace(/\.\s+(Afro\s+Gospel\s+Music|Gospel\s+Music|Music\s+by).*$/i, '').trim();
+
+  // 1. Strip repetitive promotional leading tags ("Latest Release:", "NEW!!", etc.)
+  text = text.replace(/^(NEW\s*!*|Latest\s+Release:?|New\s+Release:?|Official\s+Video:?|Official\s+Audio:?|Video:?|Audio:?|Song:?|Music:?|-|:|\s)+/i, '').trim();
+
+  // 2. Strip trailing pipe/slash/hyphen media suffixes ("| Official Music Video", "// Audio")
+  text = text.replace(/\s*(\||\/\/)\s*(Official\s+)?(Music\s+Video|Video|Audio|Visualizer|Lyrics?|Lyric\s+Video).*$/i, '').trim();
+  text = text.replace(/\s*-\s*(Official\s+)?(Music\s+Video|Video|Audio|Visualizer|Lyric\s+Video).*$/i, '').trim();
+
+  // 3. Strip trailing credit suffixes (". Afro Gospel Music by...", "- Song by...")
+  text = text.replace(/\.\s+(Afro\s+Gospel\s+Music|Gospel\s+Music|Music\s+by|Song\s+by|Inspirational\s+Song).*$/i, '').trim();
+  text = text.replace(/\s*[-–—]\s*(Song\s+by|Music\s+by|Afro\s+Gospel).*$/i, '').trim();
+
+  // 4. Deduplicate adjacent case-insensitive duplicate parentheticals (e.g. "(Chukwu Idi Ebube) (Chukwu idi ebube)")
+  text = text.replace(/\(([^)]+)\)\s*\(([^)]+)\)/gi, (match, p1, p2) => {
+    return p1.trim().toLowerCase() === p2.trim().toLowerCase() ? `(${p1.trim()})` : match;
+  });
+  text = text.replace(/\[([^\]]+)\]\s*\[([^\]]+)\]/gi, (match, p1, p2) => {
+    return p1.trim().toLowerCase() === p2.trim().toLowerCase() ? `[${p1.trim()}]` : match;
+  });
+
+  // 5. Strip trailing emojis that clutter card headings
+  text = text.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]+$/gu, '').trim();
+
+  // 6. Strip trailing isolated punctuation (e.g. trailing period from title)
+  text = text.replace(/[.]+$/, '').trim();
+
   return text || cleanFeedText(value);
 }
 
@@ -88,14 +111,20 @@ export type CardVariant = 'portrait' | 'landscape' | 'square';
 // Approximate height of the text block under the artwork (gap + up to a
 // 2-line title + 1-line subtitle) — used only to size the FlashList
 // container, which needs a fixed cross-axis size when horizontal.
-export const CARD_TEXT_AREA_HEIGHT = 70;
+export const CARD_TEXT_AREA_HEIGHT = 76;
 
 export function getContentCardWidth(
-  device: { isTV: boolean; isDesktop: boolean },
+  device: { isTV: boolean; isDesktop: boolean; isLargeDesktop?: boolean; isTablet?: boolean; width?: number },
   compact: boolean,
   fixedWidth?: number,
 ): number {
-  return fixedWidth ?? (compact ? 176 : device.isTV ? 260 : device.isDesktop ? 218 : 184);
+  if (fixedWidth) return fixedWidth;
+  if (compact) return 176;
+  if (device.isTV) return 320;
+  if (device.isLargeDesktop) return 270;
+  if (device.isDesktop) return 240;
+  if (device.isTablet) return 210;
+  return 184;
 }
 
 export function getContentCardHeight(cardWidth: number, variant: CardVariant): number {

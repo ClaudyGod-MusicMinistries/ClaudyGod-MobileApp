@@ -62,7 +62,9 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
     <TVTouchable
       onPress={onPress}
       pressScale={0.96}
-      showFocusBorder={false}
+      showFocusBorder={device.isTV}
+      focusScale={device.isTV ? 1.05 : undefined}
+      focusStyle={device.isTV ? { borderRadius: theme.radius.card, borderColor: theme.colors.primary, borderWidth: 2 } : undefined}
       style={{ width: cardWidth, flexShrink: 0 }}
       accessibilityRole="button"
       accessibilityLabel={`${item.type === 'video' ? 'Watch' : 'Play'} ${title}`}

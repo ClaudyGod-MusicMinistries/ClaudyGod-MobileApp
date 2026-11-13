@@ -1415,6 +1415,25 @@ const migrationStatements = [
        setweight(to_tsvector('english', COALESCE(channel_name, '')), 'A') ||
        setweight(to_tsvector('english', COALESCE(description, '')), 'B') ||
        setweight(to_tsvector('english', COALESCE(array_to_string(tags, ' '), '')), 'C')`,
+
+  `CREATE TABLE IF NOT EXISTS push_notification_campaigns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'new_release',
+    content_id UUID REFERENCES content_items(id) ON DELETE SET NULL,
+    target_audience TEXT NOT NULL DEFAULT 'all',
+    image_url TEXT,
+    deep_link_url TEXT,
+    recipients_attempted INTEGER NOT NULL DEFAULT 0,
+    recipients_accepted INTEGER NOT NULL DEFAULT 0,
+    invalid_tokens_pruned INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'completed',
+    created_by UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_push_campaigns_created ON push_notification_campaigns (created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_push_campaigns_content ON push_notification_campaigns (content_id)`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

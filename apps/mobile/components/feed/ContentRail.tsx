@@ -82,9 +82,10 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
   const listRef = useRef<FlashListRef<FeedCardItem>>(null);
   const scrollRef = useRef<ScrollView>(null);
   const [firstVisibleIndex, setFirstVisibleIndex] = useState(0);
+  const effectiveViewportWidth = Math.min(device.width - device.contentGutter * 2, device.maxContentWidth);
   const visibleCount = Math.max(
     1,
-    Math.floor((device.width - device.contentGutter * 2 + 16) / (mobileCardWidth + 16)),
+    Math.floor((effectiveViewportWidth + 16) / (mobileCardWidth + 16)),
   );
   const lastPageStart = Math.max(0, items.length - visibleCount);
   const itemIdentity = useMemo(() => items.map((item) => item.id).join('|'), [items]);
