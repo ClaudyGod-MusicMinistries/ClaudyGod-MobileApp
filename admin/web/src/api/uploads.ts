@@ -15,8 +15,18 @@ export async function uploadFile(
   pipeline: UploadPipeline = 'mobile',
   signal?: AbortSignal,
 ): Promise<{ key: string; publicUrl: string; sessionId: string }> {
-  const result = pipeline === 'website'
-    ? await uploadWebsiteFile(file, onProgress, signal)
-    : await uploadMediaFile(file, onProgress, signal);
+  if (pipeline === 'website') {
+    try {
+      const result = await uploadWebsiteFile(file, onProgress, signal);
+      return { key: result.key, publicUrl: result.publicUrl, sessionId: result.sessionId };
+    } catch (err) {
+      console.warn('[uploadFile] Website storage pipeline failed, falling back to core storage pipeline:', err);
+      // Fallback to core S3/Supabase storage pipeline so admin uploads never fail
+      const fallback = await uploadMediaFile(file, onProgress, signal);
+      return { key: fallback.key, publicUrl: fallback.publicUrl, sessionId: fallback.sessionId };
+    }
+  }
+
+  const result = await uploadMediaFile(file, onProgress, signal);
   return { key: result.key, publicUrl: result.publicUrl, sessionId: result.sessionId };
 }
