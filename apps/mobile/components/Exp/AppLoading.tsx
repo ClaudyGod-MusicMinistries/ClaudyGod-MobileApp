@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, Platform, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Image, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { makeStyles } from '../../styles/makeStyles';
 import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
@@ -141,7 +142,7 @@ export function AppLoadingScreen() {
 
   return (
     <View style={[styles.rootBg, { width, height }]}>
-      <StatusBar translucent barStyle="light-content" backgroundColor="transparent" />
+      <StatusBar style="light" />
 
       {/* Ambient background glow — off-canvas, breathing continuously */}
       <Animated.View

@@ -1,5 +1,6 @@
 import React from 'react';
-import { ImageBackground, StatusBar, View, useWindowDimensions, type ImageSourcePropType } from 'react-native';
+import { ImageBackground, View, useWindowDimensions, type ImageSourcePropType } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../util/colorScheme';
@@ -43,11 +44,7 @@ export function TabScreenWrapper({
 
   return (
     <View style={styles.root}>
-      <StatusBar
-        translucent={false}
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={theme.colors.background}
-      />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       {backgroundImage ? (
         <ImageBackground
           source={backgroundImage}
