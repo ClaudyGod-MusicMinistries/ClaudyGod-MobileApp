@@ -4,8 +4,8 @@ import {
   Platform,
   StyleSheet,
   View,
-  StatusBar,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -196,7 +196,7 @@ export default function Profile() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor={theme.colors.background} />
+      <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
 
       {/* Sticky title — fades in as user scrolls */}
       <SafeAreaView edges={['top']} style={styles.stickyHeader} pointerEvents="none">

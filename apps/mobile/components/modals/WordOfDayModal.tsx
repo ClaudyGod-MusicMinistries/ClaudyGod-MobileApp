@@ -6,10 +6,10 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StatusBar,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -253,7 +253,7 @@ export function WordOfDayModal({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <StatusBar backgroundColor={theme.colors.background} barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
 
       <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
         <Pressable style={styles.backfill} onPress={onClose} />

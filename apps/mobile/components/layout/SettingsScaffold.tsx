@@ -1,5 +1,6 @@
 import React from 'react';
-import { ScrollView, StatusBar, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -61,11 +62,7 @@ export function SettingsScaffold({ title, subtitle, icon, children, hero, backRo
 
   return (
     <View style={styles.root}>
-      <StatusBar
-        translucent={false}
-        barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'}
-        backgroundColor={theme.colors.background}
-      />
+      <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView

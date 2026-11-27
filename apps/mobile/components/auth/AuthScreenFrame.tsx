@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image, ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
+import { Image, ScrollView, View, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -99,7 +100,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
 
     return (
       <View style={styles.root}>
-        <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+        <StatusBar style="light" />
         <SafeAreaView style={styles.flex1} edges={['top', 'bottom']}>
           <View style={styles.backBtnWrap}>{BackButton}</View>
           <ScrollView
@@ -136,7 +137,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
   // ── Tablet / Desktop / TV: two-pane or centered card ──────────────────────
   return (
     <View style={styles.root}>
-      <StatusBar translucent={false} backgroundColor={theme.colors.background} barStyle="light-content" />
+      <StatusBar style="light" />
       <SafeAreaView style={styles.flex1} edges={['top', 'bottom']}>
         <ScrollView
           style={styles.flex1}

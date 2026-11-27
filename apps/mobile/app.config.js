@@ -310,6 +310,7 @@ module.exports = {
         : {}),
     },
     plugins: [
+      './plugins/withAndroidPlayCompliance',
       'expo-font',
       'expo-router',
       'expo-web-browser',
